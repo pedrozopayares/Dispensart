@@ -418,3 +418,120 @@ limpio de HEAD con solo los archivos devops superpuestos; sin tocar el trabajo a
 - El humo repite el literal del valor solo de desarrollo de `SEED_USER_PASSWORD` (segunda fuente además de
   `config/dispensart.php`); si cambia uno sin el otro el humo falla en rojo, no en falso verde.
 - CI no ejecuta el humo ni construye imágenes; ambos quedan para el trabajo de imágenes de S8.
+
+## 2026-10-08 — frontend-implementer: grupo 6 (`software/web`)
+
+Tareas 6.1–6.5 `[x]`. Dependencia nueva: `react-router` 7.18.4 (MIT, design D7). Tipos de la API generados
+desde `software/api/openapi.json` con `openapi-typescript@7.13.0` vía `npx` fijado (sin dependencia: su peer exige
+TypeScript 5 y la SPA usa 6) → `src/lib/api-schema.ts`; scripts `api:types` y `api:types:check` (deriva). Componentes
+shadcn/ui añadidos con la CLI: `input`, `field`, `label`, `separator`, `alert`, `empty`, `spinner`, `badge`.
+
+### Corridas
+
+| Corrida | Comando | Resultado |
+|---|---|---|
+| Cierre (1 de 1) | `npm run lint && npm run typecheck && npm test -- --run && npm run build` | lint 0, tsc 0, 39 pruebas / 7 archivos (línea base 8 / 3), build OK |
+| Delta | `vitest --run` tras etiqueta del spinner al módulo de textos | 39 / 39 |
+| Deriva de tipos | `npm run api:types:check` | exit 0; control positivo (línea plantada en `api-schema.ts`) → exit 1; restaurado → exit 0 |
+
+### Líneas (añadidas, `software/web`)
+
+| Tipo | Líneas |
+|---|---|
+| Producto (`src` sin pruebas, sin `ui`) | 600 |
+| Componentes shadcn/ui generados | 545 |
+| Pruebas (`*.test.*`, `src/test`) | 647 |
+| Tipos generados del OpenAPI | 934 |
+
+### Escenario → prueba → archivo:línea (rutas relativas a `software/web/src/`)
+
+| Capacidad | Escenario | Prueba | Archivo:línea |
+|---|---|---|---|
+| app-shell | Ingreso exitoso | navega a / y el encabezado muestra nombre y rol | features/session/login-page.test.tsx:36 |
+| app-shell | Doble clic (login) | una sola petición y botón "Ingresando…" deshabilitado · doble envío por teclado | features/session/login-page.test.tsx:51, :69 |
+| app-shell | Credenciales inválidas | mensaje, conserva correo, vacía contraseña, rehabilita | features/session/login-page.test.tsx:87 |
+| app-shell | Campos vacíos | "Este campo es obligatorio." y ninguna petición | features/session/login-page.test.tsx:98 |
+| app-shell | Demasiados intentos | mensaje de espera | features/session/login-page.test.tsx:110 |
+| app-shell | Servidor inalcanzable | red y 500 (dataset 2) | features/session/login-page.test.tsx:120 |
+| app-shell | Usuario ya autenticado | /login lleva a / sin formulario | features/session/login-page.test.tsx:141 |
+| app-shell | Pantalla de inicio de sesión (cookie CSRF antes de enviar) | pide la cookie CSRF antes del login y envía X-XSRF-TOKEN | lib/api.test.ts:16 |
+| app-shell | Carga con sesión vigente | "Cargando sesión…" y luego el inicio | app/protected-layout.test.tsx:9 |
+| app-shell | Ruta protegida sin sesión | `/` y `/inventario` (dataset 2) → /login sin shell | app/protected-layout.test.tsx:22 |
+| app-shell | Fallo al consultar la sesión | error con "Reintentar" que repite la consulta | app/protected-layout.test.tsx:35 |
+| app-shell | Sesión expirada durante el uso | 401 → /login con aviso y caché descartada | app/protected-layout.test.tsx:52 |
+| app-shell | Token CSRF vencido y reintento exitoso | cliente: dos peticiones, token renovado · UI: cierre sin error | lib/api.test.ts:58; app/shell-header.test.tsx:89 |
+| app-shell | Token CSRF vencido dos veces | cliente: sin tercer intento · UI login: mensaje de recargar | lib/api.test.ts:77; features/session/login-page.test.tsx:132 |
+| app-shell | Etiqueta de rol en español | "Regente de farmacia", nunca el código | app/shell-header.test.tsx:30 |
+| app-shell | Página de inicio sin pantallas aún | saludo y estado vacío | app/shell-header.test.tsx:39 |
+| app-shell | Cierre exitoso | descarta la caché y navega a /login | app/shell-header.test.tsx:46 |
+| app-shell | Doble clic en cerrar sesión | una sola petición, botón deshabilitado | app/shell-header.test.tsx:59 |
+| app-shell | Cierre fallido | red y 500 (dataset 2): mensaje, sigue en el shell | app/shell-header.test.tsx:76 |
+| app-shell | Otro usuario no ve datos del anterior | admin cierra, auditor entra: solo datos del auditor | app/shell-header.test.tsx:103 |
+| app-shell | Textos desde el módulo central (6.2) | /login con errores · carga, fallo y shell · 2 controles positivos | App.test.tsx:40, :59, :81, :90 |
+| runtime-environment | Shell en la raíz (sin sesión: nombre y bienvenida en /login) | muestra el nombre del producto y el mensaje de bienvenida | features/session/login-page.test.tsx:152 |
+| — (cimiento 6.1) | Escrituras con X-XSRF-TOKEN · lecturas sin él · 401 = null · red/502 | 4 pruebas | lib/api.test.ts:36, :49, :92, :97 |
+
+Frontera HTTP: `fetch` sustituido (`src/test/fake-api.ts`); la emisión de la cookie CSRF escribe `document.cookie`
+como Sanctum. Toda ruta pedida sin manejador hace fallar la prueba en `src/test/setup.ts` (evita un falso "error de
+red"); ese guardia detectó un manejador faltante durante la autoría.
+
+### [MUT] web (corridas delta filtradas; aplicada → falla, restaurada → pasa)
+
+| n | Mutación | Aplicada → FALLA | Restaurada |
+|---|---|---|---|
+| W1 | login sin guardia `inFlight` | 1/11: doble envío por teclado | 11/11 |
+| W2 | login sin `disabled` en el botón | 1/10: doble clic | 10/10 |
+| W3 | sin reintento ante `csrf_token_mismatch` | 3/15: reintento exitoso (cliente y UI), vencido dos veces | 15/15 |
+| W4 | escrituras sin `X-XSRF-TOKEN` | 4/15: login, escritura, reintento, cierre | 15/15 |
+| W5 | login sin pedir la cookie CSRF | 1/7: cookie CSRF antes del login | 7/7 |
+| W6 | cierre sin `queryClient.clear()` | 2/8: cierre exitoso, otro usuario | 8/8 |
+| W7 | 401 de la sesión expirada sin `clear()` | 1/5: sesión expirada durante el uso | 5/5 |
+| W8 | 401 de `me` tratado como error, no `null` | 3/5: rutas sin sesión (2), sesión expirada | 5/5 |
+| W9 | encabezado muestra el código de rol | 2/8: etiqueta de rol, otro usuario | 8/8 |
+| W10 | cierre sin guardia `inFlight` | 1/8: doble clic en cerrar sesión | 8/8 |
+| W11 | credenciales inválidas no vacían la contraseña | 1/11 | 11/11 |
+| W12 | envío sin validar campos vacíos | 1/11: campos vacíos | 11/11 |
+
+### Barridos (`/usr/bin/grep`, `software/web/src`, sin `api-schema.ts`; control positivo plantado en el scratchpad)
+
+| # | Patrón | Alcance | Hits | Control |
+|---|---|---|---|---|
+| 1 | `console.(log\|info\|debug)(` | src | 0 | 1 |
+| 2 | `console.(warn\|error)(` fuera de pruebas | src | 0 | — (1 cubre la forma) |
+| 3 | `localStorage`, `sessionStorage` | src | 0 | 1 |
+| 4 | `fetch(` fuera de `lib/api.ts` y pruebas | src | 0 | 1 |
+| 5 | texto literal en JSX (`>Texto<`) | src sin `ui` ni pruebas | 0 | 1 |
+| 6 | `Authorization`, `Bearer` en código | src sin pruebas | 0 | 1 |
+| 7 | `dangerouslySetInnerHTML` | src | 0 | 1 |
+| 8 | `catch` vacío | src | 0 | 1 |
+
+### Verificación renderizada (stack en marcha, `localhost:8090`, web reconstruida con este código)
+
+Chromium sin cabeza (playwright-core en el scratchpad). Secuencia observada: `GET /inventario` → `me` 401 → `/login`;
+envío vacío → 2 mensajes; login con contraseña errónea → CSRF 204 + login 422 + mensaje; login regente → CSRF 204 +
+login 200 → `/`; recarga → `me` 200 con sesión; cerrar sesión → logout 204 → `/login`; `/` → `me` 401 → `/login`.
+Cookies: `XSRF-TOKEN` (no HttpOnly), `dispensart-session` (HttpOnly); `localStorage` vacío.
+
+| Captura | Archivo |
+|---|---|
+| Login con campos vacíos | captures/s1-login-campos-vacios.png |
+| Login con credenciales inválidas | captures/s1-login-credenciales-invalidas.png |
+| Shell del regente con inicio vacío | captures/s1-shell-regente.png |
+
+### Decisiones y desviaciones
+
+| Punto | Design | Aplicado | Motivo |
+|---|---|---|---|
+| D8 módulo de textos | `src/strings.ts` | `src/lib/strings.ts` (módulo único existente de S0) | un solo módulo central |
+| D8 tipos | — | generados del OpenAPI (`openapi-typescript` por `npx` fijado) | ley del agente: tipos derivados del contrato, nunca duplicados |
+| D8 manejador global | `router.navigate` | `createAppQueryClient(router)` en `app/app-query-client.ts` | el cliente se crea con el router; pruebas usan el mismo cableado con router en memoria |
+| Sesión | `useQuery(['session','me'])` | además `staleTime: Infinity`, `retry: false` | solo cambia por login/logout/401; "Reintentar" es manual |
+| Login exitoso | — | descarta toda consulta salvo la sesión antes de fijar el usuario | "Otro usuario no ve datos del anterior" también si no hubo cierre |
+| Runtime "Shell en la raíz" | página shell sin sesión | `/` sin sesión → `/login`, que muestra nombre del producto y bienvenida | la escena S0 sigue cumpliéndose bajo el shell protegido |
+
+### Deuda (prosa; el Orchestrator asigna id)
+
+- `api:types:check` no corre en CI: el workflow `frontend` debería ejecutarlo para que un cambio del OpenAPI sin
+  regenerar los tipos falle (es archivo de CI, fuera del alcance de este agente).
+- `npm audit` reporta 7 altas preexistentes vía `shadcn` → `fast-glob` → `micromatch` → `braces` (solo desarrollo, no
+  llega al bundle); ninguna introducida por este bloque.

@@ -59,11 +59,11 @@ en las de login, logout o CSRF (falso verde: el framework omite CSRF en pruebas 
 
 ## 6. Web
 
-- [ ] 6.1 Cliente HTTP de la SPA sobre `fetch` (design D8): mismo origen con cookies, `X-XSRF-TOKEN` desde la cookie, cookie CSRF antes del login, un único reintento ante `csrf_token_mismatch`, señal de sesión expirada ante `unauthenticated`. Cubre app-shell "Sesión expirada y token CSRF vencido" (todos). Verifica: Vitest verde.
-- [ ] 6.2 Textos en el módulo central: login, shell, etiquetas de rol, mensajes de error y estados. Cubre app-shell "Etiqueta de rol en español" y el requisito de textos de "Pantalla de inicio de sesión". Verifica: Vitest que cada texto visible de 6.3–6.5 sale del módulo.
-- [ ] 6.3 Dependencia nueva `react-router` v7 en modo datos (design D7); sesión con TanStack Query y ruta de diseño protegida: carga, sin sesión → `/login`, fallo con "Reintentar", usuario autenticado en `/login` → `/`. Cubre app-shell "Rutas protegidas por sesión" (todos) y "Usuario ya autenticado". Verifica: Vitest verde.
-- [ ] 6.4 Pantalla `/login` con componentes de shadcn/ui existentes: campos obligatorios, estado pendiente sin doble envío, errores por `code`. Cubre app-shell "Pantalla de inicio de sesión" (todos). Verifica: Vitest verde.
-- [ ] 6.5 Encabezado del shell (nombre, etiqueta de rol, "Cerrar sesión") y página de inicio con estado vacío; cierre con estado pendiente, fallo y limpieza de caché. Cubre app-shell "Encabezado con sesión y cierre" (todos). Verifica: Vitest verde.
+- [x] 6.1 Cliente HTTP de la SPA sobre `fetch` (design D8): mismo origen con cookies, `X-XSRF-TOKEN` desde la cookie, cookie CSRF antes del login, un único reintento ante `csrf_token_mismatch`, señal de sesión expirada ante `unauthenticated`. Cubre app-shell "Sesión expirada y token CSRF vencido" (todos). Verifica: Vitest verde.
+- [x] 6.2 Textos en el módulo central: login, shell, etiquetas de rol, mensajes de error y estados. Cubre app-shell "Etiqueta de rol en español" y el requisito de textos de "Pantalla de inicio de sesión". Verifica: Vitest que cada texto visible de 6.3–6.5 sale del módulo.
+- [x] 6.3 Dependencia nueva `react-router` v7 en modo datos (design D7); sesión con TanStack Query y ruta de diseño protegida: carga, sin sesión → `/login`, fallo con "Reintentar", usuario autenticado en `/login` → `/`. Cubre app-shell "Rutas protegidas por sesión" (todos) y "Usuario ya autenticado". Verifica: Vitest verde.
+- [x] 6.4 Pantalla `/login` con componentes de shadcn/ui existentes: campos obligatorios, estado pendiente sin doble envío, errores por `code`. Cubre app-shell "Pantalla de inicio de sesión" (todos). Verifica: Vitest verde.
+- [x] 6.5 Encabezado del shell (nombre, etiqueta de rol, "Cerrar sesión") y página de inicio con estado vacío; cierre con estado pendiente, fallo y limpieza de caché. Cubre app-shell "Encabezado con sesión y cierre" (todos). Verifica: Vitest verde.
 
 ## 7. DevOps
 
