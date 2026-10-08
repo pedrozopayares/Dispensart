@@ -70,3 +70,13 @@ alcance; historial de 10 en memoria; Enter/Shift+Enter; ejemplo rellena sin envi
 - Hallazgo menor (sin código cambiado): ante `unauthenticated` la pantalla pinta un instante la alerta con el mismo
   texto de sesión expirada antes de que app-shell navegue a `/login`.
 - Imagen `web` reconstruida; `/assistant` servido por el contenedor (`verification.md` § 3).
+
+## 2026-10-08 — Orchestrator: cierre de apply
+
+- Tareas 16/16. 5.2 hecha por el Orchestrator en el navegador con los 5 roles; tablas en `verification.md` § 5.
+- Desvío: el recorrido usó Ollama local (`gemma4:e2b-mlx`) en vez de `mock`, por pedido del usuario; las etiquetas
+  dependen del `outcome`, no del proveedor.
+- Medición del modelo real con `assistant:eval`: 20/24. Deuda D-auv-7 (comparador literal de argumentos) registrada.
+- Suites: el implementador corrió dos veces la suite completa (la segunda solo para leer totales); dentro del tope de 3.
+- Pantalla alcanzable desde menú e inicio en los 5 roles: sin rutas huérfanas.
+- Siguiente: final-auditor, modo delta (tier B).

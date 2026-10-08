@@ -117,4 +117,21 @@ queda en «Enter repetido»; no se fuerza la prueba de doble clic para que muera
 
 | Rol | Menú | Pregunta | Etiqueta mostrada | Captura |
 |---|---|---|---|---|
-| — | — | — | pendiente: recorrido del Orchestrator en el navegador | — |
+| auditor | Dispensación · Traslados · Inventario · Kardex · Asistente | ejemplo «¿Cuántos traslados hay en tránsito?» | Sin resultados (base dev sin traslados `EN_TRANSITO`: ANULADO 15, RECIBIDO 2, RECIBIDO_PARCIAL 11) | navegador, 2026-10-08 |
+| auditor | ídem | «¿Qué existencias hay en la farmacia de urgencias?» (Enter) | Respondida; consulta Existencias, Bodega: farmacia de urgencias | navegador |
+| auditor | ídem | Inventario y vuelta a Asistente | historial vacío («Aún no has hecho preguntas.») | navegador |
+| medico | Dispensación · Asistente | ejemplo de lotes por vencer | Sin permiso; consulta Lotes por vencer «Sin permiso» | navegador |
+| regente | Dispensación · Traslados · Inventario · Kardex · Asistente | «¿Qué medicamentos se le dispensaron al paciente Juan Prueba?» (sintético) | Fuera de alcance; sin consultas a herramientas | navegador |
+| regente | ídem | «¿Va a llover mañana en Bogotá?» | Fuera de alcance; sin consultas a herramientas | navegador |
+| admin | Asistente | ejemplo «¿Cuántos traslados hay en tránsito?» | Sin permiso; consulta Estado de traslados «Sin permiso» | navegador |
+| auxiliar | Dispensación · Traslados · Inventario · Kardex · Asistente | ejemplo de stock en farmacia central | Respondida; Existencias | navegador |
+| auxiliar | ídem | ejemplo de lotes por vencer en 60 días | Respondida; Lotes por vencer (L-ACE-2401 vencido, L-ACE-2402) | navegador |
+| auxiliar | ídem | ejemplo de stock bajo el mínimo | Respondida; Stock bajo mínimo (3 filas) | navegador |
+| auxiliar | ídem | ejemplo de traslados en tránsito | Sin resultados | navegador |
+
+| Condición del recorrido | Valor |
+|---|---|
+| Proveedor | `AI_PROVIDER=ollama`, `OLLAMA_MODEL=gemma4:e2b-mlx` (desvío del `mock` de la tarea, pedido del usuario; las etiquetas dependen del `outcome`, igual en ambos) |
+| `GET /ready` por el proxy | 200 |
+| Inicio de cada rol | tarjeta «Asistente» presente en los 5 roles; admin solo ve Asistente |
+| Envío en curso | botón «Consultando…» deshabilitado y aviso «Consultando al asistente…» |
