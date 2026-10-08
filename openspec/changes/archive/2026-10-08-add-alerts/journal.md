@@ -225,3 +225,20 @@ EXIT=0
 - S5 no agrega pantallas; el panel de alertas llega con S6 (`add-operator-screens` 4.2), sin rutas huérfanas.
 - Deuda: D-auv-4 (menor, humos de dominio fuera del staging de CI), a saldar en `add-delivery-pipeline`.
 - Fase: auditoría final (tier A).
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, tier A)
+
+| Punto | Evidencia |
+|---|---|
+| Pint / Larastan | Pint pasa; Larastan 0 errores |
+| Pest completo en `dispensart_test_audit_s5` (corrida 3 de 3) | 796 pruebas, 3177 aserciones; única falla `DatabaseConnectionTest` (base renombrada, esperada); 791 avisos por falta de `.env` en la copia |
+| Pest con `.env` (alertas, `TransferRaceTest`, Arch) | 62 pasan |
+| Migraciones | migrate, rollback, reset y migrate; 5 restricciones con nombre confirmadas |
+| Semilla | dos siembras, 4 filas de mínimos |
+| Mutantes reaplicados por el auditor | M2, M3, M6, M11, M12, M13, M16, M19, M23: todos fallan por aserción |
+| Controles positivos | M6, M12, M13, M23 pasan con el mutante aplicado |
+| CI | 37776587932 sobre `6d16d4b` en verde (mismo backend que `44a4c71`) |
+| Barridos (cuenta / control) | escrituras 0/6; bloqueos 0/1; `CURRENT_DATE` 0 fuera de comentario / 2; logs 0/1; traslados 0/18; base en controlador 0/3 |
+
+- Sin observaciones. Deuda abierta: D-auv-4 (menor), a saldar en `add-delivery-pipeline`.
+- Fase: archivo.
