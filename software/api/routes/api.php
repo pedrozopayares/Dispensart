@@ -6,12 +6,16 @@ use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Catalog\LotController;
 use App\Http\Controllers\Catalog\ProductController;
 use App\Http\Controllers\Catalog\WarehouseController;
+use App\Http\Controllers\Dispensation\DispensationController;
+use App\Http\Controllers\Dispensation\DispensationPreviewController;
 use App\Http\Controllers\Inventory\KardexController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Prescriptions\PrescriptionController;
 use App\Http\Controllers\Users\UserController;
+use App\Http\Middleware\RequireIdempotencyKey;
+use App\Models\Dispensation;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -47,9 +51,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/kardex', KardexController::class)->name('kardex.index');
     Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
 
-    // Pacientes y prescripciones (S3). La ficha no usa enlace implícito: la Policy corre antes
+    // Pacientes, prescripciones y dispensación (S3). La ficha no usa enlace implícito: la Policy corre antes
     // de buscar el paciente (403 antes que 404, design D4).
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
     Route::get('/patients/{patient}', [PatientController::class, 'show'])->whereNumber('patient')->name('patients.show');
     Route::post('/prescriptions', PrescriptionController::class)->name('prescriptions.store');
+    Route::post('/dispensations/preview', DispensationPreviewController::class)
+        ->can('create', Dispensation::class)
+        ->name('dispensations.preview');
+    // Precedencia (design D4): 419/401 → 403 → clave de idempotencia (422) → validación (422) → negocio.
+    Route::post('/dispensations', DispensationController::class)
+        ->can('create', Dispensation::class)
+        ->middleware(RequireIdempotencyKey::class)
+        ->name('dispensations.store');
 });

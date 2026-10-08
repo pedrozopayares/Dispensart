@@ -26,8 +26,21 @@ final class ApiExceptionRenderer
             $e instanceof TooManyLoginAttempts => self::error(
                 'too_many_attempts', 429, headers: ['Retry-After' => (string) $e->retryAfterSeconds],
             ),
-            $e instanceof InsufficientStock => self::error('insufficient_stock', 409),
+            $e instanceof InsufficientStock => self::error(
+                'insufficient_stock', 409, $e->shortages === [] ? [] : ['shortages' => $e->shortages],
+            ),
             $e instanceof LotExpired => self::error('lot_expired', 422),
+            $e instanceof PrescriptionExpired => self::error('prescription_expired', 422),
+            $e instanceof PrescriptionExhausted => self::error('prescription_exhausted', 422),
+            $e instanceof ExceedsPrescription => self::error('exceeds_prescription', 422),
+            $e instanceof AuthorizationRequired => self::error('authorization_required', 422),
+            $e instanceof AuthorizerMustDiffer => self::error('authorizer_must_differ', 422),
+            $e instanceof InvalidAuthorizer => self::error('invalid_authorizer', 422),
+            $e instanceof TooManyAuthorizerAttempts => self::error(
+                'too_many_attempts', 429, headers: ['Retry-After' => (string) $e->retryAfterSeconds],
+            ),
+            $e instanceof InvalidIdempotencyKey => self::error('invalid_idempotency_key', 422),
+            $e instanceof IdempotencyKeyReused => self::error('idempotency_key_reused', 422),
             $e instanceof HttpExceptionInterface => self::error(
                 self::codeForStatus($e->getStatusCode()), $e->getStatusCode(), headers: $e->getHeaders(),
             ),

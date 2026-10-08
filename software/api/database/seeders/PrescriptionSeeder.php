@@ -22,7 +22,9 @@ class PrescriptionSeeder extends Seeder
     /**
      * Ítems por documento de paciente: [código de producto, cantidad prescrita].
      *
-     * @var array<string, list<array{0: string, 1: int}>>
+     * Claves numéricas: PHP las guarda como enteros.
+     *
+     * @var array<int, list<array{0: string, 1: int}>>
      */
     public const PRESCRIPTIONS = [
         '9999010001' => [['MED-001', 10], ['MED-003', 5]],
@@ -38,7 +40,7 @@ class PrescriptionSeeder extends Seeder
         }
 
         foreach (self::PRESCRIPTIONS as $documentNumber => $items) {
-            $patientId = Patient::query()->where('document_number', $documentNumber)->value('id');
+            $patientId = Patient::query()->where('document_number', (string) $documentNumber)->value('id');
             if ($patientId === null) {
                 continue;
             }

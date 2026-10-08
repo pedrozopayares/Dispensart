@@ -1,12 +1,23 @@
 <?php
 
 use App\Exceptions\ApiExceptionRenderer;
+use App\Exceptions\AuthorizationRequired;
+use App\Exceptions\AuthorizerMustDiffer;
+use App\Exceptions\ExceedsPrescription;
+use App\Exceptions\IdempotencyKeyReused;
 use App\Exceptions\InsufficientStock;
+use App\Exceptions\InvalidAuthorizer;
 use App\Exceptions\InvalidCredentials;
+use App\Exceptions\InvalidIdempotencyKey;
 use App\Exceptions\LotExpired;
+use App\Exceptions\PrescriptionExhausted;
+use App\Exceptions\PrescriptionExpired;
+use App\Exceptions\TooManyAuthorizerAttempts;
 use App\Exceptions\TooManyLoginAttempts;
 use App\Http\Middleware\AssignCorrelationId;
+use App\Http\Middleware\RequireIdempotencyKey;
 use App\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -41,6 +52,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // CSRF sin atajo de pruebas también en el grupo web (/sanctum/csrf-cookie) (design D2).
         $middleware->web(replace: [PreventRequestForgery::class => ValidateCsrfToken::class]);
 
+        // Precedencia de dispensación (design D4 de S3): el 403 del permiso precede al 422 de la clave de
+        // idempotencia.
+        $middleware->appendToPriorityList(Authorize::class, RequireIdempotencyKey::class);
+
         // Proxies de confianza: config/trustedproxy.php (rangos privados por defecto, design D3).
         $middleware->trustProxies(
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST
@@ -51,7 +66,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Rechazos de negocio esperados: no son fallos del sistema, no se reportan.
         $exceptions->dontReport([
             InvalidCredentials::class, TooManyLoginAttempts::class, InsufficientStock::class, LotExpired::class,
+            PrescriptionExpired::class, PrescriptionExhausted::class, ExceedsPrescription::class,
+            AuthorizationRequired::class, AuthorizerMustDiffer::class, InvalidAuthorizer::class,
+            TooManyAuthorizerAttempts::class, InvalidIdempotencyKey::class, IdempotencyKeyReused::class,
         ]);
+
+        // La contraseña del autorizador de control especial nunca vuelve a la sesión (RN-05, design D6).
+        $exceptions->dontFlash(['authorizer_password']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

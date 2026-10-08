@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 
 /**
  * Patrón de la ruta resuelta de una petición (`/api/patients/{patient}`), nunca la ruta literal con
@@ -17,7 +18,7 @@ final class RoutePattern
     {
         $route = $request->route();
 
-        if (! $route instanceof \Illuminate\Routing\Route || $route->isFallback) {
+        if (! $route instanceof Route || $route->isFallback) {
             return self::UNMATCHED;
         }
 

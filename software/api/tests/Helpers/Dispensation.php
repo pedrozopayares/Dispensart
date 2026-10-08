@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\AuditEvent;
+use App\Models\Dispensation;
+use App\Models\DispensationLine;
+use App\Models\IdempotencyKey;
+use App\Models\KardexMovement;
 use App\Models\Lot;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
@@ -88,4 +93,24 @@ function newIdempotencyKey(): string
 function dispense(User $user, array $body, ?string $key = null): TestResponse
 {
     return test()->actingAs($user)->postJson('/api/dispensations', $body, ['Idempotency-Key' => $key ?? newIdempotencyKey()]);
+}
+
+/**
+ * Foto de todo lo que una dispensación puede cambiar: "nada cambia" = misma foto antes y después.
+ *
+ * @return array<string, mixed>
+ */
+function dispensationState(): array
+{
+    return [
+        'stocks' => Stock::query()->orderBy('id')->pluck('quantity', 'id')->all(),
+        'kardex' => KardexMovement::count(),
+        'items' => PrescriptionItem::query()->orderBy('id')->pluck('dispensed_quantity', 'id')->all(),
+        'dispensations' => Dispensation::count(),
+        'lines' => DispensationLine::count(),
+        'idempotency_keys' => IdempotencyKey::count(),
+        'operations' => AuditEvent::query()
+            ->whereIn('action', ['dispensation.created', 'controlled_drug.authorized'])
+            ->count(),
+    ];
 }

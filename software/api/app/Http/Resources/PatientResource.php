@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 final class PatientResource extends JsonResource
 {
     /**
-     * @return array{id: int, document_type: string, document_number: string, full_name: string, birth_date: string|null, phone: string|null, masked: bool, prescriptions?: mixed}
+     * @return array{id: int, document_type: string, document_number: string, full_name: string, birth_date: string|null, phone: string|null, masked: bool, prescriptions?: list<array{id: int, patient_id: int, status: string, valid_until: string, created_at: string, prescriber: array{id: int, name: string}, items: list<array{id: int, product: array{id: int, code: string, name: string, is_controlled: bool}, prescribed_quantity: int, dispensed_quantity: int, pending_quantity: int}>}>}
      */
     public function toArray(Request $request): array
     {
