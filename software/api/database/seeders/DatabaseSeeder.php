@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             WarehouseSeeder::class,
             ProductSeeder::class,
             LotSeeder::class,
+            StockSeeder::class,
             UserSeeder::class,
         ]);
     }
