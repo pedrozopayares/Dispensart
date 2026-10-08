@@ -168,3 +168,84 @@ Decisiones:
 
 - Pendiente para 4.5: comprobación renderizada contra el stack compose (no listo en esta tarea).
 - Ancla de transporte de "RE › Shell en la raíz" (Nginx de `web`) queda para 4.3.
+
+## 2026-10-07 — backend-implementer: tareas 2.1 y 2.3–2.9
+
+Scaffolding con `composer create-project laravel/laravel:^13.0` dentro de `api-tools` (lockfile resuelto en
+PHP 8.5.11). Retirado del esqueleto: assets de Vite, vista `welcome`, ruta `/up`, `AGENTS.md`/`CLAUDE.md`
+de Boost (instrucciones de harness ajenas a la raíz), `database.sqlite`, PHPUnit (reemplazado por Pest).
+
+| Comprobación | Comando (en `api-tools`) | Resultado |
+|---|---|---|
+| Versiones | `php artisan about` | Laravel 13.35.0, PHP 8.5.11, Timezone UTC, Locale es, Database pgsql, Logs stderr |
+| Herramientas | `composer show` | pestphp/pest 5.3.1, pest-plugin-laravel 5.0.1, larastan 3.13.0, phpstan 2.3.0, pint (esqueleto) |
+| Formato | `vendor/bin/pint --test` | sale 0 |
+| Análisis estático | `vendor/bin/phpstan analyse` (nivel 6; `app`, `bootstrap/app.php`, `config`, `database`, `routes`) | `[OK] No errors` |
+| Suite, corrida 1 | `vendor/bin/pest` | 1 fallida / 25 pasan: `DatabaseConnectionTest` vio `dispensart` en vez de `dispensart_test` |
+| Suite, corrida 2 (cierre) | `pint --test && phpstan analyse && pest` | 26 pasan, 143 aserciones, 0 fallidas |
+
+Decisión — base de pruebas forzada también en `$_SERVER`: compose inyecta `DB_DATABASE=dispensart` en el
+entorno del proceso y Laravel lee `$_SERVER` antes que `$_ENV`, así que `<env force>` de `phpunit.xml`
+perdía y la corrida 1 ejecutó `migrate:fresh` sobre la base de desarrollo (solo tablas por defecto). La prueba
+de conexión lo detectó; `phpunit.xml` añade `<server force>` para `DB_CONNECTION`, `DB_DATABASE`, `DB_URL`.
+
+Decisión — Larastan no analiza `tests/`: no entiende el `$this` ligado de los cierres de Pest y reporta
+falsos positivos sobre `TestCall`. El código bajo prueba sí se analiza completo.
+
+Decisión — forma de error JSON `{code, message}` para `api/*` y peticiones JSON (`bootstrap/app.php`), con
+mensajes en `lang/es/errors.php`, sin traza ni mensaje interno aun con `APP_DEBUG=true`. Validación,
+autenticación y `HttpResponseException` conservan el render de Laravel (S1 los ajusta).
+
+### Anclas de transporte (SH, RE)
+
+| Escenario | Ancla | Archivo:línea |
+|---|---|---|
+| SH › API viva con dependencias sanas | ruta `GET /health` | `software/api/routes/health.php:8` |
+| SH › API viva con la base de datos caída | ruta `GET /health` | `software/api/routes/health.php:8` |
+| SH › API lista | ruta `GET /ready` | `software/api/routes/health.php:9` |
+| SH › Base de datos inalcanzable | ruta `GET /ready` | `software/api/routes/health.php:9` |
+| SH › Migraciones pendientes | ruta `GET /ready` | `software/api/routes/health.php:9` |
+| SH › Error no controlado conserva el identificador | manejador de excepciones (render + respaldo de cabecera) | `software/api/bootstrap/app.php:36`, `software/api/bootstrap/app.php:57` |
+| RE › Ruta de API desconocida no cae en la SPA | enrutador de la API (JSON para `api/*`) | `software/api/bootstrap/app.php:30` (lado API; el proxy de `web` lo fija 4.3) |
+| (todas) correlation id | middleware global antepuesto | `software/api/bootstrap/app.php:27`, `software/api/app/Http/Middleware/AssignCorrelationId.php:28` |
+
+### Escenario → prueba
+
+| Escenario | Prueba | Archivo:línea |
+|---|---|---|
+| CI › Pruebas contra PostgreSQL | corre las pruebas contra PostgreSQL en la base de pruebas | `software/api/tests/Feature/DatabaseConnectionTest.php:6` |
+| SH › API viva con dependencias sanas | responde 200 con el cuerpo exacto {"status":"ok"} con la base disponible | `software/api/tests/Feature/Health/HealthTest.php:7` |
+| SH › API viva con la base de datos caída | responde 200 con {"status":"ok"} aunque la base de datos esté caída | `software/api/tests/Feature/Health/HealthTest.php:16` |
+| SH › Vivacidad sin estado ni datos internos | no emite cookies ni más clave que status | `software/api/tests/Feature/Health/HealthTest.php:28` |
+| SH › API lista | responde 200 ready con base disponible y todas las migraciones aplicadas | `software/api/tests/Feature/Health/ReadyTest.php:7` |
+| SH › Migraciones pendientes | responde 503 con migrations pending si existe una migración sin aplicar | `software/api/tests/Feature/Health/ReadyTest.php:13` |
+| SH › Base de datos inalcanzable | responde 503 con database fail y migrations skipped si la base es inalcanzable | `software/api/tests/Feature/Health/ReadyDatabaseDownTest.php:13` |
+| SH › Fallo sin filtrar detalles internos | no filtra detalles internos en el cuerpo y registra la excepción con el correlation_id | `software/api/tests/Feature/Health/ReadyDatabaseDownTest.php:19` |
+| SH › Cabecera válida respetada | respeta un X-Correlation-Id válido; acepta el límite de 128 caracteres válidos | `software/api/tests/Feature/CorrelationIdTest.php:10`, `:16` |
+| SH › Cabecera ausente | genera UUIDs distintos cuando la cabecera falta | `software/api/tests/Feature/CorrelationIdTest.php:23` |
+| SH › Cabecera inválida reemplazada | reemplaza una cabecera inválida por un UUID y no la registra en el log (4 casos) | `software/api/tests/Feature/CorrelationIdTest.php:32` |
+| SH › Error no controlado conserva el identificador | responde 500 con X-Correlation-Id, sin traza en el cuerpo, y lo registra en la línea del error | `software/api/tests/Feature/CorrelationIdTest.php:52` |
+| SH › Línea de cierre por petición | escribe exactamente una línea de cierre por petición con método, ruta, estado y duración | `software/api/tests/Feature/RequestLogTest.php:22` |
+| SH › Cada línea es JSON válido | escribe cada línea como objeto JSON con timestamp, level, message y correlation_id | `software/api/tests/Feature/RequestLogTest.php:35` |
+| SH › Query string, cuerpo y cabeceras excluidos | excluye query string, cuerpo, cookies y cabecera Authorization del log | `software/api/tests/Feature/RequestLogTest.php:53` |
+| SH › Log fuera de una petición | escribe JSON válido con correlation_id null fuera de una petición | `software/api/tests/Feature/RequestLogTest.php:71` |
+| RE › Ruta de API desconocida no cae en la SPA (lado API) | responde 404 en JSON con X-Correlation-Id a una ruta desconocida bajo /api (con y sin Accept) | `software/api/tests/Feature/ApiNotFoundTest.php:3` |
+| CI › Backend correcto (base) | reglas `arch()` base | `software/api/tests/Arch/ArchitectureTest.php:5`, `:8`, `:11`, `:15` |
+
+### Barridos (`/usr/bin/grep`, control positivo en `scratchpad/control.php`)
+
+| Barrido | Comando | Resultado | Control positivo |
+|---|---|---|---|
+| Depuración | `/usr/bin/grep -rnE '\b(dd\|dump\|var_dump\|ray\|print_r)\(' app bootstrap config routes tests lang database` | 0 (exit 1) | 1 en el control |
+| Petición hacia el log | `/usr/bin/grep -rnE 'Log::.*(request\|->all\(\)\|->input\|->header\|->cookie)' app bootstrap routes` | 1: `AssignCorrelationId.php:51`, revisado: solo método, ruta, estado, duración | 1 en el control |
+| Claves de aplicación | `/usr/bin/grep -rnE 'base64:[A-Za-z0-9+/=]{20,}' --exclude-dir=vendor --exclude=.env .` | 0 (exit 1) | 1 en el control |
+| SQLite en pruebas | `/usr/bin/grep -rnE 'sqlite\|:memory:' phpunit.xml tests` | 0 (exit 1) | 3 en `config/database.php` |
+| `.env` ignorado | `git check-ignore -v software/api/.env` | `software/api/.gitignore:3` | `vendor/autoload.php` también ignorado |
+
+### Deuda (prosa; el Orchestrator la fila)
+
+- La línea de cierre registra la ruta literal; cuando entren rutas con identificadores de paciente (S3) debe
+  registrar el patrón de la ruta para no filtrar datos personales (RN-10).
+- `phpunit.xml` fuerza `APP_KEY` vacía (paridad con CI sin `.env`); S1 (sesión Sanctum, cookies cifradas)
+  necesitará una clave de prueba generada en la corrida, no escrita en el repo.
+- La corrida 1 consumió presupuesto de suite: el cambio lleva dos corridas completas del backend.
