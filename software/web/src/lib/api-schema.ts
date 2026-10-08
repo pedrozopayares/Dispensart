@@ -247,6 +247,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Traslados del más reciente al más antiguo, paginados y filtrables (transfers.view) */
+        get: operations["transfers.index"];
+        put?: never;
+        /** Crea un traslado en BORRADOR (transfers.create). No mueve stock */
+        post: operations["transfers.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle con líneas, discrepancias y el actor y la fecha de cada transición (transfers.view) */
+        get: operations["transfers.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** BORRADOR → SOLICITADO, solo por su creador */
+        post: operations["transfers.request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** SOLICITADO → APROBADO por un usuario con transfers.approve distinto del solicitante (RN-08) */
+        post: operations["transfers.approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** APROBADO → EN_TRANSITO: un salida_traslado por línea en origen, todo o nada */
+        post: operations["transfers.dispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/receive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** EN_TRANSITO → RECIBIDO | RECIBIDO_PARCIAL: entrada_traslado en destino y discrepancias por faltante */
+        post: operations["transfers.receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** BORRADOR, SOLICITADO o APROBADO → ANULADO con motivo, sin stock */
+        post: operations["transfers.void"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transfers/{transfer}/discrepancies/{discrepancy}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resuelve una discrepancia pendiente: devolución al origen (ajuste) o pérdida declarada (transfers.approve) */
+        post: operations["transfers.discrepancies.resolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -310,7 +447,7 @@ export interface components {
              * @description Código estable del rechazo (contrato con la SPA).
              * @enum {string}
              */
-            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error" | "prescription_expired" | "prescription_exhausted" | "exceeds_prescription" | "authorization_required" | "authorizer_must_differ" | "invalid_authorizer" | "invalid_idempotency_key" | "idempotency_key_reused";
+            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error" | "prescription_expired" | "prescription_exhausted" | "exceeds_prescription" | "authorization_required" | "authorizer_must_differ" | "invalid_authorizer" | "invalid_idempotency_key" | "idempotency_key_reused" | "invalid_transfer_transition" | "segregation_of_duties" | "discrepancy_already_resolved";
             /** @description Mensaje en español para el usuario. */
             message: string;
             /** @description Mensajes en español por campo inválido. */
@@ -333,6 +470,18 @@ export interface components {
             role: string;
             abilities: unknown[];
         };
+        /**
+         * DiscrepancyResolution
+         * @description Resolución de un faltante (design D10): devolución al origen con ajuste positivo, o pérdida sin movimiento.
+         * @enum {string}
+         */
+        DiscrepancyResolution: "returned_to_origin" | "written_off";
+        /**
+         * DiscrepancyStatus
+         * @description Estado de una discrepancia de recepción: nace pendiente y el regente la resuelve una sola vez.
+         * @enum {string}
+         */
+        DiscrepancyStatus: "pending" | "resolved";
         /** DispensationPreviewResource */
         DispensationPreviewResource: {
             prescription_id: number;
@@ -507,6 +656,29 @@ export interface components {
             name: string;
             is_controlled: boolean;
         };
+        /**
+         * ReceiveTransferRequest
+         * @description Recepción (transfers "Recepción del traslado", design D6): transfers.receive. Exactamente las líneas del
+         *     traslado, sin repetir, con 0 ≤ recibido ≤ cantidad de su línea. La sobre-recepción solo se rechaza aquí como
+         *     422; más adentro es un defecto. Las líneas son inmutables tras crear: leerlas sin bloqueo es seguro.
+         */
+        ReceiveTransferRequest: {
+            lines: {
+                /** @description Sin traslado enlazado (inferencia del contrato OpenAPI) no hay lista de ids que publicar. */
+                line_id: number;
+                received_quantity: number;
+            }[];
+        };
+        /**
+         * ResolveDiscrepancyRequest
+         * @description Resolución de una discrepancia (transfers "Resolución de discrepancias"): transfers.approve, resolución
+         *     conocida y motivo obligatorio (≤ 500; de solo espacios llega como null y falla `required`).
+         */
+        ResolveDiscrepancyRequest: {
+            /** @enum {string} */
+            resolution: "returned_to_origin" | "written_off";
+            reason: string;
+        };
         /** StockResource */
         StockResource: {
             id: number;
@@ -569,6 +741,21 @@ export interface components {
             reason: string;
         };
         /**
+         * StoreTransferRequest
+         * @description Alta de traslado (transfers "Creación de traslados"): solo transfers.create. Origen ≠ destino, 1 a 50 líneas sin
+         *     lote repetido. Estado, creador, aprobador y producto nunca se leen del cuerpo: solo `transfer()` llega a la
+         *     acción, con las claves conocidas de cada línea.
+         */
+        StoreTransferRequest: {
+            origin_warehouse_id: number;
+            destination_warehouse_id: number;
+            notes?: string | null;
+            lines: {
+                lot_id: number;
+                quantity: number;
+            }[];
+        };
+        /**
          * StoreUserRequest
          * @description Alta de usuario (identity-access "Alta de usuarios"). El correo se normaliza antes de validar:
          *     la unicidad no distingue mayúsculas.
@@ -588,6 +775,90 @@ export interface components {
         StoreWarehouseRequest: {
             code: string;
             name: string;
+        };
+        /** TransferDiscrepancyResource */
+        TransferDiscrepancyResource: {
+            id: number;
+            line_id: number;
+            lot_id: number;
+            shortage: number;
+            status: components["schemas"]["DiscrepancyStatus"];
+            resolution: components["schemas"]["DiscrepancyResolution"] | null;
+            resolution_reason: string | null;
+            resolved_by: {
+                id: number;
+                name: string;
+            } | null;
+            resolved_at: string | null;
+        };
+        /** TransferResource */
+        TransferResource: {
+            id: number;
+            status: components["schemas"]["TransferStatus"];
+            notes: string | null;
+            origin_warehouse: components["schemas"]["WarehouseResource"];
+            destination_warehouse: components["schemas"]["WarehouseResource"];
+            created_by: {
+                id: number;
+                name: string;
+            } | null;
+            created_at: string;
+            requested_by: {
+                id: number;
+                name: string;
+            } | null;
+            requested_at: string | null;
+            approved_by: {
+                id: number;
+                name: string;
+            } | null;
+            approved_at: string | null;
+            dispatched_by: {
+                id: number;
+                name: string;
+            } | null;
+            dispatched_at: string | null;
+            received_by: {
+                id: number;
+                name: string;
+            } | null;
+            received_at: string | null;
+            voided_by: {
+                id: number;
+                name: string;
+            } | null;
+            voided_at: string | null;
+            void_reason: string | null;
+            lines: {
+                id: number;
+                product: {
+                    id: number;
+                    code: string;
+                    name: string;
+                };
+                lot: components["schemas"]["LotSummaryResource"];
+                quantity: number;
+                received_quantity: number | null;
+            }[];
+            discrepancies: components["schemas"]["TransferDiscrepancyResource"][];
+        };
+        /**
+         * TransferStatus
+         * @description Estados del traslado con los literales de RN-07. Las transiciones viven solo en TransferTransitions; la base repite el conjunto en transfers_status_check.
+         * @enum {string}
+         */
+        TransferStatus: "BORRADOR" | "SOLICITADO" | "APROBADO" | "EN_TRANSITO" | "RECIBIDO" | "RECIBIDO_PARCIAL" | "ANULADO";
+        /** TransferSummaryResource */
+        TransferSummaryResource: {
+            id: number;
+            status: components["schemas"]["TransferStatus"];
+            origin_warehouse: components["schemas"]["WarehouseResource"];
+            destination_warehouse: components["schemas"]["WarehouseResource"];
+            created_by: {
+                id: number;
+                name: string;
+            };
+            created_at: string;
         };
         /**
          * UpdateProductRequest
@@ -625,6 +896,14 @@ export interface components {
             errors: {
                 [key: string]: string[];
             };
+        };
+        /**
+         * VoidTransferRequest
+         * @description Anulación con motivo (transfers "Anulación del traslado"): creador o transfers.approve. `reason` de solo
+         *     espacios llega como null (TrimStrings + ConvertEmptyStringsToNull) y falla `required`.
+         */
+        VoidTransferRequest: {
+            reason: string;
         };
         /** WarehouseResource */
         WarehouseResource: {
@@ -688,7 +967,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description La operación dejaría la existencia negativa o la existencia no existe; en la dispensación, con `shortages` por ítem. code: insufficient_stock */
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1487,7 +1766,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description La operación dejaría la existencia negativa o la existencia no existe; en la dispensación, con `shortages` por ítem. code: insufficient_stock */
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1506,6 +1785,670 @@ export interface operations {
                 };
             };
             /** @description Datos inválidos (code: validation_failed, con errors) o ingreso a un lote vencido (code: lot_expired). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.index": {
+        parameters: {
+            query?: {
+                status?: "BORRADOR" | "SOLICITADO" | "APROBADO" | "EN_TRANSITO" | "RECIBIDO" | "RECIBIDO_PARCIAL" | "ANULADO";
+                origin_warehouse_id?: number;
+                destination_warehouse_id?: number;
+                per_page?: number;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `TransferSummaryResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferSummaryResource"][];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "transfers.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description `TransferResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos (code: validation_failed, con errors) o lote vencido en alguna línea (code: lot_expired). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol (code: forbidden), o quien creó y solicitó el traslado intenta aprobarlo (code: segregation_of_duties, RN-08). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Lote vencido en alguna línea, evaluado antes que las existencias (code: lot_expired). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "transfers.receive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiveTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "transfers.void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "transfers.discrepancies.resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transfer ID */
+                transfer: number;
+                /** @description The discrepancy ID */
+                discrepancy: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveDiscrepancyRequest"];
+            };
+        };
+        responses: {
+            /** @description `TransferDiscrepancyResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferDiscrepancyResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos (code: validation_failed, con errors) o devolución al origen sobre un lote vencido (code: lot_expired). */
             422: {
                 headers: {
                     [name: string]: unknown;
