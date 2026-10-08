@@ -278,3 +278,15 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 - Deuda (prosa): el arreglo de `api-tools` escribe `vendor/` en `software/api` del anfitrión en el primer uso;
   en Linux con un uid de anfitrión distinto de 1000 la instalación podría fallar por permisos del bind mount (no
   probado: el anfitrión es macOS). CI no usa `api-tools`.
+
+## 2026-10-08 — Orchestrator: 4.5, run de `main` con rechazo y aprobación
+
+- Fusión: a pedido explícito del usuario, el Orchestrator avanzó `main` sin forzar: `ed4ae1f..5edcd0f` y, con su
+  confirmación, `5edcd0f..bd9fd8a` para incluir el arreglo de clon limpio (`9272a2e`). El run 37784881174 sobre
+  `5edcd0f` quedó obsoleto.
+- Run 37785649410 sobre `bd9fd8a`: intento 1, el usuario rechazó producción (job `failure`, anotación de rechazo);
+  intento 2, el usuario aprobó (`approved pedrozopayares production`, trabajo `success`).
+- Digests promovidos (`api@sha256:12f0cfd13ca0…`, `web@sha256:7eb041979e37…`) = digests del staging del mismo run.
+- Desvío del comando de 4.5: `approvals` devuelve solo la aprobación del intento vigente; el rechazo se prueba con el
+  job del intento 1. `verification.md` filas DP-13/14/15 y § de 4.5 completadas.
+- Tareas: todas en `[x]`. Fase: verificación de cierre y auditoría final.

@@ -48,9 +48,9 @@ Commits: `6d973aa 1b9ffbe 7650154 aee73fc 6eb376b 2ef8dac b74fc5d b730b19 313019
 | DP-10 | Humo fallido | run 37740344926 (neg. b, ruta inexistente): staging `failure` en el paso de humo, `== docker compose logs` impreso, `Bajar el stack` (`down -v`, `ci.yml:305-306`) ejecutado, producción `skipped`; local: `stop db` → sale 1, `FALLA GET /ready: HTTP 503` |
 | DP-11 | Imagen ausente en el registro | run 37740344336 (neg. c, digest inexistente): staging `failure` en `Descarga de las imágenes publicadas` (`manifest unknown`); arranque y humo `skipped`; 0 `load build definition` en staging |
 | DP-12 | Sin reconstrucción en staging | run 37739984220: en el log de staging 11 referencias `@sha256:` por imagen y 0 `load build definition` (control positivo: 2 en el log completo, del trabajo build); `ci.yml:261-262` imágenes por digest, `:293` `up --no-build` |
-| DP-13 | Espera de aprobación | pendiente: 4.5, run de main del usuario |
-| DP-14 | Aprobado | pendiente: 4.5, run de main del usuario |
-| DP-15 | Rechazado | pendiente: 4.5, run de main del usuario |
+| DP-13 | Espera de aprobación | run 37785649410 sobre `bd9fd8a` (`main`): intento 1, trabajo de producción en espera del entorno `production` tras staging verde |
+| DP-14 | Aprobado | run 37785649410 sobre `bd9fd8a` (`main`): intento 2, `approvals` → `approved pedrozopayares production`; trabajo de producción `success` |
+| DP-15 | Rechazado | run 37785649410 sobre `bd9fd8a` (`main`): intento 1, trabajo de producción (job 113342963425) `failure` sin pasos ejecutados; anotación «The deployment was rejected or didn't satisfy other protection rules.» |
 | DP-16 | Push a dev | runs 37739984220, 37782508066, 37783646165: staging `success`, producción `skipped` (no `failure`, sin aprobación pedida); `ci.yml:313` solo `refs/heads/main` |
 | DP-17 | Staging fallido | estructural: `ci.yml:312` `needs: [build, staging]`; runs 37740344926 y 37740344336: staging `failure`, producción `skipped`, run `failure` (en esas ramas el `if` de `main` también omite producción; el run de `main` con staging fallido no se forzó) |
 | DP-18 | Entorno sin revisor requerido | run 37740344567 (neg. d, entorno temporal `guard-check`): `Guarda de revisor requerido` `failure` con `Reglas de revisor requerido en guard-check: 0`, `Despliegue simulado` `skipped`; `ci.yml:320-335`; local: `environments/no-existe` → 404 y sale 1; `production` → 1 |
@@ -121,6 +121,6 @@ Commits: `6d973aa 1b9ffbe 7650154 aee73fc 6eb376b 2ef8dac b74fc5d b730b19 313019
 
 | Paso | Estado |
 |---|---|
-| Fusión `dev` → `main` | pendiente: 4.5, run de main del usuario |
-| Rechazo y aprobación en `production`; `gh api repos/$REPO/actions/runs/<id>/approvals` | pendiente: 4.5, run de main del usuario |
-| Digests del resumen = digests del log de staging del mismo run | pendiente: 4.5, run de main del usuario |
+| Fusión `dev` → `main` | avance directo `ed4ae1f..5edcd0f` y luego `5edcd0f..bd9fd8a` (sin forzar), hecho por el Orchestrator a pedido explícito del usuario |
+| Rechazo y aprobación en `production`; `gh api repos/$REPO/actions/runs/<id>/approvals` | `approvals` lista solo el intento vigente: `approved`; el rechazo consta en el intento 1 (job `failure`, anotación de rechazo) |
+| Digests del resumen = digests del log de staging del mismo run | producción: `api@sha256:12f0cfd13ca0…`, `web@sha256:7eb041979e37…`; staging del mismo run: exactamente esos 2 digests |
