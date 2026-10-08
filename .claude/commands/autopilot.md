@@ -32,7 +32,7 @@ and then start. Everything below is the law of the run.
 4. **GATE 1 preaprobado** (`ROADMAP.md` § Preaprobación) si y solo si se cumplen sus cuatro condiciones.
    Verifícalas una a una y escribe el resultado en `journal.md`: `GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier <X>`.
    Una condición falla → Estado `bloqueado: GATE 1 <condición>` y DETENTE.
-5. Estado de la fila → `propuesto`. Commit en `dev`: `spec: propone <change-id>`.
+5. Estado de la fila → `propuesto`. Commit en `dev`: `spec: propone <objetivo de la prueba en palabras del jurado>` (Git law, nunca el change id solo).
 
 ### /apply
 1. `openspec validate <id> --strict` pasa.
@@ -51,7 +51,7 @@ and then start. Everything below is the law of the run.
 1. `openspec archive <id> -y`. Capability nueva → spec-engineer escribe el `## Purpose` en la spec viva.
 2. spec-validator post-archivo: `openspec validate --all --strict` limpio.
 3. Reconcilia `DEBT.md`: ninguna deuda blocker/major abierta; minor con una tajada de arrastre máximo.
-4. Estado → `archivado`. Commit en `dev`: `chore: archiva <change-id>`. `git push`.
+4. Estado → `archivado`. Commit en `dev`: `chore: cierra <objetivo de la prueba en palabras del jurado>` (cuerpo cita el change id). `git push`.
 5. Reporte al usuario ≤ 200 palabras: qué se construyó, tests (números de la tabla), deuda abierta, tiempo.
 6. Siguiente fila.
 

@@ -79,6 +79,10 @@ Agents commit/push `dev` or `feat/<change-id>` only. `main` = user-only. No forc
 Commits: Conventional Commits, **Spanish**, short and plain — one subject line (type keyword in English:
 `feat`, `fix`, `chore`…), at most two body lines, no essays. The history is a graded deliverable: small,
 coherent commits that show progression.
+**Subjects name the test objective advanced, in words the jury reads without the repo open** (user ruling
+2026-10-07). Never a bare change id, task number or internal jargon as the subject. Good:
+`feat: dispensación consume lotes en orden FEFO`, `spec: propone autenticación por roles y catálogo de lotes`.
+Bad: `spec: propone add-catalog-and-identity`, `chore: tareas 2.3-2.5`. Body lines may cite the slice (S0..S8).
 
 ## Iron rules
 1. No gate skipped. Unregistered gate = nonexistent.
