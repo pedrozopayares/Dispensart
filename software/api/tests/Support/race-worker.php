@@ -3,8 +3,8 @@
 /*
 | Worker de la prueba de carrera (design D8). Un proceso PHP = una conexión propia a PostgreSQL.
 | Arranca la app, se identifica como race-worker en pg_stat_activity, autentica al usuario indicado y
-| despacha POST /api/stock-adjustments por el kernel HTTP real (FormRequest, Policy, acción, libro, render).
-| Imprime {status, code} en una línea. Solo lo lanza tests/Support/RaceRunner; nunca forma parte de la app.
+| despacha POST a la ruta pedida (por defecto /api/stock-adjustments) con sus cabeceras por el kernel HTTP real
+| (middleware, FormRequest, Policy, acción, libro, render). Imprime {status, code, body} en una línea. Solo lo lanza tests/Support/RaceRunner; nunca forma parte de la app.
 */
 
 use App\Models\User;
@@ -16,7 +16,7 @@ require __DIR__.'/../../vendor/autoload.php';
 
 $app = require __DIR__.'/../../bootstrap/app.php';
 
-/** @var array{user_id: int, body: array<string, mixed>} $payload */
+/** @var array{uri?: string, user_id: int, body: array<string, mixed>, headers?: array<string, string>} $payload */
 $payload = json_decode($argv[1] ?? '', true, flags: JSON_THROW_ON_ERROR);
 
 $kernel = $app->make(Kernel::class);
@@ -33,10 +33,14 @@ config([
     'database.connections.pgsql.application_name' => RaceRunner::APPLICATION_NAME,
 ]);
 
+$server = ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json'];
+foreach ($payload['headers'] ?? [] as $name => $value) {
+    $server['HTTP_'.strtoupper(str_replace('-', '_', $name))] = $value;
+}
 $request = Request::create(
-    '/api/stock-adjustments',
+    $payload['uri'] ?? '/api/stock-adjustments',
     'POST',
-    server: ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json'],
+    server: $server,
     content: (string) json_encode($payload['body']),
 );
 $app->instance('request', $request);
@@ -51,4 +55,4 @@ $kernel->terminate($request, $response);
 
 /** @var array{code?: string}|null $body */
 $body = json_decode((string) $response->getContent(), true);
-fwrite(STDOUT, (string) json_encode(['status' => $response->getStatusCode(), 'code' => $body['code'] ?? null]));
+fwrite(STDOUT, (string) json_encode(['status' => $response->getStatusCode(), 'code' => $body['code'] ?? null, 'body' => $body]));
