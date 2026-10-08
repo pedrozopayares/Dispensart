@@ -74,3 +74,18 @@ alertas solo desde la API; rutas en inglés; humo manual en lugar de E2E en nave
 - Condición 4 (ADR / RN): `openapi-typescript` y MSW solo en desarrollo; respetan ADR-0003/0004.
 - GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier B
 - Apply espera el archivo de S5 (bloqueado por decisión de tier del usuario).
+
+## 2026-10-08 — Orchestrator: apply parcial adelantado
+
+- S1 y S2 archivados. Se adelanta la parte de S6 cuya API existe: cimientos (grupo 1, recursos de stock,
+  kardex y catálogo), Inventario sin panel de alertas (4.1), Kardex (5.x) y sus rutas. Dispensación espera
+  S3; Traslados espera S4; alertas (4.2) espera S5. Tarea 0.1 (delta de `app-shell`) al spec-engineer.
+
+## 2026-10-08 — spec-engineer: tarea 0.1 (delta MODIFIED de app-shell)
+
+- S1 archivado; `specs/app-shell/spec.md` con `MODIFIED` de "Encabezado con sesión y cierre", bloque completo.
+  El validador exige conservar los nombres de escenario: «Página de inicio sin pantallas aún» se reescribe para
+  el rol sin pantallas (`admin`); se añade «Página de inicio con saludo». Descripción: el inicio saluda y los
+  accesos los fija `operator-workspace`.
+- `proposal.md` Modified Capabilities y tarea 6.1 actualizadas; 0.1 marcada `[x]`.
+- `openspec validate add-operator-screens --strict`: válido. Ancla de transporte: sin coincidencias.
