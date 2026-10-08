@@ -277,3 +277,11 @@ empiece por `dispensart_test`.
   de él la borra (pasó una vez en este apply). Sugerencia devops: `DB_DATABASE=dispensart_test` por defecto en
   `api-tools`, o documentarlo.
 - Riesgo 3 del design sigue abierto (rol de base dueño y superusuario puede `DISABLE`/`DROP TRIGGER`), sin cambio.
+
+### Deuda D-auv-1 saldada (pedido del Orchestrator, commit `1349b07`)
+
+| Deuda | Cambio | Mutación → resultado | Evidencia de la deuda |
+|---|---|---|---|
+| D-auv-1: `SpaClient` enviaba `X-XSRF-TOKEN` también en GET; "Lectura sin token CSRF" no podía fallar | software/api/tests/Support/SpaClient.php:127–128 — el token viaja solo en POST/PUT/PATCH/DELETE | `ValidateCsrfToken::isReading` deja de tratar `GET /api/auth/me` como lectura → CsrfTest.php:57 FALLA 1/1; restaurado → PASA 1/1 | misma mutación con el `SpaClient` anterior → PASA 1/1 (la prueba no la detectaba) |
+
+Delta: Pint del archivo pasa; las 11 suites que usan `SpaClient` (Seed, Identity, Warehouse, StockAdjustmentEndpoint): 119 pasan / 562 aserciones.
