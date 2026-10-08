@@ -28,6 +28,6 @@ final class ToolResultEnvelope
      */
     private static function attribute(string $value): string
     {
-        return mb_substr((string) preg_replace('/[^A-Za-z0-9_-]/', '', $value), 0, ToolCallRecord::MAX_TOOL_NAME);
+        return ToolCallRecord::safeName($value);
     }
 }

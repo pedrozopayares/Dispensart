@@ -79,3 +79,17 @@ test('ante un 503 también queda exactamente una línea, con outcome assistant_u
         ->and(array_filter(logLines($this->logPath), fn (array $line): bool => in_array($line['level'], ['error', 'critical', 'alert', 'emergency'], true)))->toBe([])
         ->and(array_column(logLines($this->logPath), 'level'))->toContain('info');
 });
+
+test('nombre de herramienta inventado por el modelo: saneado en el log y en tool_calls de la respuesta', function () {
+    scriptProvider([callTool("run_sql\"}\n{\"message\": \"falso\"}\r\nX-Linea: 1")]);
+
+    ask(worldUser($this->world, Role::AuxiliarFarmacia), '¿Qué existencias hay?')
+        ->assertOk()
+        ->assertJsonPath('data.tool_calls.0.tool', 'run_sqlmessagefalsoX-Linea1')
+        ->assertJsonPath('data.tool_calls.0.status', 'rejected');
+
+    $lines = assistantLines($this->logPath);
+    expect($lines)->toHaveCount(1)
+        ->and($lines[0]['context']['tool_calls'])->toBe([['tool' => 'run_sqlmessagefalsoX-Linea1', 'status' => 'rejected']])
+        ->and((string) file_get_contents($this->logPath))->not->toContain('falso\"');
+});

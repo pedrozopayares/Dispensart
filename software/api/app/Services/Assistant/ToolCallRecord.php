@@ -23,7 +23,16 @@ final readonly class ToolCallRecord
         public array $arguments = [],
         public ?array $data = null,
     ) {
-        $this->tool = mb_substr($tool, 0, self::MAX_TOOL_NAME);
+        $this->tool = self::safeName($tool);
+    }
+
+    /**
+     * Nombre apto para respuesta, log y cabecera del sobre: solo letras, dígitos, guion y guion bajo, a lo sumo
+     * 64 caracteres. El nombre de una llamada rechazada lo inventó el modelo: nunca viaja tal cual (RN-10).
+     */
+    public static function safeName(string $value): string
+    {
+        return mb_substr((string) preg_replace('/[^A-Za-z0-9_-]/', '', $value), 0, self::MAX_TOOL_NAME);
     }
 
     public function hasData(): bool
