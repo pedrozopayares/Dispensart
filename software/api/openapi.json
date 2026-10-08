@@ -16,6 +16,226 @@
         }
     ],
     "paths": {
+        "/dispensations": {
+            "post": {
+                "operationId": "dispensations.store",
+                "description": "El cuerpo es el texto guardado por el almac\u00e9n de idempotencia; su forma, la de DispensationResource.",
+                "summary": "Dispensa por FEFO con Idempotency-Key: 201 con la dispensaci\u00f3n, o la respuesta original con\nIdempotent-Replayed: true al repetir clave y cuerpo",
+                "tags": [
+                    "Dispensation"
+                ],
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true,
+                        "description": "Clave por usuario: repetir clave y cuerpo devuelve la respuesta original sin efectos nuevos.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{16,128}$"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreDispensationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Dispensaci\u00f3n creada, o su repetici\u00f3n id\u00e9ntica.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DispensationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Idempotent-Replayed": {
+                                "description": "Presente con valor true cuando la respuesta es la repetici\u00f3n de la original.",
+                                "schema": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe; en la dispensaci\u00f3n, con `shortages` por \u00edtem. code: insufficient_stock",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "En este orden: clave de idempotencia ausente o mal formada (invalid_idempotency_key); datos inv\u00e1lidos (validation_failed, con errors); misma clave con otro cuerpo (idempotency_key_reused); coautorizaci\u00f3n de control especial (authorization_required, authorizer_must_differ, invalid_authorizer); prescripci\u00f3n (prescription_exhausted, prescription_expired, exceeds_prescription).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After. code: too_many_attempts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Segundos hasta poder reintentar.",
+                                "required": true,
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/dispensations/preview": {
+            "post": {
+                "operationId": "dispensations.preview",
+                "summary": "Lotes que FEFO tomar\u00eda hoy por \u00edtem, sin bloquear ni escribir; el faltante es dato (fulfillable)",
+                "tags": [
+                    "DispensationPreview"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreviewDispensationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`DispensationPreviewResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DispensationPreviewResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos (code: validation_failed, con errors), o prescripci\u00f3n no dispensable (code: prescription_expired, prescription_exhausted, exceeds_prescription).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
         "/kardex": {
             "get": {
                 "operationId": "kardex.index",
@@ -311,7 +531,7 @@
                         }
                     },
                     "429": {
-                        "description": "Demasiados intentos fallidos de login; ver Retry-After. code: too_many_attempts",
+                        "description": "Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After. code: too_many_attempts",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -492,6 +712,244 @@
                 "security": [
                     {
                         "sessionCookie": []
+                    }
+                ]
+            }
+        },
+        "/patients": {
+            "get": {
+                "operationId": "patients.index",
+                "summary": "Busca pacientes por prefijo de documento o parte del nombre (hasta 20). Enmascarados para el auditor",
+                "tags": [
+                    "Patient"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `PatientResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PatientResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
+        "/patients/{patient}": {
+            "get": {
+                "operationId": "patients.show",
+                "summary": "Ficha del paciente con sus prescripciones y saldos. Enmascarada para el auditor",
+                "tags": [
+                    "Patient"
+                ],
+                "parameters": [
+                    {
+                        "name": "patient",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PatientResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PatientResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
+        "/prescriptions": {
+            "post": {
+                "operationId": "prescriptions.store",
+                "summary": "Crea una prescripci\u00f3n a nombre del m\u00e9dico autenticado (solo prescriptions.create)",
+                "tags": [
+                    "Prescription"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StorePrescriptionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`PrescriptionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PrescriptionResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
                     }
                 ]
             }
@@ -891,7 +1349,7 @@
                         }
                     },
                     "409": {
-                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe. code: insufficient_stock",
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe; en la dispensaci\u00f3n, con `shortages` por \u00edtem. code: insufficient_stock",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1349,7 +1807,15 @@
                             "lot_expired",
                             "method_not_allowed",
                             "http_error",
-                            "server_error"
+                            "server_error",
+                            "prescription_expired",
+                            "prescription_exhausted",
+                            "exceeds_prescription",
+                            "authorization_required",
+                            "authorizer_must_differ",
+                            "invalid_authorizer",
+                            "invalid_idempotency_key",
+                            "idempotency_key_reused"
                         ]
                     },
                     "message": {
@@ -1364,6 +1830,33 @@
                             "items": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "shortages": {
+                        "type": "array",
+                        "description": "Solo en insufficient_stock de la dispensaci\u00f3n: \u00edtems que no alcanzan.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "prescription_item_id": {
+                                    "type": "integer"
+                                },
+                                "product_id": {
+                                    "type": "integer"
+                                },
+                                "requested": {
+                                    "type": "integer"
+                                },
+                                "available": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "prescription_item_id",
+                                "product_id",
+                                "requested",
+                                "available"
+                            ]
                         }
                     }
                 },
@@ -1401,6 +1894,178 @@
                     "abilities"
                 ],
                 "title": "AuthenticatedUserResource"
+            },
+            "DispensationPreviewResource": {
+                "type": "object",
+                "properties": {
+                    "prescription_id": {
+                        "type": "integer"
+                    },
+                    "warehouse_id": {
+                        "type": "integer"
+                    },
+                    "requires_authorization": {
+                        "type": "boolean"
+                    },
+                    "fulfillable": {
+                        "type": "boolean"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "prescription_item_id": {
+                                    "type": "integer"
+                                },
+                                "product_id": {
+                                    "type": "integer"
+                                },
+                                "requested": {
+                                    "type": "integer"
+                                },
+                                "available": {
+                                    "type": "integer"
+                                },
+                                "shortage": {
+                                    "type": "integer"
+                                },
+                                "expired_excluded_quantity": {
+                                    "type": "integer"
+                                },
+                                "requires_authorization": {
+                                    "type": "boolean"
+                                },
+                                "allocations": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "lot_id": {
+                                                "type": "integer"
+                                            },
+                                            "lot_code": {
+                                                "type": "string"
+                                            },
+                                            "expires_on": {
+                                                "type": "string"
+                                            },
+                                            "quantity": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "lot_id",
+                                            "lot_code",
+                                            "expires_on",
+                                            "quantity"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "prescription_item_id",
+                                "product_id",
+                                "requested",
+                                "available",
+                                "shortage",
+                                "expired_excluded_quantity",
+                                "requires_authorization",
+                                "allocations"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "prescription_id",
+                    "warehouse_id",
+                    "requires_authorization",
+                    "fulfillable",
+                    "items"
+                ],
+                "title": "DispensationPreviewResource"
+            },
+            "DispensationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "prescription_id": {
+                        "type": "integer"
+                    },
+                    "patient_id": {
+                        "type": "integer"
+                    },
+                    "warehouse_id": {
+                        "type": "integer"
+                    },
+                    "dispensed_by": {
+                        "type": "integer"
+                    },
+                    "authorized_by": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "prescription_item_id": {
+                                    "type": "integer"
+                                },
+                                "product_id": {
+                                    "type": "integer"
+                                },
+                                "lot_id": {
+                                    "type": "integer"
+                                },
+                                "lot_code": {
+                                    "type": "string"
+                                },
+                                "expires_on": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                },
+                                "kardex_movement_id": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "prescription_item_id",
+                                "product_id",
+                                "lot_id",
+                                "lot_code",
+                                "expires_on",
+                                "quantity",
+                                "kardex_movement_id"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "prescription_id",
+                    "patient_id",
+                    "warehouse_id",
+                    "dispensed_by",
+                    "authorized_by",
+                    "created_at",
+                    "lines"
+                ],
+                "title": "DispensationResource"
             },
             "KardexMovementResource": {
                 "type": "object",
@@ -1552,6 +2217,284 @@
                 ],
                 "title": "MovementType"
             },
+            "PatientResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "document_type": {
+                        "type": "string"
+                    },
+                    "document_number": {
+                        "type": "string"
+                    },
+                    "full_name": {
+                        "type": "string"
+                    },
+                    "birth_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "masked": {
+                        "type": "boolean"
+                    },
+                    "prescriptions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "patient_id": {
+                                    "type": "integer"
+                                },
+                                "status": {
+                                    "type": "string"
+                                },
+                                "valid_until": {
+                                    "type": "string"
+                                },
+                                "created_at": {
+                                    "type": "string"
+                                },
+                                "prescriber": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "name"
+                                    ]
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "product": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "code": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "is_controlled": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "code",
+                                                    "name",
+                                                    "is_controlled"
+                                                ]
+                                            },
+                                            "prescribed_quantity": {
+                                                "type": "integer"
+                                            },
+                                            "dispensed_quantity": {
+                                                "type": "integer"
+                                            },
+                                            "pending_quantity": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "product",
+                                            "prescribed_quantity",
+                                            "dispensed_quantity",
+                                            "pending_quantity"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "patient_id",
+                                "status",
+                                "valid_until",
+                                "created_at",
+                                "prescriber",
+                                "items"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "document_type",
+                    "document_number",
+                    "full_name",
+                    "birth_date",
+                    "phone",
+                    "masked"
+                ],
+                "title": "PatientResource"
+            },
+            "PrescriptionResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "patient_id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "valid_until": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "prescriber": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "product": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "is_controlled": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "code",
+                                        "name",
+                                        "is_controlled"
+                                    ]
+                                },
+                                "prescribed_quantity": {
+                                    "type": "integer"
+                                },
+                                "dispensed_quantity": {
+                                    "type": "integer"
+                                },
+                                "pending_quantity": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "product",
+                                "prescribed_quantity",
+                                "dispensed_quantity",
+                                "pending_quantity"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "patient_id",
+                    "status",
+                    "valid_until",
+                    "created_at",
+                    "prescriber",
+                    "items"
+                ],
+                "title": "PrescriptionResource"
+            },
+            "PreviewDispensationRequest": {
+                "type": "object",
+                "description": "Vista previa FEFO. El permiso (dispensations.create) lo exige la ruta (`can`), antes de validar. Cada \u00edtem\npertenece a la prescripci\u00f3n indicada y no se repite.",
+                "properties": {
+                    "prescription_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "prescription_item_id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                }
+                            },
+                            "required": [
+                                "prescription_item_id",
+                                "quantity"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "prescription_id",
+                    "warehouse_id",
+                    "items"
+                ],
+                "title": "PreviewDispensationRequest"
+            },
             "ProductResource": {
                 "type": "object",
                 "properties": {
@@ -1634,6 +2577,108 @@
                     "lot"
                 ],
                 "title": "StockResource"
+            },
+            "StoreDispensationRequest": {
+                "type": "object",
+                "description": "Dispensaci\u00f3n: las reglas de la vista previa m\u00e1s las credenciales opcionales del autorizador (RN-05). El\ndispensador nunca se lee del cuerpo. La huella de idempotencia usa solo `dispensation()`: credenciales y\ncampos ajenos no la alteran (design D5).",
+                "properties": {
+                    "prescription_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "prescription_item_id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                }
+                            },
+                            "required": [
+                                "prescription_item_id",
+                                "quantity"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "uniqueItems": true
+                    },
+                    "authorizer_email": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "authorizer_password": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "prescription_id",
+                    "warehouse_id",
+                    "items"
+                ],
+                "title": "StoreDispensationRequest"
+            },
+            "StorePrescriptionRequest": {
+                "type": "object",
+                "description": "Alta de prescripci\u00f3n (prescriptions \"Creaci\u00f3n de prescripciones por el m\u00e9dico\"): solo prescriptions.create.\n`valid_until` \u2265 hoy en Bogot\u00e1; 1 a 20 \u00edtems sin producto repetido. El m\u00e9dico nunca se lee del cuerpo: solo\n`prescription()` llega a la acci\u00f3n.",
+                "properties": {
+                    "patient_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "valid_until": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "product_id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                }
+                            },
+                            "required": [
+                                "product_id",
+                                "quantity"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "patient_id",
+                    "valid_until",
+                    "items"
+                ],
+                "title": "StorePrescriptionRequest"
             },
             "StoreProductRequest": {
                 "type": "object",
