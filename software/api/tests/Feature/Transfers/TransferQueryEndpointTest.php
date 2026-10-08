@@ -94,14 +94,16 @@ it('responde 404 a un traslado inexistente', function () {
 });
 
 it('responde 404 sin 500 a ids de traslado o discrepancia fuera de rango o no numéricos', function (string $method, string $uri) {
-    $this->actingAs(User::factory()->regente()->create())->json($method, $uri)
+    // {t}: un traslado que existe, para que el 404 de la discrepancia no venga del traslado.
+    $transfer = Transfer::factory()->create();
+    $this->actingAs(User::factory()->regente()->create())->json($method, str_replace('{t}', (string) $transfer->id, $uri))
         ->assertNotFound()
         ->assertJsonPath('code', 'not_found');
 })->with([
     'detalle con 19 dígitos' => ['GET', '/api/transfers/9999999999999999999'],
     'despacho con 19 dígitos' => ['POST', '/api/transfers/9999999999999999999/dispatch'],
     'detalle no numérico' => ['GET', '/api/transfers/abc'],
-    'discrepancia con 19 dígitos' => ['POST', '/api/transfers/1/discrepancies/9999999999999999999/resolve'],
+    'discrepancia con 19 dígitos' => ['POST', '/api/transfers/{t}/discrepancies/9999999999999999999/resolve'],
 ]);
 
 it('rechaza con 403 la lista y el detalle a medico y admin', function (Role $role) {
