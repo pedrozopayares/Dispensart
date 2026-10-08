@@ -9,10 +9,10 @@ en logs ni rechazos (RN-10, Ley 1581).
 ## ADDED Requirements
 
 ### Requirement: Búsqueda de pacientes
-`GET /api/patients?q=` SHALL devolver a los roles con `patients.view` hasta 20 pacientes cuyo número de
-documento empiece por `q` o cuyo nombre completo contenga `q` sin distinguir mayúsculas, ordenados por nombre,
-con `id`, `document_type`, `document_number`, `full_name`, `birth_date`, `phone` y `masked`. `q` SHALL ser
-obligatorio, de 3 a 50 caracteres (RN-10).
+`GET /api/patients?q=` SHALL devolver a los roles con `patients.view` hasta 20 pacientes, ordenados por nombre,
+con `id`, `document_type`, `document_number`, `full_name`, `birth_date`, `phone` y `masked`; `q` obligatorio, de
+3 a 50 caracteres. Quien ve datos en claro busca por prefijo de documento o fragmento de nombre sin distinguir
+mayúsculas; `auditor` SHALL coincidir solo con el número de documento completo exacto (RN-10).
 
 #### Scenario: Búsqueda por prefijo de documento
 - **WHEN** un `auxiliar_farmacia` envía `GET /api/patients?q=999901` y un paciente semilla tiene documento `9999010001`
@@ -21,6 +21,14 @@ obligatorio, de 3 a 50 caracteres (RN-10).
 #### Scenario: Búsqueda por nombre sin distinguir mayúsculas
 - **WHEN** un `medico` envía `GET /api/patients?q=SINTÉTICA` y existe un paciente cuyo nombre contiene `Sintética`
 - **THEN** la API responde HTTP 200 con ese paciente en `data` [ancla: ruta `GET /api/patients`, archivo:línea al aplicar]
+
+#### Scenario: Auditor con prefijo de documento sin resultados
+- **WHEN** un `auditor` envía `GET /api/patients?q=999901` y un paciente tiene documento `9999010001`
+- **THEN** la API responde HTTP 200 con `data` vacío y no se escribe fila de acceso [ancla: búsqueda de pacientes (`SearchPatients`) + ruta `GET /api/patients`, archivo:línea al aplicar]
+
+#### Scenario: Auditor con fragmento de nombre sin resultados
+- **WHEN** un `auditor` envía `GET /api/patients?q=Sint` y existe un paciente cuyo nombre contiene `Sintética`
+- **THEN** la API responde HTTP 200 con `data` vacío y no se escribe fila de acceso [ancla: búsqueda de pacientes (`SearchPatients`) + ruta `GET /api/patients`, archivo:línea al aplicar]
 
 #### Scenario: Sin coincidencias
 - **WHEN** un `regente_farmacia` envía `GET /api/patients?q=zzzz` y ningún paciente coincide
@@ -41,7 +49,8 @@ obligatorio, de 3 a 50 caracteres (RN-10).
 ### Requirement: Ficha del paciente con prescripciones
 `GET /api/patients/{id}` SHALL devolver a los roles con `patients.view` los campos del paciente y sus
 prescripciones de la más reciente a la más antigua, cada una con `id`, `status`, `valid_until`, médico que la
-emitió e ítems con producto, `is_controlled`, cantidad prescrita, dispensada y pendiente (RN-04, RN-10).
+emitió e ítems con producto, `is_controlled`, cantidad prescrita, dispensada y pendiente. `{id}` SHALL aceptar solo
+de 1 a 18 dígitos; otro valor SHALL responder como paciente inexistente (RN-04, RN-10).
 
 #### Scenario: Ficha con saldos
 - **WHEN** un `auxiliar_farmacia` envía `GET /api/patients/{id}` de un paciente con una prescripción de 10 unidades de la que se dispensaron 4
@@ -54,6 +63,10 @@ emitió e ítems con producto, `is_controlled`, cantidad prescrita, dispensada y
 #### Scenario: Paciente inexistente
 - **WHEN** un `regente_farmacia` envía `GET /api/patients/999999` y no existe
 - **THEN** la API responde HTTP 404 con `code` `not_found` [ancla: render de ModelNotFoundException, archivo:línea al aplicar]
+
+#### Scenario: Identificador fuera de rango
+- **WHEN** un `regente_farmacia` envía `GET /api/patients/1234567890123456789` (19 dígitos), o `GET /api/patients/abc`
+- **THEN** la API responde HTTP 404 con `code` `not_found`, nunca 500, y no se escribe fila de acceso [ancla: restricción de parámetro de las rutas de pacientes + render de NotFoundHttpException, archivo:línea al aplicar]
 
 #### Scenario: Admin sin acceso a la ficha
 - **WHEN** un `admin` envía `GET /api/patients/{id}` de un paciente existente

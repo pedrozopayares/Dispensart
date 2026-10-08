@@ -166,3 +166,7 @@ del regente (201); auditor ve ficha enmascarada sin botón de dispensar; médico
 **Deuda (prosa)**: el patrón de búsqueda de la tarea 0.2 debe perder el prefijo `/api`. La ficha del paciente
 semilla Ana acumula prescripciones agotadas creadas por pruebas previas contra el stack (datos, no código).
 El ítem `invalid_idempotency_key` no tiene texto propio (cae en el genérico): la SPA siempre envía una clave válida.
+
+## 2026-10-08 — spec-engineer: tarea 0.2
+
+- Barrido de rutas sin prefijo `/api` (las claves de `paths` lo omiten; va en `servers[0].url`). Hoy: 14 rutas, faltan `alerts` y `transfers` hasta archivar S4/S5. Validación estricta: válida.
