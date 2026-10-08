@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { InventoryPage } from '@/features/inventory/inventory-page'
+import { KardexPage } from '@/features/kardex/kardex-page'
 import { canAny, type Ability } from '@/lib/abilities'
 import type { AuthenticatedUser } from '@/lib/api'
 import { strings } from '@/lib/strings'
@@ -22,6 +23,7 @@ export const screens: readonly Screen[] = [
     abilities: ['inventory.view'],
     navLabel: strings.nav.inventory,
   },
+  { path: '/kardex', Component: KardexPage, abilities: ['inventory.view'], navLabel: strings.nav.kardex },
 ]
 
 export function screensFor(user: AuthenticatedUser): Screen[] {
