@@ -73,8 +73,10 @@ describe('solo inserción', function () {
         stockOf(10);
         stockOf(4);
 
+        // CASCADE: desde S3 las líneas de dispensación referencian el kardex y un TRUNCATE simple ya choca con
+        // esa FK (0A000) antes del trigger; en cascada la FK no lo detiene y solo el trigger lo rechaza.
         expectRejectedByDatabase(
-            fn () => DB::statement('TRUNCATE kardex_movements'),
+            fn () => DB::statement('TRUNCATE kardex_movements CASCADE'),
             sqlState: 'P0001',
             constraint: 'kardex_movements is append-only: TRUNCATE rejected',
         );
