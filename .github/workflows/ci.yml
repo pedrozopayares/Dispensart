@@ -236,3 +236,59 @@ jobs:
         run: |
           echo "api: $API_DIGEST"
           echo "web: $WEB_DIGEST"
+
+  # Staging simulado en el runner con el mismo compose.yaml: imágenes publicadas por digest, sin
+  # reconstruir; humo de software/docker/smoke.sh; el stack se baja con sus volúmenes siempre (D5).
+  staging:
+    name: Staging simulado (humo por digest)
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    env:
+      API_IMAGE: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-api@${{ needs.build.outputs.api_digest }}
+      WEB_IMAGE: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-web@${{ needs.build.outputs.web_digest }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Contraseña de la base generada por run y enmascarada antes de cualquier uso.
+      - name: Contraseña efímera de la base
+        run: |
+          pw="$(openssl rand -hex 24)"
+          echo "::add-mask::$pw"
+          echo "DB_PASSWORD=$pw" >> "$GITHUB_ENV"
+
+      # Control del enmascarado: el log debe mostrar *** en lugar del valor.
+      - name: Control del enmascarado
+        run: echo "DB_PASSWORD=$DB_PASSWORD"
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Un digest ausente en GHCR falla aquí, sin construir nada en el runner.
+      - name: Descarga de las imágenes publicadas
+        run: |
+          docker pull "$API_IMAGE"
+          docker pull "$WEB_IMAGE"
+          docker compose -f software/compose.yaml pull db
+
+      - name: Arranque del stack (sin construir)
+        run: docker compose -f software/compose.yaml up --no-build --wait --wait-timeout 180 db api web
+
+      - name: Humo
+        run: bash software/docker/smoke.sh
+
+      - name: Logs del stack
+        if: failure()
+        run: docker compose -f software/compose.yaml logs --no-color --tail 300
+
+      - name: Bajar el stack
+        if: always()
+        run: docker compose -f software/compose.yaml down -v
