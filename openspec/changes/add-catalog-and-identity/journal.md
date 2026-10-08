@@ -100,3 +100,218 @@ limitador por IP tras dos proxies (`TrustProxies` en rangos privados, revisar en
 - Insumo heredado de S0: las pruebas fuerzan `APP_KEY` vacía; Sanctum con sesión por cookie necesita una
   clave de prueba generada en tiempo de ejecución.
 - Tarea 0.1 (delta MODIFIED sobre `runtime-environment`) delegada al spec-engineer.
+
+## 2026-10-08 — backend-implementer: grupos 1–5 (`software/api`)
+
+Tareas 1.1–5.16 `[x]`. Commits en `dev`: `09ea4dc`, `bdbb36a`, `e2ecaa3`, `044352e`, `799df06`, `261ee7a`.
+Dependencias nuevas: `laravel/sanctum` 4.3.3 (require), `dedoc/scramble` 0.13.47 (require-dev), `@redocly/cli` 2.60.0 (raíz, dev).
+
+### Corrida de cierre (1 de 1 del implementador)
+
+| Comando | Resultado |
+|---|---|
+| `vendor/bin/pint --test` | pasa |
+| `vendor/bin/phpstan analyse` (nivel 6) | 0 errores |
+| `php artisan test` (PostgreSQL `dispensart_test`) | 166 pasan / 686 aserciones (línea base 26) |
+| `npm run openapi:lint` (Redocly) | válido, 0 avisos |
+| deriva OpenAPI (`composer openapi` + `git diff --exit-code` en el host) | exit 0; control positivo: `/lots` quitado del archivo → exit 1; re-exportado → exit 0 |
+
+### Líneas
+
+| Tipo | Líneas añadidas |
+|---|---|
+| Producto (`app`, `config`, `database`, `routes`, `bootstrap`, `lang`) | 2120 |
+| Pruebas (`tests`, `phpunit.xml`) | 1473 |
+| Contrato generado (`openapi.json`) | 1266 |
+
+### Escenario → prueba → archivo:línea (rutas relativas a `software/api/tests/Feature/`)
+
+| Capacidad | Escenario | Prueba | Archivo:línea |
+|---|---|---|---|
+| identity-access | Usuario con rol válido | guarda un usuario con rol válido insertado directamente | Identity/UserRoleConstraintTest.php:22 |
+| identity-access | Rol fuera del conjunto rechazado por la base | rechaza en la base un rol fuera del conjunto | Identity/UserRoleConstraintTest.php:29 |
+| identity-access | Rol nulo rechazado por la base | rechaza en la base un usuario sin rol | Identity/UserRoleConstraintTest.php:39 |
+| identity-access | Capacidades de auxiliar / regente / medico / auditor / admin | resuelve exactamente las capacidades de cada rol (dataset 5) | Identity/RoleAbilitiesTest.php:12 |
+| identity-access | Capacidades de auditor, solo lectura | niega al auditor toda capacidad de escritura | Identity/RoleAbilitiesTest.php:30 |
+| identity-access | Capacidades de admin, sin datos clínicos ni inventario | niega al admin datos clínicos e inventario | Identity/RoleAbilitiesTest.php:42 |
+| identity-access | Capacidad desconocida denegada a todo rol | niega una capacidad desconocida a los cinco roles | Identity/RoleAbilitiesTest.php:48 |
+| identity-access | Petición sin sesión | GET /api/warehouses › responde 401 sin sesión | Catalog/WarehouseEndpointTest.php:34 |
+| identity-access | Petición sin sesión (Bearer falso → 401, no 500) | responde 401, no 500, ante una cabecera Bearer falsa | Identity/LoginTest.php:133 |
+| identity-access | 401 en JSON aunque falte Accept | responde 401 en JSON aunque falte Accept, sin redirección | Identity/MeTest.php:32 |
+| identity-access | Rol falsificado por el cliente ignorado | ignora un rol falsificado en el cuerpo o en cabeceras | Catalog/ProductEndpointTest.php:100 |
+| identity-access | Cambio de rol en la base vigente en la petición siguiente | aplica en la petición siguiente un cambio de rol hecho en la base | Catalog/WarehouseEndpointTest.php:94 |
+| identity-access | Rechazo por permisos (cuerpo exacto) | rechaza con 403 a los demás roles con el cuerpo exacto y sin crear | Catalog/WarehouseEndpointTest.php:77 |
+| identity-access | Recurso inexistente | responde 404 en español sin nombre de clase a un producto inexistente | Catalog/ProductEndpointTest.php:150 |
+| identity-access | Validación con errores por campo | rechaza sin code con errors.code en español | Catalog/ProductEndpointTest.php:83 |
+| identity-access | Emisión de la cookie CSRF | emite la cookie XSRF-TOKEN legible por la SPA con un 204 | Identity/CsrfTest.php:11 |
+| identity-access | Login sin token CSRF | rechaza con 419 el login sin X-XSRF-TOKEN y no abre sesión | Identity/CsrfTest.php:23 |
+| identity-access | Escritura con token CSRF caducado | rechaza con 419 una escritura con token de otra sesión | Identity/CsrfTest.php:40 |
+| identity-access | Lectura sin token CSRF | permite lecturas con sesión sin X-XSRF-TOKEN | Identity/CsrfTest.php:57 |
+| identity-access | Credenciales válidas | abre sesión con credenciales válidas, regenera la sesión y no devuelve token | Identity/LoginTest.php:27 |
+| identity-access | Correo con mayúsculas | compara el correo sin distinguir mayúsculas | Identity/LoginTest.php:50 |
+| identity-access | Contraseña incorrecta | rechaza una contraseña incorrecta sin abrir sesión | Identity/LoginTest.php:59 |
+| identity-access | Correo inexistente indistinguible | responde igual para un correo inexistente que para una contraseña incorrecta | Identity/LoginTest.php:67 |
+| identity-access | Datos incompletos o mal formados | rechaza datos incompletos o mal formados por campo (dataset 3) | Identity/LoginTest.php:75 |
+| identity-access | Demasiados intentos fallidos | bloquea con 429 el sexto intento tras cinco fallos | Identity/LoginTest.php:90 |
+| identity-access | Éxito reinicia el contador | reinicia el contador de fallos tras un inicio de sesión exitoso | Identity/LoginTest.php:102 |
+| identity-access | Origen ajeno a la SPA | rechaza con 403 y sin cookie el login desde un origen ajeno (dataset 2) | Identity/LoginTest.php:117 |
+| identity-access | Cierre de sesión exitoso | cierra la sesión: la cookie anterior deja de autenticar | Identity/LogoutTest.php:11 |
+| identity-access | Cierre sin sesión | responde 401 al cerrar sin sesión | Identity/LogoutTest.php:25 |
+| identity-access | Cierre repetido | responde 401, no 500, al repetir el cierre | Identity/LogoutTest.php:32 |
+| identity-access | Usuario autenticado | devuelve el usuario de la sesión con las capacidades de su rol | Identity/MeTest.php:12 |
+| identity-access | Usuario actual › Sin sesión | responde 401 sin sesión | Identity/MeTest.php:26 |
+| identity-access | Admin lista usuarios | lista a un admin los 5 usuarios semilla por nombre | Identity/UsersEndpointTest.php:25 |
+| identity-access | Otro rol intenta listar usuarios | rechaza con 403 a los demás roles (dataset 4) | Identity/UsersEndpointTest.php:39 |
+| identity-access | Listado › Sin sesión | responde 401 sin sesión | Identity/UsersEndpointTest.php:46 |
+| identity-access | Alta exitosa (usuario) | crea un usuario con contraseña con hash que luego inicia sesión | Identity/UsersEndpointTest.php:52 |
+| identity-access | Correo duplicado sin distinguir mayúsculas | rechaza un correo duplicado sin distinguir mayúsculas | Identity/UsersEndpointTest.php:78 |
+| identity-access | Rol inválido o datos incompletos | rechaza rol inválido o datos incompletos (dataset 3) | Identity/UsersEndpointTest.php:91 |
+| identity-access | Otro rol intenta crear usuarios | rechaza con 403 a los demás roles y no crea usuario (dataset 4) | Identity/UsersEndpointTest.php:111 |
+| identity-access | Alta › Sin sesión | responde 401 sin sesión y no crea usuario | Identity/UsersEndpointTest.php:121 |
+| catalog | Cualquier rol consulta bodegas | devuelve a cualquier rol las 3 bodegas semilla (dataset 5) | Catalog/WarehouseEndpointTest.php:17 |
+| catalog | Sin bodegas | devuelve una lista vacía sin bodegas | Catalog/WarehouseEndpointTest.php:28 |
+| catalog | Alta exitosa (bodega) | crea una bodega como admin | Catalog/WarehouseEndpointTest.php:42 |
+| catalog | Código o nombre duplicado | rechaza código o nombre duplicado (dataset 2) | Catalog/WarehouseEndpointTest.php:51 |
+| catalog | Datos incompletos o demasiado largos | rechaza datos incompletos o demasiado largos (dataset 2) | Catalog/WarehouseEndpointTest.php:65 |
+| catalog | Otro rol intenta crear (bodega) | rechaza con 403 a los demás roles (dataset 4) | Catalog/WarehouseEndpointTest.php:77 |
+| catalog | Alta de bodegas › Sin sesión | responde 401 sin sesión y no crea bodega | Catalog/WarehouseEndpointTest.php:86 |
+| catalog | Cambio parcial | cambia solo el nombre y conserva el código | Catalog/WarehouseEndpointTest.php:117 |
+| catalog | Conservar su propio código | permite conservar su propio código | Catalog/WarehouseEndpointTest.php:124 |
+| catalog | Cuerpo vacío | devuelve la bodega intacta con un cuerpo vacío | Catalog/WarehouseEndpointTest.php:131 |
+| catalog | Código de otra bodega | rechaza el código de otra bodega sin cambiarla | Catalog/WarehouseEndpointTest.php:138 |
+| catalog | Bodega inexistente | responde 404 a una bodega inexistente | Catalog/WarehouseEndpointTest.php:149 |
+| catalog | Otro rol intenta modificar (bodega) | rechaza con 403 a un regente sin cambiar la bodega | Catalog/WarehouseEndpointTest.php:156 |
+| catalog | Cualquier rol consulta productos | devuelve a cualquier rol los 6 productos semilla (dataset 5) | Catalog/ProductEndpointTest.php:15 |
+| catalog | Sin productos | devuelve una lista vacía sin productos | Catalog/ProductEndpointTest.php:29 |
+| catalog | Consulta de productos › Sin sesión | responde 401 sin sesión | Catalog/ProductEndpointTest.php:33 |
+| catalog | Alta exitosa de control especial | crea un producto de control especial | Catalog/ProductEndpointTest.php:39 |
+| catalog | Campos opcionales omitidos | usa presentation null e is_controlled false si se omiten | Catalog/ProductEndpointTest.php:56 |
+| catalog | Datos inválidos (producto) | rechaza datos inválidos por campo (dataset 3) | Catalog/ProductEndpointTest.php:66 |
+| catalog | Otro rol intenta crear (producto) | rechaza con 403 a los demás roles (dataset 4) | Catalog/ProductEndpointTest.php:91 |
+| catalog | Alta de productos › Sin sesión | responde 401 sin sesión y no crea producto | Catalog/ProductEndpointTest.php:110 |
+| catalog | Marcar como control especial | marca como control especial sin cambiar los demás campos | Catalog/ProductEndpointTest.php:127 |
+| catalog | Código de otro producto | rechaza el código de otro producto sin cambiarlo | Catalog/ProductEndpointTest.php:140 |
+| catalog | Producto inexistente | responde 404 en español sin nombre de clase | Catalog/ProductEndpointTest.php:150 |
+| catalog | Otro rol intenta modificar (producto) | rechaza con 403 a un auditor sin cambiar el producto | Catalog/ProductEndpointTest.php:158 |
+| catalog | Todos los lotes en orden de vencimiento | devuelve todos los lotes por vencimiento y luego id | Catalog/LotEndpointTest.php:13 |
+| catalog | Filtro por producto | filtra por producto | Catalog/LotEndpointTest.php:27 |
+| catalog | Producto sin lotes o inexistente | devuelve una lista vacía para un producto inexistente | Catalog/LotEndpointTest.php:38 |
+| catalog | Filtro mal formado | rechaza un filtro mal formado | Catalog/LotEndpointTest.php:46 |
+| catalog | Consulta de lotes › Sin sesión | responde 401 sin sesión | Catalog/LotEndpointTest.php:53 |
+| catalog | Lote que venció ayer / hoy / mañana (HTTP) | calcula is_expired con el día de Bogotá en cada respuesta | Catalog/LotEndpointTest.php:57 |
+| catalog | Lote que venció ayer | marca vencido un lote que venció ayer | Catalog/LotExpiryTest.php:22 |
+| catalog | Lote que vence hoy | marca vencido un lote que vence hoy | Catalog/LotExpiryTest.php:28 |
+| catalog | Lote que vence mañana | no marca vencido un lote que vence mañana | Catalog/LotExpiryTest.php:34 |
+| catalog | Frontera 23:30 Bogotá (design D6) | en la frontera de 23:30 Bogotá usa el día de Bogotá | Catalog/LotExpiryTest.php:40 |
+| catalog | Cambio de día sin escritura | vence al cambiar de día sin escritura alguna | Catalog/LotExpiryTest.php:48 |
+| catalog | Lote duplicado para el mismo producto | rechaza un lote duplicado para el mismo producto | Catalog/CatalogIntegrityTest.php:64 |
+| catalog | Mismo código de lote en otro producto | acepta el mismo código de lote en otro producto | Catalog/CatalogIntegrityTest.php:76 |
+| catalog | Lote huérfano o sin vencimiento | rechaza un lote huérfano · rechaza un lote sin vencimiento | Catalog/CatalogIntegrityTest.php:85, :94 |
+| catalog | Código de bodega o de producto duplicado en la base | rechaza bodega con código / nombre existente · producto con código existente | Catalog/CatalogIntegrityTest.php:24, :35, :46 |
+| catalog | Borrar producto con lotes | rechaza borrar un producto con lotes y conserva ambos | Catalog/CatalogIntegrityTest.php:104 |
+| seed-data | Bodegas y productos sembrados | siembra exactamente las 3 bodegas y 6 productos | Seed/SeedTest.php:34 |
+| seed-data | Lotes por producto | siembra 2 o 3 lotes por producto y al menos uno no vencido del controlado | Seed/SeedTest.php:44 |
+| seed-data | Distribución de vencimientos | distribuye vencimientos: vencido, 1–29, 31–90 y más de 90 días | Seed/SeedTest.php:55 |
+| seed-data | Sin datos reales (correos) | no contiene correos fuera de dispensart.test en el código de siembra | Seed/SeedTest.php:66 |
+| seed-data | Un usuario por rol | crea exactamente un usuario por rol con los correos indicados | Seed/SeedTest.php:78 |
+| seed-data | Inicio de sesión con la contraseña documentada | permite iniciar sesión con la contraseña documentada | Seed/SeedTest.php:90 |
+| seed-data | Contraseña reemplazada por entorno | usa SEED_USER_PASSWORD si está definida | Seed/SeedTest.php:99 |
+| seed-data | Contraseña guardada con hash | guarda las contraseñas con hash | Seed/SeedTest.php:109 |
+| seed-data · runtime-environment | Producción sin contraseña explícita · Valor por defecto inerte en producción | en producción sin SEED_USER_PASSWORD siembra el catálogo, ningún usuario | Seed/SeedTest.php:117 |
+| seed-data | Siembra repetida | repite la siembra sin error y con los mismos conteos | Seed/SeedTest.php:135 |
+| seed-data | Cambios del admin sobreviven al reinicio (nivel seeder) | conserva el nombre que el admin dio a una bodega semilla | Seed/SeedTest.php:145 |
+| seed-data | Filas no semilla intactas | deja intactas las filas que no son semilla | Seed/SeedTest.php:156 |
+| — (cimiento 1.4) | Fábricas válidas | Factory de usuario / de bodega, producto y lote | FactoryTest.php:14, :20 |
+
+Fuera de este bloque: seed-data "Arranque desde cero" y "Cambios del admin sobreviven al reinicio" en el stack (7.1), humo con cookies reales (7.2), app-shell (6.x).
+
+### [MUT] (corridas delta filtradas)
+
+| n | mutation | Applied → FAILS m/k: test | Restored → PASSES k/k |
+|---|---|---|---|
+| M1 | `Role::RegenteFarmacia` gana `Ability::CatalogManage` | FAILS 1/12: resuelve exactamente las capacidades de cada rol › regente_farmacia | PASSES 12/12 |
+| M2 | `ProductPolicy::create` devuelve `true` | FAILS 5/23: rechaza con 403 a los demás roles (4 del dataset) + ignora un rol falsificado | PASSES 23/23 |
+| M3 | grupo `/api` sin `auth:sanctum` (`Route::middleware([])`) | FAILS 2/24: GET /api/warehouses › responde 401 sin sesión; POST › responde 401 sin sesión | PASSES 24/24 |
+| M4 | login copia `role` a la sesión y `WarehousePolicy::create` autoriza con ese valor | FAILS 1/24: aplica en la petición siguiente un cambio de rol hecho en la base | PASSES 24/24 |
+| M5 | `ValidateCsrfToken::$except = ['api/auth/login']` | FAILS 1/4: rechaza con 419 el login sin X-XSRF-TOKEN | PASSES 4/4 |
+| M6 | correo inexistente → `ValidationException` "El correo no está registrado." | FAILS 1/12: responde igual para un correo inexistente que para una contraseña incorrecta | PASSES 12/12 |
+| M7 | sin `RateLimiter::hit` en el fallo | FAILS 1/12: bloquea con 429 el sexto intento tras cinco fallos | PASSES 12/12 |
+| M8 | migración sin `users_role_check` | FAILS 1/3: rechaza en la base un rol fuera del conjunto | PASSES 3/3 |
+| M9 | migración sin `lots_product_id_lot_code_unique` | FAILS 1/9: rechaza un lote duplicado para el mismo producto | PASSES 9/9 |
+| M10 | `Lot::isExpiredOn` con `<` en lugar de `<=` | FAILS 3/6: vence hoy; frontera 23:30 Bogotá; cambio de día sin escritura | PASSES 6/6 |
+| M11 | `WarehouseSeeder` con `create()` en lugar de `firstOrCreate` por código | FAILS 3/12: repite la siembra; conserva el nombre del admin; filas no semilla intactas | PASSES 12/12 |
+
+### Anclas de transporte (cláusula → archivo:línea, `software/api/`)
+
+| Cláusula del ancla | Archivo:línea |
+|---|---|
+| middleware `auth:sanctum` | routes/api.php:23 |
+| ruta `POST /api/auth/login` | routes/api.php:21 |
+| ruta `POST /api/auth/logout` | routes/api.php:24 |
+| ruta `GET /api/auth/me` | routes/api.php:25 |
+| ruta `GET /api/users` · `POST /api/users` | routes/api.php:27 · :28 |
+| ruta `GET /api/warehouses` · `POST` · `PATCH /{id}` | routes/api.php:30 · :31 · :32 |
+| ruta `GET /api/products` · `POST` · `PATCH /{id}` | routes/api.php:34 · :35 · :36 |
+| ruta `GET /api/lots` | routes/api.php:38 |
+| ruta de Sanctum `sanctum/csrf-cookie` | vendor/laravel/sanctum/src/SanctumServiceProvider.php:73 (grupo `web`, :76) |
+| sesión solo para orígenes de la SPA (`statefulApi`) | bootstrap/app.php:33 |
+| render JSON forzado para `api/*` | bootstrap/app.php:52, :58 |
+| invitado → 401 sin redirección | bootstrap/app.php:37 |
+| render de AuthenticationException | app/Exceptions/ApiExceptionRenderer.php:23 |
+| render de ValidationException | app/Exceptions/ApiExceptionRenderer.php:24 |
+| render de AuthorizationException (403 `forbidden`) | app/Exceptions/ApiExceptionRenderer.php:29, :39 |
+| render de ModelNotFoundException (404 `not_found`) | app/Exceptions/ApiExceptionRenderer.php:29, :40 |
+| middleware CSRF + render de TokenMismatchException | bootstrap/app.php:40; app/Http/Middleware/ValidateCsrfToken.php:15, :20; app/Exceptions/ApiExceptionRenderer.php:42 |
+| acción de login (respuesta idéntica) | app/Actions/Identity/LoginAction.php:43, :46, :49 |
+| limitador de login | app/Actions/Identity/LoginAction.php:35, :47, :52 |
+| FormRequest de login (incluye 403 por origen ajeno) | app/Http/Requests/Auth/LoginRequest.php:14, :29 |
+| FormRequest de alta de usuario | app/Http/Requests/Users/StoreUserRequest.php:32 |
+| FormRequest de bodega | app/Http/Requests/Catalog/StoreWarehouseRequest.php:22; UpdateWarehouseRequest.php:23 |
+| FormRequest de producto | app/Http/Requests/Catalog/StoreProductRequest.php:22; UpdateProductRequest.php:22 |
+| FormRequest de consulta de lotes | app/Http/Requests/Catalog/ListLotsRequest.php:21 |
+| Policy de usuarios | app/Policies/UserPolicy.php:15, :20 |
+| Policy de bodegas | app/Policies/WarehousePolicy.php:21, :26 |
+| Policy de productos | app/Policies/ProductPolicy.php:21, :26 |
+| recurso de lote (`is_expired`) | app/Http/Resources/LotResource.php:27 |
+| sin bearer | app/Providers/AppServiceProvider.php:32 |
+
+### Barridos (`/usr/bin/grep`, con control positivo plantado en el scratchpad)
+
+| # | Patrón buscado | Alcance | Hits | Control positivo |
+|---|---|---|---|---|
+| 1 | `Log::*(` con `$email`, `$password`, `password`, `->email`, `->name` | app database routes bootstrap | 0 | archivo plantado con `Log::warning(..., ['email' => $email, ...])` → 1 |
+| 2 | `dd(`, `dump(`, `var_dump(`, `ray(` | app database routes bootstrap tests config | 0 | `dd($x);` plantado → 1 |
+| 3 | `HasApiTokens`, `personal_access_tokens`, `createToken` | app database config routes | 0 | plantado → 2 |
+| 4 | `actingAs`, `withoutMiddleware` | LoginTest, LogoutTest, CsrfTest, SpaClient | 1 (comentario "sin actingAs", LoginTest.php:10) | UsersEndpointTest.php → 8 |
+| 5 | `protected $except`, `validateCsrfTokens(except`, `withoutMiddleware(...Csrf` | app bootstrap tests | 0 | `protected $except = [...]` plantado → 1 |
+| 6 | `Facades\DB` | app/Http/Controllers | 0 | database/migrations → 1 archivo |
+| 7 | `base64:` + 20 caracteres (APP_KEY) | `git grep` en software | 0 | `APP_KEY=base64:AAAA…` plantado → 1 |
+| 8 | `sqlite` | phpunit.xml tests | 2 (comentarios "nunca SQLite", phpunit.xml:28, DatabaseConnectionTest.php:5) | config/database.php → 3 |
+| 9 | correos fuera de `@dispensart.test` | database/seeders database/factories | 0 | `real@gmail.com` plantado → 1 |
+
+### Desviaciones del design (sin cambio de contrato salvo nota)
+
+| Punto | Design | Aplicado | Motivo |
+|---|---|---|---|
+| D1 origen ajeno | corte en `LoginController` | `LoginRequest::authorize()` → `hasSession()` | mismo 403, antes de validar; controlador sin `if` |
+| D2 CSRF | `ValidateCsrfToken` sin atajo de pruebas | además `hasValidOrigin()` = `false`; extiende `PreventRequestForgery` (base no obsoleta de Laravel 13) | Laravel 13 acepta `Sec-Fetch-Site: same-origin` sin token; la spec exige `X-XSRF-TOKEN` en toda escritura. **La SPA debe enviar siempre `X-XSRF-TOKEN`** (ya lo pide D8) |
+| D3 clave del limitador | `sha1($email)` | `hash('sha256', $email)` | el preset `arch()->security()` de S0 prohíbe `sha1` |
+| D3 hash ficticio | literal fijo | `Hash::make` aleatorio una vez por proceso | mismo costo que los hashes reales, sin literal versionado |
+| D5 | — | `redirectGuestsTo(null)` | sin él, 401 sin `Accept` daba 500 (`Route [login] not defined`) |
+| D9 | — | `config/session.php` cookie por defecto `dispensart-session` (antes slug de `APP_NAME`); servidor OpenAPI relativo `/api`; sin UI `/docs/api` | OpenAPI determinista; `SESSION_COOKIE` sigue reemplazándola |
+| D11 usuarios semilla | `firstOrCreate` | `firstOrNew` + `forceFill` | `role` no es asignable en masa; misma semántica (solo crea si falta) |
+| Altas | 201 implícito (`wasRecentlyCreated`) | `->response()->setStatusCode(201)` explícito | el OpenAPI inferido documenta 201 |
+
+### Para devops (7.1–7.3) y frontend (6.x)
+
+- **Conflicto a decidir antes de 7.1:** compose arranca `api` con `APP_ENV=production` por defecto; por D10 la siembra no crea usuarios sin `SEED_USER_PASSWORD` en producción, y compose no le da valor → "Arranque desde cero" (login con cada usuario semilla) no se cumple tal como está. Opciones: `APP_ENV` local por defecto en el stack de desarrollo, o documentar `SEED_USER_PASSWORD` obligatoria.
+- Imagen `api` debe reconstruirse: `laravel/sanctum` es dependencia de producción nueva. Entrypoint: `db:seed --force` tras `migrate --force`.
+- Variables nuevas para `.env.example`: `SANCTUM_STATEFUL_DOMAINS` (defecto `localhost:8090,127.0.0.1:8090`; cambiar si `WEB_PORT` ≠ 8090), `TRUSTED_PROXIES` (defecto rangos privados), `SESSION_COOKIE`, `SESSION_SECURE_COOKIE` (vacía = Secure cuando la petición llega por HTTPS vía proxy de confianza), `SEED_USER_PASSWORD` (defecto solo desarrollo `dispensart-dev-only`, en `config/dispensart.php`).
+- CI 7.3: `composer openapi` necesita PostgreSQL (migra `dispensart_test` para leer columnas); `composer openapi:check` usa `git diff` → correr en el runner con el repo, no dentro de `api-tools` (el bind mount no es repositorio git). Lint: `npm run openapi:lint` en la raíz.
+- Frontend: respuestas exitosas con envoltura `data`; cookie de sesión `dispensart-session`.
+
+### Deuda (en prosa; el Orchestrator asigna id)
+
+- Falta una prueba de `TrustProxies`: que `X-Forwarded-For` desde un proxy privado separe los contadores del limitador y que el mismo encabezado desde una IP pública se ignore (riesgo 3 del design). Las pruebas actuales fijan `REMOTE_ADDR` 127.0.0.1, fuera de los rangos de confianza.
+- Si el admin cambia el código de un producto semilla, la siguiente siembra recrea el producto original con su código (la clave natural es el código). Ningún escenario lo cubre; impacto bajo.
+- `npm audit` en la raíz: 4 vulnerabilidades altas transitivas de `@fission-ai/openspec` (braces/micromatch), previas a este cambio; `@redocly/cli` no añade ninguna. Herramienta de desarrollo, no se despliega.
