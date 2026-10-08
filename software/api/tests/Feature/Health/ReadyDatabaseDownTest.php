@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Database\QueryException;
+
 // Sin RefreshDatabase a propósito: la base queda inalcanzable (puerto cerrado, driver real).
 
 beforeEach(function () {
@@ -32,5 +34,8 @@ it('no filtra detalles internos en el cuerpo y registra la excepción con el cor
 
     expect($errors)->toHaveCount(1)
         ->and($errors[0]['correlation_id'])->toBe('traza-db-caida')
-        ->and($errors[0]['message'])->toContain('SQLSTATE'); // la causa queda en el log, no en la respuesta
+        // La causa queda en el log como clase + SQLSTATE (design D9 de S3: sin el mensaje, que puede llevar
+        // valores enlazados), nunca en la respuesta.
+        ->and($errors[0]['message'])->toBe(QueryException::class)
+        ->and($errors[0]['context']['code'])->toMatch('/^[0-9A-Z]{5}$/');
 });

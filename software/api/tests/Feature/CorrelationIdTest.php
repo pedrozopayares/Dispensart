@@ -63,7 +63,12 @@ it('responde 500 con X-Correlation-Id, sin traza en el cuerpo, y lo registra en 
         ->not->toContain('.php');
 
     $errors = array_values(array_filter(logLines($this->logPath), fn (array $line): bool => $line['level'] === 'error'));
+    // Design D9 de S3: el mensaje de la excepción no llega al log (podría traer datos de paciente); queda la
+    // clase y su ubicación.
     expect($errors)->toHaveCount(1)
         ->and($errors[0]['correlation_id'])->toBe('traza-500')
-        ->and($errors[0]['message'])->toBe('detalle interno sintético');
+        ->and($errors[0]['message'])->toBe(RuntimeException::class)
+        ->and($errors[0]['context']['class'])->toBe(RuntimeException::class)
+        ->and($errors[0]['context']['line'])->toBeInt()
+        ->and((string) file_get_contents($this->logPath))->not->toContain('detalle interno sintético');
 });

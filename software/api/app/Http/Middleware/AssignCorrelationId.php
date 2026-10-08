@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Support\RoutePattern;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
@@ -40,8 +41,9 @@ final class AssignCorrelationId
     }
 
     /**
-     * Línea de cierre: solo método, ruta sin query string, estado y duración.
-     * Nunca cuerpo, cookies ni cabeceras (RN-10).
+     * Línea de cierre: solo método, patrón de la ruta resuelta (`/api/patients/{patient}`, nunca la ruta literal
+     * con identificadores; `unmatched` sin ruta), estado y duración. Nunca cuerpo, query string, cookies ni
+     * cabeceras (RN-10, design D9 de S3). Una ruta sin parámetros (`/ready`) se registra igual que antes.
      */
     public function terminate(Request $request, Response $response): void
     {
@@ -50,7 +52,7 @@ final class AssignCorrelationId
 
         Log::info('request.completed', [
             'method' => $request->getMethod(),
-            'path' => '/'.ltrim($request->path(), '/'),
+            'path' => RoutePattern::of($request),
             'status' => $response->getStatusCode(),
             'duration_ms' => $durationMs,
         ]);

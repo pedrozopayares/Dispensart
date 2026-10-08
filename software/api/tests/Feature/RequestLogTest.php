@@ -53,14 +53,16 @@ it('escribe cada línea como objeto JSON con timestamp, level, message y correla
 it('excluye query string, cuerpo, cookies y cabecera Authorization del log', function () {
     $this->withUnencryptedCookie('sesion_sintetica', 'galleta-secreta-789')
         ->withHeaders(['Authorization' => 'Bearer token-sintetico-xyz', 'X-Correlation-Id' => 'traza-privacidad'])
-        ->postJson('/health?documento=123456', ['nombre' => 'Paciente Sintético']);
+        // GET con cuerpo: /health solo admite GET y una petición sin ruta resuelta registra `unmatched` (design D9
+        // de S3); así el control positivo conserva la ruta.
+        ->json('GET', '/health?documento=123456', ['nombre' => 'Paciente Sintético']);
 
     $raw = (string) file_get_contents($this->logPath);
     $closing = closingLines(logLines($this->logPath));
 
     // Control positivo: la petición sí quedó registrada.
     expect($closing)->toHaveCount(1)
-        ->and($closing[0]['context']['method'])->toBe('POST')
+        ->and($closing[0]['context']['method'])->toBe('GET')
         ->and($closing[0]['context']['path'])->toBe('/health');
 
     foreach (['documento', '123456', 'Paciente', 'Sint', 'galleta-secreta-789', 'sesion_sintetica', 'token-sintetico-xyz', 'Bearer'] as $forbidden) {
