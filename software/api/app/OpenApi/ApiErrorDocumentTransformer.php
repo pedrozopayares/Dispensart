@@ -31,8 +31,27 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         401 => ['codes' => ['unauthenticated'], 'description' => 'Sin sesión.'],
         403 => ['codes' => ['forbidden'], 'description' => 'Sin permiso para el rol, o login desde un origen ajeno a la SPA.'],
         404 => ['codes' => ['not_found'], 'description' => 'Recurso inexistente.'],
+        409 => ['codes' => ['insufficient_stock'], 'description' => 'La operación dejaría la existencia negativa o la existencia no existe.'],
         419 => ['codes' => ['csrf_token_mismatch'], 'description' => 'Falta X-XSRF-TOKEN o no corresponde a la sesión.'],
         429 => ['codes' => ['too_many_attempts'], 'description' => 'Demasiados intentos fallidos de login; ver Retry-After.'],
+    ];
+
+    /**
+     * Rechazos de dominio que Scramble no infiere (excepciones propias, design D10 de S2), por operación.
+     *
+     * @var array<string, list<int>>
+     */
+    private const DOMAIN_ERRORS = [
+        'post stock-adjustments' => [409, 422],
+    ];
+
+    /**
+     * Operaciones cuyo 422 incluye, además de validation_failed, un rechazo de dominio con la forma ApiError.
+     *
+     * @var array<string, string>
+     */
+    private const DOMAIN_422 = [
+        'post stock-adjustments' => 'Datos inválidos (code: validation_failed, con errors) o ingreso a un lote vencido (code: lot_expired).',
     ];
 
     public function handle(OpenApi $document, OpenApiContext $context): void
@@ -67,18 +86,21 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
     {
         $isLogin = $path === 'auth/login';
         $isWrite = $operation->method !== 'get';
+        $key = $operation->method.' '.$path;
 
         $codes = [];
         $kept = [];
         foreach ($operation->responses ?? [] as $response) {
             $code = (int) ($response instanceof Reference ? $response->resolve()->code : $response->code);
             $codes[] = $code;
-            if (! in_array($code, [401, 403, 404, 419, 422, 429], true)) {
+            if (! in_array($code, [401, 403, 404, 409, 419, 422, 429], true)) {
                 $kept[] = $response;
             }
         }
 
         $errors = array_values(array_intersect([401, 403, 404, 422], $codes));
+        $errors = array_values(array_unique([...$errors, ...(self::DOMAIN_ERRORS[$key] ?? [])]));
+        sort($errors);
         if ($isWrite) {
             $errors[] = 419;
         }
@@ -87,9 +109,13 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         }
 
         foreach ($errors as $status) {
-            $kept[] = $status === 422
-                ? $this->validationResponse($validationError, $apiError, $isLogin)
-                : $this->errorResponse($status, $apiError);
+            $kept[] = match (true) {
+                $status === 422 && isset(self::DOMAIN_422[$key]) => Response::make(422)
+                    ->setDescription(self::DOMAIN_422[$key])
+                    ->setContent('application/json', $apiError),
+                $status === 422 => $this->validationResponse($validationError, $apiError, $isLogin),
+                default => $this->errorResponse($status, $apiError),
+            };
         }
         $operation->responses = $kept;
 
@@ -130,7 +156,8 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         return (new ObjectType)
             ->addProperty('code', (new StringType)->setDescription('Código estable del rechazo (contrato con la SPA).')->enum([
                 'unauthenticated', 'forbidden', 'not_found', 'csrf_token_mismatch', 'validation_failed',
-                'invalid_credentials', 'too_many_attempts', 'method_not_allowed', 'http_error', 'server_error',
+                'invalid_credentials', 'too_many_attempts', 'insufficient_stock', 'lot_expired', 'method_not_allowed',
+                'http_error', 'server_error',
             ]))
             ->addProperty('message', (new StringType)->setDescription('Mensaje en español para el usuario.'))
             ->addProperty('errors', $this->fieldErrorsType())

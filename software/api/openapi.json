@@ -16,6 +16,234 @@
         }
     ],
     "paths": {
+        "/kardex": {
+            "get": {
+                "operationId": "kardex.index",
+                "summary": "Movimientos del kardex, del m\u00e1s reciente al m\u00e1s antiguo, paginados (inventory.view)",
+                "tags": [
+                    "Kardex"
+                ],
+                "parameters": [
+                    {
+                        "name": "warehouse_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "lot_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `KardexMovementResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/KardexMovementResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
         "/auth/login": {
             "post": {
                 "operationId": "auth.login",
@@ -513,6 +741,194 @@
                 ]
             }
         },
+        "/stock": {
+            "get": {
+                "operationId": "stock.index",
+                "summary": "Existencias con cantidad mayor que 0, filtrables por bodega, producto y lote (inventory.view)",
+                "tags": [
+                    "Stock"
+                ],
+                "parameters": [
+                    {
+                        "name": "warehouse_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "lot_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `StockResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StockResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
+        "/stock-adjustments": {
+            "post": {
+                "operationId": "stock-adjustments.store",
+                "summary": "Ajusta una existencia con motivo y devuelve el movimiento `ajuste` creado (solo inventory.adjust)",
+                "tags": [
+                    "StockAdjustment"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreStockAdjustmentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`KardexMovementResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/KardexMovementResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe. code: insufficient_stock",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos (code: validation_failed, con errors) o ingreso a un lote vencido (code: lot_expired).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
         "/users": {
             "get": {
                 "operationId": "users.index",
@@ -929,6 +1345,8 @@
                             "validation_failed",
                             "invalid_credentials",
                             "too_many_attempts",
+                            "insufficient_stock",
+                            "lot_expired",
                             "method_not_allowed",
                             "http_error",
                             "server_error"
@@ -984,6 +1402,72 @@
                 ],
                 "title": "AuthenticatedUserResource"
             },
+            "KardexMovementResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/MovementType"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "balance_after": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ProductSummaryResource"
+                    },
+                    "lot": {
+                        "$ref": "#/components/schemas/LotSummaryResource"
+                    },
+                    "user": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "quantity",
+                    "balance_after",
+                    "reason",
+                    "created_at",
+                    "warehouse",
+                    "product",
+                    "lot",
+                    "user"
+                ],
+                "title": "KardexMovementResource"
+            },
             "LoginRequest": {
                 "type": "object",
                 "description": "Login desde la SPA. Sin sesi\u00f3n (origen ajeno a SANCTUM_STATEFUL_DOMAINS, o sin Origin/Referer) se\nrechaza con 403 antes de validar: sin consulta a la base, sin limitador y sin cookie (design D1).",
@@ -1032,6 +1516,42 @@
                 ],
                 "title": "LotResource"
             },
+            "LotSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "lot_code": {
+                        "type": "string"
+                    },
+                    "expires_on": {
+                        "type": "string"
+                    },
+                    "is_expired": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "lot_code",
+                    "expires_on",
+                    "is_expired"
+                ],
+                "title": "LotSummaryResource"
+            },
+            "MovementType": {
+                "type": "string",
+                "description": "Tipos de movimiento del kardex (RN-06). Los literales son los de la regla; S3 y S4 escriben los suyos.\n",
+                "enum": [
+                    "entrada",
+                    "salida_dispensacion",
+                    "salida_traslado",
+                    "entrada_traslado",
+                    "ajuste"
+                ],
+                "title": "MovementType"
+            },
             "ProductResource": {
                 "type": "object",
                 "properties": {
@@ -1063,6 +1583,58 @@
                 ],
                 "title": "ProductResource"
             },
+            "ProductSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "is_controlled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "is_controlled"
+                ],
+                "title": "ProductSummaryResource"
+            },
+            "StockResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ProductSummaryResource"
+                    },
+                    "lot": {
+                        "$ref": "#/components/schemas/LotSummaryResource"
+                    }
+                },
+                "required": [
+                    "id",
+                    "quantity",
+                    "warehouse",
+                    "product",
+                    "lot"
+                ],
+                "title": "StockResource"
+            },
             "StoreProductRequest": {
                 "type": "object",
                 "description": "Alta de producto (catalog \"Alta de productos\"): solo catalog.manage. Campos ajenos (p. ej. role) se ignoran.",
@@ -1091,6 +1663,36 @@
                     "name"
                 ],
                 "title": "StoreProductRequest"
+            },
+            "StoreStockAdjustmentRequest": {
+                "type": "object",
+                "description": "Ajuste de inventario (inventory \"Ajuste de inventario\"): solo inventory.adjust. `reason` de solo espacios\nllega como null (TrimStrings + ConvertEmptyStringsToNull) y falla `required`. Usuario, tipo, saldo y fecha\nnunca se leen del cuerpo: solo `adjustment()` llega a la acci\u00f3n.",
+                "properties": {
+                    "warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "lot_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": -1000000,
+                        "maximum": 1000000
+                    },
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "warehouse_id",
+                    "lot_id",
+                    "quantity",
+                    "reason"
+                ],
+                "title": "StoreStockAdjustmentRequest"
             },
             "StoreUserRequest": {
                 "type": "object",
