@@ -309,3 +309,23 @@ Bloqueo (fuera del alcance devops): el trabajo frontend de CI falla en `api:type
 (run `37732220017` también): `software/web/src/lib/api-schema.ts` no se regeneró tras el OpenAPI de S2
 (`83d0860`). Arreglo: `npm run api:types` en `software/web` y commit (frontend-implementer).
 Texto de `tasks.md` 6.2 sin `--memory-limit=1G`: la corrida real lo usó; corrección de redacción para el dueño de tasks.
+
+## 2026-10-08 — Orchestrator: estado de cierre
+
+- Tareas: todas `[x]`. `verification.md` presente (`0f53b91`).
+- CI 37732568878: backend verde (293 / 1201, Larastan 0); frontend rojo en `api:types:check` (tipos de la SPA
+  sin regenerar tras el OpenAPI de S2). Ruteado a frontend-implementer antes de la auditoría.
+- Riesgo 3 (dueño de base puede deshabilitar el trigger del kardex): riesgo aceptado, se documenta en el README (S8).
+
+## 2026-10-08 — Orchestrator: auditoría con observación menor
+
+- final-auditor: OBSERVATIONS, sin blockers ni majors; un minor (fecha del kardex con `CURRENT_TIMESTAMP`).
+- Filado D-auv-2 (minor), se salda en S3 como sugiere el auditor (S3 agranda la ventana). Re-auditoría delta
+  solo para emitir veredicto con la deuda filada.
+- D-auv-1 verificado como saldado por el auditor (`1349b07`).
+
+## 2026-10-08 — Orchestrator: GATE 2
+
+- final-auditor (delta): `APPROVED`.
+- GATE 2: APPROVED
+- DEBT: D-auv-1 saldado; D-auv-2 (minor) abierto con arrastre a S3.

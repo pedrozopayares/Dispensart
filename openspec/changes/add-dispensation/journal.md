@@ -112,3 +112,9 @@ dispensador + correo (no global); `ILIKE` depende de la configuración regional 
 - Condición 4 (ADR / RN): ninguna decisión congelada ni regla debilitada.
 - GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier A
 - Fuera de alcance (no deuda; va al README en S8): endpoint para que el auditor lea la bitácora.
+
+## 2026-10-08 — Orchestrator: /apply adelantado
+
+- `openspec validate add-dispensation --strict`: válido. GATE 1 registrado.
+- S2 tiene backend y devops cerrados; espera auditoría. S3 usa `StockLedger` de S2 ya construido. Se adelanta
+  el backend de S3 (paralelismo autorizado por el usuario). El backend de S3 no modifica archivos de S2.

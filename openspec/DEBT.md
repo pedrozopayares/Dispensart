@@ -11,9 +11,10 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-1 | minor | add-catalog-and-identity (final-auditor) | `software/api/tests/Support/SpaClient.php:126` envía `X-XSRF-TOKEN` en todo GET; la prueba "Lectura sin token CSRF" (`CsrfTest.php:57`) no puede fallar. | add-stock-and-kardex: cabecera solo en escrituras + mutación que demuestre el pin |
+| D-auv-2 | minor | add-stock-and-kardex (final-auditor) | `kardex_movements.created_at` usa `CURRENT_TIMESTAMP` (inicio de transacción); con transacciones solapadas el listado de `GET /api/kardex` (`InventoryQuery.php:50`, orden por `created_at`) puede mostrar la historia fuera del orden de `balance_after`. | add-dispensation: migración a `clock_timestamp()` + prueba de transacciones solapadas en orden inverso |
 
 ## Settled
 
 | Id | Settled in | How |
 |---|---|---|
+| D-auv-1 | add-stock-and-kardex (`1349b07`) | `SpaClient` envía `X-XSRF-TOKEN` solo en escrituras; mutación sobre `GET /api/auth/me` hace fallar `CsrfTest.php:57`; verificado por final-auditor. |
