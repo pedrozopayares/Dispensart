@@ -193,3 +193,32 @@ transporte, barridos y reparto de líneas: `verification.md` §§ 0–5.
   agotan y el humo es repetible. La prescripción sembrada se comprueba en la ficha, no se consume.
 - Evidencia y controles negativos (contraseña errónea, clave distinta en la repetición): `verification.md` § 6.
 - Deuda: ninguna nueva. Sin cambios en `app`, `src`, compose ni workflows; el humo no corre en CI (igual que S1/S2).
+
+## 2026-10-08 — spec-engineer: hallazgos de la auditoría final (RN-10)
+
+- [major] `patients` "Búsqueda de pacientes": `auditor` solo coincide por documento completo exacto; escenarios
+  "Auditor con prefijo de documento sin resultados" y "Auditor con fragmento de nombre sin resultados" (con ancla).
+- [minor] "Ficha del paciente con prescripciones": `{id}` de 1 a 18 dígitos; escenario "Identificador fuera de
+  rango" → 404 `not_found` (con ancla).
+- `tasks.md` grupo 7 (7.1–7.4) con `[MUT]` M15; cabecera: declarados 14, total 15. Validación estricta válida;
+  barrido del ancla sin hits sin ancla.
+
+## 2026-10-08 — backend-implementer: grupo 7 (hallazgos de final-auditor)
+
+Tareas 7.1–7.4 `[x]`. Commit `1aea2be`. Filas nuevas PAT-30..32, M15 y comprobación de 7.3 en `verification.md`.
+
+| Hallazgo | Corrección | Evidencia |
+|---|---|---|
+| [major] búsqueda del auditor por prefijo o nombre: oráculo para reconstruir datos enmascarados | `SearchPatients`: sin `viewIdentifiable`, solo `document_number = q` exacto | PatientEndpointTest.php:117 (auditor vacío + control positivo del auxiliar); M15 2/2 FALLA → 2/2 PASA |
+| [minor] id de paciente sin tope: `whereNumber` admitía ids fuera de bigint → 500 | ruta `[0-9]{1,18}` → sin ruta → 404 `not_found` | PatientEndpointTest.php:201; sin el tope 2/5 filas dan 500, con él 5/5 |
+
+- Otros parámetros numéricos: en S3 solo `{patient}`. `{warehouse}` y `{product}` (S1) usan `whereNumber` con enlace
+  implícito y probablemente comparten el defecto (19 dígitos sobre el máximo de bigint → error de PostgreSQL → 500).
+  No son de esta tajada: los señalo como deuda. `{transfer}`/`{discrepancy}` son de S4, que trabaja en paralelo.
+- `openapi.json` no se regeneró: el árbol de trabajo tiene rutas de S4 sin confirmar y la exportación las incluiría.
+  Hay que re-exportar (y regenerar los tipos de la SPA si cambian) en la próxima corrida limpia. Es tarea de
+  frontend/S4.
+- Incidente: al editar `routes/api.php` lo trunqué. Una lectura y escritura en la misma expresión de Python abrió el
+  archivo en modo escritura antes de leerlo, y eso borró los cambios sin confirmar de S4. Restauré la versión
+  confirmada y reapliqué el reemplazo exacto de S4, tomado de su transcripción (+24 líneas, idénticas). Solo mi línea
+  entró al commit, por blob preparado. S4 debe confirmar que su `routes/api.php` está como lo dejó.

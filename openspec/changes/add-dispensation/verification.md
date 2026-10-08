@@ -1,6 +1,6 @@
 # Verification — add-dispensation (S3, tier A)
 
-Fuente: sección backend-implementer de `journal.md`. Árbol medido: `dev` en `237126f`. Prefijos: `PAT` patients,
+Fuente: sección backend-implementer de `journal.md`. Árbol medido: `dev` en `237126f`; grupo 7 en `1aea2be`. Prefijos: `PAT` patients,
 `PRE` prescriptions, `DSP` dispensation, `AUD` audit-trail, `EXT` filas de diseño sin escenario. Rutas de prueba
 relativas a `software/api/tests/Feature/`; de código, a `software/api/`.
 
@@ -22,7 +22,7 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 
 | Capacidad | Escenarios en la spec | Escenarios con prueba |
 |---|---|---|
-| patients | 29 | 29 |
+| patients | 32 | 32 |
 | prescriptions | 19 | 19 |
 | dispensation | 46 | 46 |
 | audit-trail | 16 | 16 |
@@ -33,17 +33,17 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 | PAT-02 | Búsqueda por nombre sin distinguir mayúsculas | encuentra por nombre sin distinguir mayúsculas (`q=SINTÉTICA`) | Patients/PatientEndpointTest.php:41 |
 | PAT-03 | Sin coincidencias | devuelve data vacío sin coincidencias y no registra filas de acceso | Patients/PatientEndpointTest.php:48 |
 | PAT-04 | Búsqueda sin término o demasiado corta | rechaza un término ausente, corto o largo sin listar pacientes ni repetir el valor (dataset 3) | Patients/PatientEndpointTest.php:56 |
-| PAT-05 | Admin sin acceso a pacientes | responde por rol: datos en claro, enmascarados o 403 (dataset 5) | Patients/PatientEndpointTest.php:117 |
-| PAT-06 | Sin sesión (búsqueda) | responde 401 sin sesión | Patients/PatientEndpointTest.php:135 |
-| PAT-07 | Ficha con saldos | devuelve la ficha con prescripciones de la más reciente a la más antigua y sus saldos | Patients/PatientEndpointTest.php:149 |
-| PAT-08 | Paciente sin prescripciones | devuelve prescriptions vacío para un paciente sin prescripciones | Patients/PatientEndpointTest.php:168 |
-| PAT-09 | Paciente inexistente | responde 404 a un paciente inexistente sin fila de acceso (regente, medico) | Patients/PatientEndpointTest.php:175 |
-| PAT-10 | Admin sin acceso a la ficha | responde 403 al admin sin datos del paciente ni fila de acceso, también para un id inexistente | Patients/PatientEndpointTest.php:186 |
-| PAT-11 | Sin sesión (ficha) | responde 401 sin sesión | Patients/PatientEndpointTest.php:195 |
-| PAT-12 | Auditor ve la ficha enmascarada | enmascara la ficha para el auditor con sus prescripciones completas · (unitaria) enmascara documento, nombre, teléfono y fecha | Patients/PatientEndpointTest.php:199; Patients/PatientMaskerTest.php:9 |
-| PAT-13 | Ningún dato en claro en la respuesta del auditor | no deja ningún dato en claro en los cuerpos de búsqueda y ficha del auditor | Patients/PatientEndpointTest.php:212 |
+| PAT-05 | Admin sin acceso a pacientes | responde por rol: datos en claro, enmascarados o 403 (dataset 5) | Patients/PatientEndpointTest.php:132 |
+| PAT-06 | Sin sesión (búsqueda) | responde 401 sin sesión | Patients/PatientEndpointTest.php:150 |
+| PAT-07 | Ficha con saldos | devuelve la ficha con prescripciones de la más reciente a la más antigua y sus saldos | Patients/PatientEndpointTest.php:164 |
+| PAT-08 | Paciente sin prescripciones | devuelve prescriptions vacío para un paciente sin prescripciones | Patients/PatientEndpointTest.php:183 |
+| PAT-09 | Paciente inexistente | responde 404 a un paciente inexistente sin fila de acceso (regente, medico) | Patients/PatientEndpointTest.php:190 |
+| PAT-10 | Admin sin acceso a la ficha | responde 403 al admin sin datos del paciente ni fila de acceso, también para un id inexistente | Patients/PatientEndpointTest.php:215 |
+| PAT-11 | Sin sesión (ficha) | responde 401 sin sesión | Patients/PatientEndpointTest.php:224 |
+| PAT-12 | Auditor ve la ficha enmascarada | enmascara la ficha para el auditor con sus prescripciones completas · (unitaria) enmascara documento, nombre, teléfono y fecha | Patients/PatientEndpointTest.php:228; Patients/PatientMaskerTest.php:9 |
+| PAT-13 | Ningún dato en claro en la respuesta del auditor | no deja ningún dato en claro en los cuerpos de búsqueda y ficha del auditor | Patients/PatientEndpointTest.php:241 |
 | PAT-14 | Auditor busca por documento completo | devuelve al auditor el paciente buscado por documento completo enmascarado | Patients/PatientEndpointTest.php:108 |
-| PAT-15 | Otros roles ven datos completos | muestra al regente los datos en claro · por rol (dataset 5) | Patients/PatientEndpointTest.php:229, :117 |
+| PAT-15 | Otros roles ven datos completos | muestra al regente los datos en claro · por rol (dataset 5) | Patients/PatientEndpointTest.php:258, :132 |
 | PAT-16 | Excepción de base de datos con documento en los valores enlazados | no deja el documento de los valores enlazados en el cuerpo ni en el log de una excepción de base de datos | Patients/PatientLogTest.php:50 |
 | PAT-17 | Lecturas normales sin datos personales en el log | no escribe datos personales en el log en una búsqueda y una ficha normales | Patients/PatientLogTest.php:71 |
 | PAT-18 | Excepción con datos del paciente en el mensaje | no deja en el cuerpo ni en el log una excepción con nombre y documento en su mensaje | Patients/PatientLogTest.php:83 |
@@ -57,6 +57,9 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 | PAT-26 | Paciente sin nombre | rechaza en la base un paciente sin nombre, sin tipo, sin número o con nombre en blanco (dataset 5) | Patients/PatientIntegrityTest.php:39 |
 | PAT-27 | Tres pacientes sembrados | siembra exactamente 3 pacientes con documento del rango 99990 | Patients/PatientSeedTest.php:18 |
 | PAT-28 | Siembra repetida | repite la siembra sin duplicar pacientes ni prescripciones y sin reiniciar saldos | Patients/PatientSeedTest.php:25 |
+| PAT-30 | Auditor con prefijo de documento sin resultados | no devuelve al auditor pacientes por prefijo de documento ni por fragmento de nombre (fila «prefijo de documento», con control positivo del auxiliar) | Patients/PatientEndpointTest.php:117 |
+| PAT-31 | Auditor con fragmento de nombre sin resultados | ídem (fila «fragmento de nombre») | Patients/PatientEndpointTest.php:117 |
+| PAT-32 | Identificador fuera de rango | responde 404 sin 500 a un identificador fuera de rango o no numérico, sin fila de acceso (dataset 5: 19 dígitos de la spec, 19 sobre el máximo de bigint, 25 dígitos, `abc`, 18 dígitos inexistente) | Patients/PatientEndpointTest.php:201 |
 | PAT-29 | Sin datos reales | no contiene en el código de siembra documentos fuera del rango 99990 ni nombres sin la marca de sintético | Patients/PatientSeedTest.php:52 |
 | PRE-01 | Prescripción creada | crea la prescripción vigente a nombre del médico con ítems sin dispensar y su fila en la bitácora | Prescriptions/PrescriptionEndpointTest.php:42 |
 | PRE-02 | Médico enviado por el cliente ignorado | ignora el médico enviado por el cliente | Prescriptions/PrescriptionEndpointTest.php:65 |
@@ -123,12 +126,12 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 | DSP-44 | Demasiados intentos fallidos de autorizador | responde 429 con Retry-After al sexto intento tras 5 fallos, aun con la contraseña correcta | Dispensation/ControlledDrugAuthorizationTest.php:111 |
 | DSP-45 | Producto no controlado con datos de autorizador | ignora credenciales erradas cuando ningún producto es controlado | Dispensation/ControlledDrugAuthorizationTest.php:124 |
 | DSP-46 | Contraseña del autorizador fuera de logs y rechazos | no deja la contraseña del autorizador en respuestas, log, bitácoras ni registros de idempotencia | Dispensation/ControlledDrugAuthorizationTest.php:136 |
-| AUD-01 | Ficha registrada | registra exactamente una fila view con usuario, paciente, ruta, correlation_id y fecha (auxiliar) | Patients/PatientEndpointTest.php:237 |
+| AUD-01 | Ficha registrada | registra exactamente una fila view con usuario, paciente, ruta, correlation_id y fecha (auxiliar) | Patients/PatientEndpointTest.php:266 |
 | AUD-02 | Búsqueda registra cada paciente devuelto | registra una fila search por cada paciente devuelto y ninguna por los demás | Patients/PatientEndpointTest.php:84 |
 | AUD-03 | Búsqueda sin resultados | devuelve data vacío sin coincidencias y no registra filas de acceso | Patients/PatientEndpointTest.php:48 |
-| AUD-04 | Lecturas del auditor también registradas | registra exactamente una fila view… (auditor) | Patients/PatientEndpointTest.php:237 |
-| AUD-05 | Acceso denegado o inexistente sin fila de acceso | 403 al admin sin fila · 404 sin fila (regente, medico) | Patients/PatientEndpointTest.php:186, :175 |
-| AUD-06 | Fallo al registrar el acceso | responde 500 sin datos del paciente si la fila de acceso no puede escribirse | Patients/PatientEndpointTest.php:254 |
+| AUD-04 | Lecturas del auditor también registradas | registra exactamente una fila view… (auditor) | Patients/PatientEndpointTest.php:266 |
+| AUD-05 | Acceso denegado o inexistente sin fila de acceso | 403 al admin sin fila · 404 sin fila (regente, medico) | Patients/PatientEndpointTest.php:215, :190 |
+| AUD-06 | Fallo al registrar el acceso | responde 500 sin datos del paciente si la fila de acceso no puede escribirse | Patients/PatientEndpointTest.php:283 |
 | AUD-07 | Sin datos personales en la fila | no guarda en la fila de acceso el término, el nombre ni el documento | Patients/PatientEndpointTest.php:98 |
 | AUD-08 | Dispensación ordinaria registrada | registra exactamente una fila dispensation.created del dispensador y ninguna de autorización | Dispensation/DispensationEndpointTest.php:222 |
 | AUD-09 | Dispensación de control especial registrada con su autorizador | dispensa con la autorización del regente, guarda authorized_by y registra ambas filas | Dispensation/ControlledDrugAuthorizationTest.php:37 |
@@ -150,7 +153,7 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 ## 2. Ancla de transporte: cláusula → ruta archivo:línea
 
 Barrido: `/usr/bin/grep -rnE '<patrón de CYCLE-TIERS.md>' specs/ | /usr/bin/grep -c .` desde la carpeta del cambio →
-70 hits, todos con `[ancla: …]` en la spec (journal del spec-engineer). Anclas resueltas:
+73 hits; sin `ancla` 0 (control positivo: el total 73 sale del mismo patrón). Todos con `[ancla: …]` en la spec. Anclas resueltas:
 
 | Ancla de la spec | Código archivo:línea |
 |---|---|
@@ -158,6 +161,8 @@ Barrido: `/usr/bin/grep -rnE '<patrón de CYCLE-TIERS.md>' specs/ | /usr/bin/gre
 | middleware CSRF (419) | app/Http/Middleware/ValidateCsrfToken.php:13; app/Exceptions/ApiExceptionRenderer.php:57 |
 | ruta `GET /api/patients` | routes/api.php:56 |
 | ruta `GET /api/patients/{id}` | routes/api.php:57 |
+| búsqueda de pacientes (`SearchPatients`): auditor solo documento exacto | app/Actions/Patients/SearchPatients.php:31–33 |
+| restricción de parámetro de las rutas de pacientes + render de NotFoundHttpException (404) | routes/api.php:57 (`[0-9]{1,18}`); app/Exceptions/ApiExceptionRenderer.php:55 |
 | ruta `POST /api/prescriptions` | routes/api.php:58 |
 | ruta `POST /api/dispensations/preview` | routes/api.php:59 |
 | ruta `POST /api/dispensations` | routes/api.php:63 |
@@ -199,9 +204,11 @@ Barrido: `/usr/bin/grep -rnE '<patrón de CYCLE-TIERS.md>' specs/ | /usr/bin/gre
 | M12 | `JsonLineTap` sin `RedactExceptionProcessor` | 1/1: no deja el documento de los valores enlazados… | 1/1 |
 | M13 | `DispenseMedication`: un bloqueo por ítem en el orden de la petición | 1/1: orden cruzado, 10/10 iteraciones fuera (`40P01` → 500) | 1/1 |
 | M14 | `AssignCorrelationId`: ruta literal | 1/1: registra la ficha por el patrón de la ruta | 1/1 |
+| M15 | `SearchPatients`: prefijo y nombre también para el auditor | 2/2: no devuelve al auditor pacientes por prefijo de documento ni por fragmento de nombre (ambas filas) | 2/2 |
+| 7.3 | ruta de la ficha con `whereNumber` (sin tope de dígitos) | 2/5: 19 dígitos sobre el máximo de bigint y 25 dígitos (500); las otras 3 filas pasan | 5/5 |
 | D-auv-2 | migración `clock_timestamp()` retirada (default `CURRENT_TIMESTAMP`) | 1/1: lista el kardex… en el orden real de sus saldos | 1/1 |
 
-Declarados: 14 (M1–M14); entregados: 15 filas (M2 partido en a/b según su tarea) + D-auv-2.
+Declarados: 15 (M1–M15); entregados: 16 filas (M2 partido en a/b según su tarea) + comprobación de 7.3 + D-auv-2.
 
 ## 4. Barridos (`/usr/bin/grep`, desde `software/api`)
 
@@ -221,6 +228,7 @@ Declarados: 14 (M1–M14); entregados: 15 filas (M2 partido en a/b según su tar
 |---|---|---|---|
 | cierre | `pint --test && phpstan analyse --memory-limit=1G && php artisan test` | `85fc059` | Pint pasa; Larastan 0 errores; Pest **488 pasan / 1972 aserciones** |
 | delta | `php artisan test tests/Feature/Patients/PatientEndpointTest.php` (+ Pint del archivo) | `237126f` | 28 pasan / 167 aserciones (fila `medico` añadida al 404) |
+| delta grupo 7 | `pint --test` y `phpstan analyse` de los 3 archivos tocados; `php artisan test tests/Feature/Patients` | `1aea2be` | Pint pasa; Larastan 0 errores; 53 pasan / 262 aserciones (antes de las 2 filas de desbordamiento); `PatientEndpointTest --filter='fuera de rango'` 5 pasan |
 | OpenAPI | `composer openapi` ×2 + `cmp`; `npm run openapi:lint` | `85fc059` | idéntico entre corridas; Redocly válido |
 
 ## 6. Humo sobre el stack (6.1, devops-implementer)

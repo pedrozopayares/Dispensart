@@ -1,6 +1,6 @@
 # Tasks — add-dispensation (S3)
 
-Tier A. `[MUT]` declarados: 14 (M1–M14). Refinado por el architect con `design.md` (D1–D10).
+Tier A. `[MUT]` declarados: 14 (M1–M14); la auditoría añade M15: total 15. Refinado por el architect con `design.md` (D1–D10).
 "Cimiento" marca andamiaje o registro sin escenario propio: se verifica con el comando que la tarea nombra.
 Orden: 0 → 1 → 2 → 3 → 4 → 5 → 6 (solo `software/api`; sin web ni devops: las pantallas son de S6). Un solo
 implementador (backend): sin bloques paralelos api ∥ web. Dentro de api, 4.2–4.4 (logs) no dependen de 2–3 y
@@ -73,6 +73,13 @@ que el architect fija cómo se limpian esas pruebas (mismo problema que S2).
 - [x] 6.1 Script de humo versionado contra `localhost:${WEB_PORT}`: login del auxiliar semilla → búsqueda de paciente semilla → vista previa → dispensación con clave → repetición con la misma clave (sin movimiento nuevo en `GET /api/kardex`) → dispensación controlada con el regente semilla. Cubre, sobre el stack real, patients "Búsqueda por prefijo de documento"; prescriptions "Prescripciones sembradas"; dispensation "Vista previa en orden FEFO", "Reintento devuelve la respuesta original", "Auxiliar dispensa con autorización del regente". Verifica: `bash software/scripts/smoke-dispensation.sh` (ruta final la fija el architect) termina con código 0 sobre el stack en marcha.
 - [x] 6.2 Corrida completa de cierre: Pint, Larastan, Pest. Verifica: verdes, registradas en `journal.md` dentro del presupuesto de 3 corridas. Cimiento.
 - [x] 6.3 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M14 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro. Verifica: `openspec validate add-dispensation --strict` válido y spec-validator sin hallazgos. Cimiento.
+
+## 7. Correcciones de la auditoría final
+
+- [x] 7.1 `SearchPatients`: para quien no ve datos en claro (`auditor`), coincidencia solo por número de documento completo exacto, sin prefijo ni nombre; prueba HTTP real. Cubre patients "Auditor con prefijo de documento sin resultados", "Auditor con fragmento de nombre sin resultados", "Auditor busca por documento completo". Verifica: prueba Pest verde.
+- [x] 7.2 [MUT] M15: reactivar prefijo y nombre para `auditor` en `SearchPatients` → "Auditor con prefijo de documento sin resultados" y "Auditor con fragmento de nombre sin resultados" FALLAN; restaurar → PASAN. Verifica: fila M15 en `verification.md`.
+- [x] 7.3 Restricción de 1 a 18 dígitos en el parámetro de paciente de las rutas; prueba HTTP real. Cubre patients "Identificador fuera de rango". Verifica: prueba Pest verde (404 `not_found`, sin 500, sin fila de acceso).
+- [x] 7.4 `verification.md`: filas de escenario de 7.1 y 7.3, fila M15 y columna de ancla para los hits nuevos. Verifica: `openspec validate add-dispensation --strict` válido. Cimiento.
 
 ## Workflow follow-up
 
