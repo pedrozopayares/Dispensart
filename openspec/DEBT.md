@@ -11,9 +11,6 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-5 | minor | add-inventory-assistant (final-auditor) | `QuestionPreFilter.php:13` solo bloquea `pacient|prescrip|receta` y 7+ dígitos: «¿Qué le dispensaron a <nombre>?» llega al proveedor con el nombre. Con mock u Ollama local nada sale de la máquina. | add-delivery-pipeline (saldo de deuda): ampliar el patrón (`dispens`, `fórmula`) con prueba que falle sin el cambio; acotar la cláusula absoluta del spec a datos que el sistema lee |
-| D-auv-6 | minor | add-inventory-assistant (final-auditor) | Nombres de herramienta inventados por el modelo en llamadas rechazadas entran sin sanear al log y a `tool_calls` (`ToolCallRecord.php:25`, `AssistantQueryLogger.php:21`). | add-delivery-pipeline (saldo de deuda): restringir a `[A-Za-z0-9_-]` en `ToolCallRecord`, como `ToolResultEnvelope::attribute`, con prueba |
-| D-auv-4 | minor | add-alerts (devops-implementer, 6.1) | El trabajo de staging de CI arranca de base vacía pero solo corre `smoke.sh`; `alerts-smoke.sh` (y los humos de dominio) nunca corren sobre una base recién creada. | add-delivery-pipeline: invocar los humos de dominio desde `smoke.sh` o desde el trabajo de staging |
 
 ## Settled
 
@@ -22,3 +19,6 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 | D-auv-1 | add-stock-and-kardex (`1349b07`) | `SpaClient` envía `X-XSRF-TOKEN` solo en escrituras; mutación sobre `GET /api/auth/me` hace fallar `CsrfTest.php:57`; verificado por final-auditor. |
 | D-auv-2 | add-dispensation (`fabb1c9`) | `created_at` del kardex con `clock_timestamp()`; prueba de transacciones solapadas falla con el valor anterior; verificado por final-auditor. |
 | D-auv-3 | add-transfers (`102c1a4`) | Tope `[0-9]{1,18}` en los ids de `routes/api.php`; pruebas de 404 con id de 19 dígitos en productos y bodegas; verificado por final-auditor. |
+| D-auv-4 | add-delivery-pipeline (`59db1e7`) | `smoke.sh` corre los 6 humos de dominio en staging sobre base nueva; runs 37782508066 y 37785649410; verificado por final-auditor. |
+| D-auv-5 | add-delivery-pipeline (`3c8e709`) | Filtro previo bloquea lo dispensado/prescrito a una persona y «fórmula»; prueba HTTP con la pregunta del auditor falla sin el cambio; residuo aceptado en README (Compromiso 6); verificado por final-auditor. |
+| D-auv-6 | add-delivery-pipeline (`df71b72`) | Nombres de herramienta saneados a `[A-Za-z0-9_-]` (64) en `ToolCallRecord`; pruebas de log y respuesta HTTP fallan sin el cambio; verificado por final-auditor. |

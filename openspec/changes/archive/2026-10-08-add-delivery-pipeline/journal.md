@@ -304,3 +304,21 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 - Deuda (prosa): el paso `existing` trata «acceso denegado» como imagen ausente para no romper la primera
   publicación en un fork; si el token pudiera escribir pero no leer, re-publicaría. No ocurre con `GITHUB_TOKEN` y
   `packages: write`.
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, tier B, re-auditoría delta)
+
+| Punto | Evidencia |
+|---|---|
+| Workflow | solo lectura por defecto, `packages: write` solo en `build`; único secreto `GITHUB_TOKEN`; 4 checkouts con `persist-credentials: false`; entrega solo en push; actionlint 0 |
+| 4.5 | run 37785649410: intento 1 rechazado, intento 2 aprobado; mismos digests en build, staging y producción |
+| D-auv-4 | 6 humos de dominio en staging sobre base nueva (run 37782508066 y run de `main`) |
+| D-auv-5 / D-auv-6 | 5 mutantes del auditor en proyecto aislado: fallan 7, 4, 3, 3 y 2 pruebas; todo desmontado |
+| Hallazgo 2 (`87ec590`) | run 37790178800: intento 1 `CONSTRUYE` ×2; re-ejecución de `build` `REUTILIZA` ×2, 0 publicaciones, mismos digests |
+| Hallazgo 3 (`9420fed`) | 13 `uses:` fijados por SHA de commit; muestras contrastadas con las etiquetas |
+| Documentos | README coincide con el código; 14 citas de AI_USAGE válidas; barrido de secretos limpio (control 1) |
+| `verification.md` | 38/38 escenarios con fila, § 0 presente |
+
+- Hallazgo 1 (cita de AI_USAGE a la ruta viva del journal): corregido por el Orchestrator en el commit de archivo,
+  con la comprobación de rutas de 5.4 repetida.
+- Deuda: D-auv-4, D-auv-5 y D-auv-6 saldadas en este cambio.
+- Fase: archivo.
