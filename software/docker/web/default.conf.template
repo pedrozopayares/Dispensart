@@ -1,0 +1,47 @@
+# SPA en el mismo origen que la API: /api, /sanctum, /health y /ready van a ${API_UPSTREAM}.
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Proxy a la API. Variable + resolver: la IP de api se resuelve en cada petición.
+    location ~ ^/(api|sanctum)(/|$) {
+        set $api_upstream ${API_UPSTREAM};
+        include /etc/nginx/snippets/api-proxy.conf;
+    }
+
+    location ~ ^/(health|ready)$ {
+        set $api_upstream ${API_UPSTREAM};
+        include /etc/nginx/snippets/api-proxy.conf;
+    }
+
+    # Recursos con hash de Vite: caché larga.
+    location /assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Respaldo de la SPA: toda ruta desconocida devuelve index.html (enlaces profundos).
+    location / {
+        try_files $uri /index.html;
+    }
+
+    location = /index.html {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache";
+    }
+}
+
+# Vivacidad del propio Nginx para el healthcheck; puerto interno no publicado y sin log.
+server {
+    listen 8081;
+    root /usr/share/nginx/html;
+    access_log off;
+
+    location = /livez {
+        try_files /index.html =503;
+    }
+}

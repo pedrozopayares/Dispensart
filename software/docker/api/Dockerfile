@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Imagen de la API (design D1). Contexto de construcción: software/.
-# Etapas: base (PHP-FPM + extensiones) -> dev (Composer y herramientas, servicio api-tools).
-# La etapa prod (vendor sin dev + Nginx + supervisord) se agrega en la tarea 4.1.
+# Etapas: base (PHP-FPM + extensiones) -> dev (Composer y herramientas, servicio api-tools)
+#         base -> vendor (dependencias sin desarrollo) -> prod (FPM + Nginx bajo supervisord, no root).
 
 ARG PHP_IMAGE=php:8.5.11-fpm-alpine3.24
 ARG COMPOSER_IMAGE=composer:2.10.3
@@ -50,3 +50,58 @@ ENV COMPOSER_HOME=/home/app/.composer
 USER app
 
 CMD ["php", "-v"]
+
+# --- vendor: dependencias de Composer SIN desarrollo y autoloader optimizado ---
+FROM base AS vendor
+
+RUN apk add --no-cache unzip
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+
+USER app
+ENV COMPOSER_HOME=/home/app/.composer
+
+# Primero solo los manifiestos: la capa de vendor se reutiliza mientras el lockfile no cambie.
+COPY --chown=app:app api/composer.json api/composer.lock ./
+RUN --mount=type=cache,target=/home/app/.composer/cache,uid=1000,gid=1000 \
+    composer install --no-dev --no-scripts --no-autoloader --no-interaction --no-progress --prefer-dist
+
+COPY --chown=app:app api/ ./
+# post-autoload-dump ejecuta package:discover sin paquetes de desarrollo.
+RUN composer dump-autoload --no-dev --optimize --no-interaction
+
+# --- prod: PHP-FPM + Nginx bajo supervisord, todo como usuario app (design D1) ---
+FROM base AS prod
+
+RUN set -eux; \
+    apk add --no-cache nginx supervisor; \
+    # Se reemplaza la configuración de pool de la imagen oficial (user www-data, puerto 9000).
+    rm -f /usr/local/etc/php-fpm.d/*.conf /usr/local/etc/php-fpm.d/*.default; \
+    cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini; \
+    # Socket de FPM y estado persistente (APP_KEY, volumen api_state) con dueño no root.
+    mkdir -p /run/app /var/lib/dispensart; \
+    chown app:app /run/app /var/lib/dispensart; \
+    chmod 0700 /var/lib/dispensart
+
+COPY docker/api/nginx.conf /etc/nginx/nginx.conf
+COPY docker/api/php-fpm.conf /usr/local/etc/php-fpm.d/app.conf
+COPY docker/api/php.ini /usr/local/etc/php/conf.d/zz-app.ini
+COPY docker/api/supervisord.conf /etc/supervisor/supervisord.conf
+COPY --chmod=0755 docker/api/entrypoint.sh /usr/local/bin/entrypoint
+
+# Código propiedad de root (solo lectura para el proceso); escribibles solo storage y bootstrap/cache.
+COPY --from=vendor --chown=root:root /app /app
+RUN set -eux; \
+    mkdir -p storage/app/private storage/app/public storage/framework/cache/data \
+             storage/framework/sessions storage/framework/views storage/logs bootstrap/cache; \
+    chown root:root /app; \
+    chown -R app:app storage bootstrap/cache; \
+    test ! -e .env; \
+    test ! -d vendor/pestphp; \
+    test ! -d vendor/larastan
+
+USER app
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]

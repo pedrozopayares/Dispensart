@@ -1,0 +1,12 @@
+# Contexto software/ para la imagen web: lista blanca. Ni node_modules, ni dist local, ni secretos, ni la API.
+*
+!web
+!docker/web
+**/.env
+**/.env.*
+!**/.env.example
+web/node_modules
+web/dist
+web/dist-ssr
+web/coverage
+web/*.local

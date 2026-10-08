@@ -1,14 +1,19 @@
-# Contexto software/ para la imagen de la API: nunca secretos, dependencias ni la SPA.
+# Contexto software/ para la imagen de la API: lista blanca. Nunca secretos, dependencias ni la SPA.
+*
+!api
+!docker/api
 **/.env
 **/.env.*
 !**/.env.example
-.git
-web
 api/vendor
 api/node_modules
-api/storage/logs
-api/storage/framework/cache/data
-api/storage/framework/sessions
-api/storage/framework/views
-api/bootstrap/cache/*.php
+api/tests
+api/phpunit.xml
+api/phpstan.neon
 api/.phpunit.cache
+api/storage/logs/*
+api/storage/framework/cache/data/*
+api/storage/framework/sessions/*
+api/storage/framework/testing
+api/storage/framework/views/*
+api/bootstrap/cache/*.php

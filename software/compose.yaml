@@ -1,6 +1,16 @@
-# Stack local de Dispensart. Arranque: docker compose -f software/compose.yaml up --build
-# Al host solo se publican WEB_PORT (8090) y DB_PORT (5434, solo loopback).
+# Stack local de Dispensart. Arranque desde cero, sin .env: docker compose -f software/compose.yaml up --build
+# Al host solo se publican WEB_PORT (8090) y DB_PORT (5434, solo loopback). api no publica puertos.
+# Variables opcionales: software/.env.example.
 name: dispensart
+
+x-db-env: &db-env
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  # Puerto interno de la red de compose, no el publicado al host.
+  DB_PORT: 5432
+  DB_DATABASE: ${DB_DATABASE:-dispensart}
+  DB_USERNAME: ${DB_USERNAME:-dispensart}
+  DB_PASSWORD: ${DB_PASSWORD:-dispensart_local_dev_only}
 
 services:
   db:
@@ -24,6 +34,64 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # API: PHP-FPM + Nginx bajo supervisord, no root (design D1). Migra y gestiona APP_KEY al arrancar (D2).
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: prod
+    image: dispensart-api:local
+    environment:
+      <<: *db-env
+      APP_NAME: Dispensart
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      # Vacía: el arranque la genera y la persiste en api_state. Si se define, se usa tal cual.
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: http://localhost:${WEB_PORT:-8090}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_CONNECT_TIMEOUT: 2
+    volumes:
+      - api_state:/var/lib/dispensart
+    # Sin ports: solo alcanzable por la red interna, a través de web.
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Disponibilidad real: Nginx -> FPM -> base + migraciones. wget sale con error ante un 503.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  # SPA compilada servida por Nginx no root; reenvía /api, /sanctum, /health y /ready a api.
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    image: dispensart-web:local
+    ports:
+      - "${WEB_PORT:-8090}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/livez"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
   # Herramientas PHP (Composer, Artisan, Pint, Larastan, Pest) bajo demanda (design D4):
   #   docker compose -f software/compose.yaml run --rm api-tools <comando>
   api-tools:
@@ -36,16 +104,12 @@ services:
     volumes:
       - ./api:/app
     environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: db
-      # Puerto interno de la red de compose, no el publicado al host.
-      DB_PORT: 5432
-      DB_DATABASE: ${DB_DATABASE:-dispensart}
-      DB_USERNAME: ${DB_USERNAME:-dispensart}
-      DB_PASSWORD: ${DB_PASSWORD:-dispensart_local_dev_only}
+      <<: *db-env
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   db_data:
+  # APP_KEY generada en el primer arranque (design D2).
+  api_state:
