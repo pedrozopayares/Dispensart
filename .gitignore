@@ -24,3 +24,6 @@ coverage/
 # misc
 .DS_Store
 *.log
+
+# Respaldos de base (pg_dump): contienen datos, nunca se versionan
+*.dump
