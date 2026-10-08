@@ -3631,9 +3631,7 @@
                             "properties": {
                                 "line_id": {
                                     "type": "integer",
-                                    "enum": [
-                                        ""
-                                    ]
+                                    "description": "Sin traslado enlazado (inferencia del contrato OpenAPI) no hay lista de ids que publicar."
                                 },
                                 "received_quantity": {
                                     "type": "integer",

@@ -34,7 +34,11 @@ final class ReceiveTransferRequest extends FormRequest
         return [
             'lines' => ['required', 'array', 'list', 'size:'.count($quantities)],
             'lines.*' => ['required', 'array'],
-            'lines.*.line_id' => ['bail', 'required', 'integer', 'distinct', Rule::in(array_keys($quantities))],
+            // Sin traslado enlazado (inferencia del contrato OpenAPI) no hay lista de ids que publicar.
+            'lines.*.line_id' => [
+                'bail', 'required', 'integer', 'distinct',
+                ...($this->transferModel() === null ? [] : [Rule::in(array_keys($quantities))]),
+            ],
             'lines.*.received_quantity' => ['bail', 'required', 'integer', 'min:0'],
         ];
     }
