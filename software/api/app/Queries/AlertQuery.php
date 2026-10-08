@@ -27,13 +27,15 @@ final class AlertQuery
     /**
      * Existencias con cantidad > 0 cuyo lote vence en la ventana, ya vencidas incluidas (sin límite inferior),
      * con `days_to_expiry` = vencimiento − hoy. Orden: vencimiento, id de lote, nombre de bodega.
+     * `$days` y `$productId` son opcionales para el asistente (S7, design D6); sus valores por defecto son los de
+     * la ruta de alertas, que no los pasa.
      *
      * @return Collection<int, Stock>
      */
-    public function expiringLots(?int $warehouseId): Collection
+    public function expiringLots(?int $warehouseId, int $days = self::EXPIRY_WINDOW_DAYS, ?int $productId = null): Collection
     {
         $today = BusinessCalendar::today();
-        $horizon = $today->addDays(self::EXPIRY_WINDOW_DAYS);
+        $horizon = $today->addDays($days);
 
         return Stock::query()
             ->select('stocks.*')
@@ -43,6 +45,7 @@ final class AlertQuery
             ->where('stocks.quantity', '>', 0)
             ->where('lots.expires_on', '<=', $horizon->toDateString())
             ->when($warehouseId !== null, fn (Builder $query) => $query->where('stocks.warehouse_id', $warehouseId))
+            ->when($productId !== null, fn (Builder $query) => $query->where('stocks.product_id', $productId))
             ->with(['warehouse', 'product', 'lot'])
             ->orderBy('lots.expires_on')
             ->orderBy('lots.id')

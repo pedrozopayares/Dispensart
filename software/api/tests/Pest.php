@@ -2,6 +2,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -11,6 +12,11 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
+
+// Asistente (S7): ninguna prueba sale a la red; Ollama solo se simula en el borde HTTP con Http::fake (design D15).
+pest()->in('Feature/Assistant')->beforeEach(function (): void {
+    Http::preventStrayRequests();
+});
 
 /**
  * Redirige el canal stderr a un archivo temporal para leer el log real (formateador incluido).
