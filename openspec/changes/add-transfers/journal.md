@@ -92,3 +92,65 @@ en traslados, sin consulta de en tránsito hasta S5/S7.
 - Condición 3 (tier): A, coincide con ROADMAP.
 - Condición 4 (ADR / RN): ninguna decisión congelada ni regla debilitada.
 - GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier A
+
+## 2026-10-08 — Orchestrator: /apply adelantado
+
+- `openspec validate add-transfers --strict`: válido. GATE 1 registrado.
+- S3 tiene backend cerrado (Pest 488, M1–M14) y espera humo + auditoría. S4 usa `StockLedger` (S2,
+  archivado) y `audit_events` de S3 ya construido. Se adelanta el backend de S4 (paralelismo autorizado).
+
+## 2026-10-08 — backend-implementer: grupos 0–5, 6.2, 6.3 y deuda D-auv-3 (`software/api`)
+
+Tareas `[x]`: 0.1, 1.1–1.5, 2.1–2.2, 3.1–3.6, 4.1–4.2, 5.1–5.13, 6.2, 6.3. Pendiente: **6.1** (humo sobre el stack:
+script bajo `software/docker`, devops-implementer). Commits en `dev`: `d89d2dd`, `4ea9b37`, `13a4802`, `2921d6a`,
+`102c1a4` (D-auv-3), `5ddb0ae`, `bc90997`. Sin dependencias nuevas. Trazabilidad (84/84), `[MUT]` M1–M17 + CAP +
+D-auv-3, anclas, barridos, reparto de líneas y corridas: `verification.md` §§ 0–5.
+
+### 0.1 — costuras confirmadas
+
+| Pregunta | Hallazgo | Archivo:línea |
+|---|---|---|
+| `StockLedger::apply(list<StockChange>): list<KardexMovement>` | movimientos en el orden de los cambios; transacción propia o punto de guardado | app/Services/Inventory/StockLedger.php:30 |
+| Firma de `AdjustStock` | `handle(User, array{warehouse_id, lot_id, quantity, reason}): KardexMovement`; ingreso a lote vencido → `LotExpired` | app/Actions/Inventory/AdjustStock.php:27 |
+| `CHECK` de `audit_events` | `audit_events_action_check`, `audit_events_subject_type_check`, `audit_events_action_subject_check`, `audit_events_details_ids_only` | database/migrations/2026_10_09_000007_create_audit_tables.php |
+| Casos de `AuditAction` (antes) | 4: prescription.created, dispensation.created, controlled_drug.authorized, controlled_drug.authorization_failed | app/Enums/AuditAction.php |
+| Payload de `RaceRunner` | `{uri, user_id, body, headers?}` ya genérico (S3); sin arranque escalonado → añadido `staggered()` con `launch` + `awaitWaiting(n)`; `post()` y `postAdjustments()` intactos; `--filter=Race` 12 verdes | tests/Support/RaceRunner.php |
+
+### Decisiones de implementación (sin cambio de spec)
+
+- Bloqueo del traslado en un solo sitio (`Services\Transfers\TransferLocker`): M8 es una mutación de una línea.
+- Segregación compara `created_by` con el actor dentro de la transacción, antes de `target()` (D8).
+- `ReceiveTransfer` llama `assertAllowed` antes del cálculo: un traslado no `EN_TRANSITO` da 409 aunque el cuerpo
+  sea otro; el calculador solo ve recepciones válidas.
+- Las líneas despachadas se enlazan por índice de `apply()` y se confirma el lote (`LogicException` si no coincide).
+- Rutas de traslado con ids de 1 a 18 dígitos (`[0-9]{1,18}`), como `{patient}`: id desbordado → 404, nunca 500.
+- OpenAPI: 403 `segregation_of_duties` solo en aprobar (override por operación); 409 genérico ampliado a
+  `invalid_transfer_transition` y `discrepancy_already_resolved` (cambia la descripción del 409 de ajustes y
+  dispensación). La regla `in` de `line_id` solo existe con traslado enlazado: Scramble publicaba `enum: [""]` y
+  Redocly fallaba (`no-enum-type-mismatch`), corregido en `bc90997`.
+- `lang/es/validation.php` gana `different`, `size.array`, `max.numeric` y atributos de traslados.
+
+### D-auv-3 (deuda del coordinador)
+
+| Ítem | Evidencia |
+|---|---|
+| `PATCH /api/products/{product}` y `PATCH /api/warehouses/{warehouse}` con `[0-9]{1,18}` | routes/api.php:44, :48 (commit `102c1a4`) |
+| Pruebas: id de 19 dígitos → 404 `not_found` | Catalog/ProductEndpointTest.php:158; Catalog/WarehouseEndpointTest.php:156 |
+| Control positivo: antes del arreglo → 500 en ambas (2/2 FALLA); después 49/49 del catálogo | `verification.md` § 3 fila D-auv-3 |
+| Mismo tope en `{transfer}` y `{discrepancy}`; con `whereNumber` 3/4 filas FALLAN (500) | `verification.md` § 3 fila CAP |
+
+### Corridas
+
+| # | Resultado |
+|---|---|
+| cierre (`5ddb0ae`): `pint --test && phpstan analyse --memory-limit=1G && php artisan test` | Pint pasa; Larastan 0 errores; Pest 737 pasan / 2907 aserciones |
+| delta posterior (`bc90997`): recepción + Pint + Larastan; OpenAPI + Redocly | 18 pasan; Redocly válido |
+
+### Deuda y pendientes (en prosa; el Orchestrator asigna ids)
+
+- `openapi.json` cambió (9 rutas de traslados, códigos nuevos): `software/web/src/lib/api-schema.ts` debe
+  regenerarse (`npm run api:types`) o el control de deriva de CI fallará. Tarea del frontend-implementer.
+- 6.1 (humo de traslados sobre el stack) queda para devops-implementer.
+- El mensaje de `lot_expired` («no admite ingreso de unidades», de S2) se lee raro al despachar o crear un traslado
+  con un lote vencido; el código es correcto. Redacción en `lang/es/errors.php`, no cambia comportamiento.
+- La consulta de cantidades en tránsito (D5) no tiene endpoint; S5/S7 la derivan de `transfer_lines` cuando la usen.
