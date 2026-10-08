@@ -11,6 +11,8 @@ context: |
   constraints, row locks). Docker multi-stage images (PHP-FPM + Nginx, non-root). GitHub Actions CI/CD.
   Quality: Pint, Larastan, ESLint. AI assistant: Laravel service behind a provider interface, read-only
   function-calling tools, mock provider by default, no patient data sent to the model.
+  Host ports (author's machine has 80/5173/5432/8000/8080 taken): WEB_PORT=8090 (Nginx: SPA + /api proxy),
+  DB_PORT=5434; API never exposed to the host. Working branch dev; main is user-only.
   Repo layout: .claude/ + CLAUDE.md = harness at root, openspec/ = SDD working files, docs/adr/ = ADRs,
   software/ = all application source code, .github/ = CI at repo root.
   Public repository: no secrets committed, synthetic data only.

@@ -69,7 +69,10 @@ Full table + evidence discipline: `openspec/CYCLE-TIERS.md`. Binding everywhere:
 TABLES, no prose paragraph carries a count, every zero carries a positive control.
 
 ## Autopilot
-On user command ("autopilot next N slices"): chain proposal→apply→archive continuously. GATE 1 still needs user approval unless user pre-approved a listed batch in-conversation. Report ≤200 words per change. Stop on any blocker or budget breach.
+`/autopilot` (`.claude/commands/autopilot.md`) chains proposal→apply→archive over `openspec/ROADMAP.md`,
+whose Estado column is the resumption point. GATE 1 is pre-approved for the S0–S8 batch under the four
+conditions written in `ROADMAP.md` § Preaprobación (user ruling 2026-10-07); any condition failing stops
+the run. GATE 2 is never pre-approved. Report ≤200 words per change. Stop on any blocker or budget breach.
 
 ## Git law
 Agents commit/push `dev` or `feat/<change-id>` only. `main` = user-only. No force-push.
