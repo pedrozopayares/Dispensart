@@ -9,6 +9,8 @@ use App\Http\Controllers\Catalog\WarehouseController;
 use App\Http\Controllers\Inventory\KardexController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockController;
+use App\Http\Controllers\Patients\PatientController;
+use App\Http\Controllers\Prescriptions\PrescriptionController;
 use App\Http\Controllers\Users\UserController;
 use App\Models\Product;
 use App\Models\User;
@@ -44,4 +46,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/stock', StockController::class)->name('stock.index');
     Route::get('/kardex', KardexController::class)->name('kardex.index');
     Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
+
+    // Pacientes y prescripciones (S3). La ficha no usa enlace implícito: la Policy corre antes
+    // de buscar el paciente (403 antes que 404, design D4).
+    Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
+    Route::get('/patients/{patient}', [PatientController::class, 'show'])->whereNumber('patient')->name('patients.show');
+    Route::post('/prescriptions', PrescriptionController::class)->name('prescriptions.store');
 });
