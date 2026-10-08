@@ -12,7 +12,7 @@ use Tests\TestCase;
  *
  * - Envía el Origin de la SPA: la petición pasa por la pila con estado de Sanctum (sesión + CSRF real).
  * - Guarda las cookies de cada respuesta tal como llegan (cifradas) y las reenvía sin tocarlas.
- * - Pone X-XSRF-TOKEN desde la cookie XSRF-TOKEN, como hace la SPA.
+ * - Pone X-XSRF-TOKEN desde la cookie XSRF-TOKEN solo en escrituras (POST/PUT/PATCH/DELETE), como la SPA.
  * - Antes de cada petición olvida guardias, sesión en memoria y cookies en cola, igual que un proceso
  *   FPM nuevo: el usuario y su rol salen de la base en cada petición, nunca de memoria de la anterior.
  * - Sesión en la base (driver database), como en el stack; nunca el driver array, que comparte estado.
@@ -123,7 +123,9 @@ final class SpaClient
         if ($this->origin !== null) {
             $server['HTTP_ORIGIN'] = $this->origin;
         }
-        if ($withXsrf && isset($this->cookies['XSRF-TOKEN'])) {
+        // Como la SPA: el token solo viaja en escrituras; una lectura nunca lo lleva.
+        $isWrite = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+        if ($isWrite && $withXsrf && isset($this->cookies['XSRF-TOKEN'])) {
             $server['HTTP_X_XSRF_TOKEN'] = $this->cookies['XSRF-TOKEN'];
         }
         foreach ($headers as $name => $value) {
