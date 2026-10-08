@@ -16,6 +16,7 @@ use RuntimeException;
  * Barrera determinista: antes de lanzar, una conexión aparte toma LOCK TABLE kardex_movements IN SHARE MODE.
  * Ningún worker puede insertar su movimiento hasta que todos estén esperando un bloqueo (visible en
  * pg_stat_activity); recién entonces se suelta. Así las transacciones se solapan siempre, no "a veces".
+ * Arranque simultáneo (post) o escalonado (staggered, S4 D13), con la ruta por petición.
  */
 final class RaceRunner
 {
@@ -49,6 +50,28 @@ final class RaceRunner
      */
     public static function post(string $uri, array $requests, ?Closure $barrier = null): array
     {
+        return self::run(array_map(fn (array $request): array => ['uri' => $uri, ...$request], $requests), false, $barrier);
+    }
+
+    /**
+     * Arranque escalonado (design D13 de S4): lanza cada petición, con su propia ruta, solo cuando la anterior
+     * ya espera en la barrera. Así el orden de llegada a las filas disputadas es el de la lista, siempre.
+     *
+     * @param  list<array{uri: string, user_id: int, body: array<string, mixed>, headers?: array<string, string>}>  $requests
+     * @return list<array{status: int, code: string|null, body: array<string, mixed>|null}>
+     */
+    public static function staggered(array $requests): array
+    {
+        return self::run($requests, true);
+    }
+
+    /**
+     * @param  list<array{uri: string, user_id: int, body: array<string, mixed>, headers?: array<string, string>}>  $requests
+     * @param  (Closure(Connection): void)|null  $barrier
+     * @return list<array{status: int, code: string|null, body: array<string, mixed>|null}>
+     */
+    private static function run(array $requests, bool $staggered, ?Closure $barrier = null): array
+    {
         $connection = self::barrierConnection();
         $connection->beginTransaction();
         if ($barrier === null) {
@@ -60,9 +83,12 @@ final class RaceRunner
         $processes = [];
         try {
             foreach ($requests as $request) {
-                $processes[] = self::startWorker(['uri' => $uri, ...$request]);
+                $processes[] = self::launch($request);
+                if ($staggered) {
+                    self::awaitWaiting(count($processes), $processes);
+                }
             }
-            self::waitUntilAllBlocked($processes);
+            self::awaitWaiting(count($processes), $processes);
         } finally {
             $connection->rollBack();
             DB::purge(self::BARRIER_CONNECTION);
@@ -82,7 +108,7 @@ final class RaceRunner
     /**
      * @param  array{uri: string, user_id: int, body: array<string, mixed>, headers?: array<string, string>}  $request
      */
-    private static function startWorker(array $request): InvokedProcess
+    private static function launch(array $request): InvokedProcess
     {
         return Process::path(base_path())
             ->env([
@@ -95,9 +121,11 @@ final class RaceRunner
     }
 
     /**
+     * Espera hasta que exactamente `$count` workers estén detenidos en un bloqueo (pg_stat_activity).
+     *
      * @param  list<InvokedProcess>  $processes
      */
-    private static function waitUntilAllBlocked(array $processes): void
+    private static function awaitWaiting(int $count, array $processes): void
     {
         $deadline = microtime(true) + self::BARRIER_TIMEOUT_SECONDS;
 
@@ -107,7 +135,7 @@ final class RaceRunner
                  WHERE datname = current_database() AND application_name = ? AND wait_event_type = 'Lock'",
                 [self::APPLICATION_NAME],
             );
-            if ($blocked === count($processes)) {
+            if ($blocked === $count) {
                 return;
             }
 
