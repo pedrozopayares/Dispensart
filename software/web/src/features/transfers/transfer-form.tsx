@@ -60,6 +60,8 @@ export function TransferForm({ onCancel }: { onCancel: () => void }) {
   const addLine = () => {
     const key = nextKey.current++
     setDraft((current) => ({ ...current, lines: [...current.lines, { key, quantity: '' }] }))
+    // Con una línea ya no aplica "Agrega al menos un lote": se retira sin esperar al siguiente envío.
+    setErrors((current) => (current === null ? null : { ...current, lines: undefined }))
   }
 
   const submit = () => {

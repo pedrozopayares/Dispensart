@@ -160,6 +160,23 @@ describe('Traslados › creación', () => {
     expect(api.requestsTo('POST', '/api/transfers')).toHaveLength(0)
   })
 
+  // Hallazgo del recorrido 7.1: el mensaje seguía visible tras "Agregar lote" hasta el siguiente envío.
+  it('Sin líneas: "Agrega al menos un lote." desaparece al agregar una línea, sin otro envío', async () => {
+    const { api } = await openForm()
+    select(f.origin, '1')
+    fireEvent.click(createButton())
+    expect(await screen.findByText(f.noLines)).toBeInTheDocument()
+    expect(screen.getByLabelText(f.destination)).toHaveAttribute('aria-invalid', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: f.addLine }))
+
+    expect(screen.getByLabelText(f.lot.replace('{n}', '1'))).toBeInTheDocument()
+    expect(screen.queryByText(f.noLines)).not.toBeInTheDocument()
+    // Solo se retira el error de "sin líneas": el del destino sigue hasta corregirlo y reenviar.
+    expect(screen.getByLabelText(f.destination)).toHaveAttribute('aria-invalid', 'true')
+    expect(api.requestsTo('POST', '/api/transfers')).toHaveLength(0)
+  })
+
   it.each(['', '0', '1.5'])('Cantidad inválida (%j): mensaje junto a la cantidad y ninguna petición', async (quantity) => {
     const { api } = await openForm()
     await fillValidDraft(quantity)
