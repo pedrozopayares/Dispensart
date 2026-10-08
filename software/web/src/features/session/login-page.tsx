@@ -13,7 +13,8 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { useLogin, useSession } from '@/features/session/session'
-import { ApiError, errorMessage } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { describeError } from '@/lib/api-errors'
 import { strings } from '@/lib/strings'
 
 type FieldErrors = { email?: string; password?: string }
@@ -88,7 +89,7 @@ export function LoginPage() {
               )}
               {loginMutation.isError && (
                 <Alert variant="destructive">
-                  <AlertDescription>{errorMessage(loginMutation.error)}</AlertDescription>
+                  <AlertDescription>{describeError(loginMutation.error)}</AlertDescription>
                 </Alert>
               )}
               <Field data-invalid={fieldErrors.email ? true : undefined}>

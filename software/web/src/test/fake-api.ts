@@ -70,7 +70,9 @@ export function installFakeApi(routes: Record<string, Handler | Handler[]>) {
   )
 
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
-    const path = typeof input === 'string' ? input : input.toString()
+    // El cliente envía URL absolutas (design D2 de S6); las rutas de la prueba se comparan sin origen.
+    const url = new URL(typeof input === 'string' ? input : input.toString(), 'http://localhost')
+    const path = url.pathname + url.search
     const method = (init.method ?? 'GET').toUpperCase()
     const call: RecordedCall = {
       method,

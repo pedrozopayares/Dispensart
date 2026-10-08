@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useLogout } from '@/features/session/session'
-import { ApiError, errorMessage, type AuthenticatedUser } from '@/lib/api'
+import { ApiError, type AuthenticatedUser } from '@/lib/api'
+import { describeError } from '@/lib/api-errors'
 import { roleLabel, strings } from '@/lib/strings'
 
 // Encabezado del shell: producto, usuario, etiqueta de rol en español y cierre de sesión.
@@ -43,7 +44,7 @@ export function ShellHeader({ user }: { user: AuthenticatedUser }) {
         <Alert variant="destructive">
           <AlertDescription>
             {logout.error instanceof ApiError && logout.error.code === 'csrf_token_mismatch'
-              ? errorMessage(logout.error)
+              ? describeError(logout.error)
               : strings.shell.logoutFailed}
           </AlertDescription>
         </Alert>

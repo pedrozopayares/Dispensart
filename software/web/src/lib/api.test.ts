@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ApiError, apiRequest, errorMessage, getCurrentUser, login } from '@/lib/api'
+import { ApiError, apiRequest, getCurrentUser, login } from '@/lib/api'
+import { describeError as errorMessage } from '@/lib/api-errors'
 import { strings } from '@/lib/strings'
 import {
   apiError,
