@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { strings } from '@/lib/strings'
 import {
   clearPatient,
@@ -12,6 +12,7 @@ import {
   record,
   searchInput,
 } from '@/test/dispensation-fixtures'
+import { spyOnConsole } from '@/test/console-spy'
 import { deferred, json, networkError } from '@/test/http'
 import { renderAs } from '@/test/render'
 
@@ -69,9 +70,7 @@ describe('Dispensación › búsqueda de paciente', () => {
   })
 
   it('Fallo de la búsqueda: mensaje de red, "Reintentar" repite el término y la consola no recibe nada', async () => {
-    const consoleSpies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
-      vi.spyOn(console, method).mockImplementation(() => {}),
-    )
+    const consoleSpies = spyOnConsole()
     const { api } = renderAs('auxiliar_farmacia', '/dispensations', {
       ...dispensationRoutes(record([])),
       'GET /api/patients': [networkError, () => json(200, { data: [{ ...clearPatient }] })],

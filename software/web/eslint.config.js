@@ -21,8 +21,8 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Sin datos personales en la consola (RN-10): solo warn/error, y revisados en revisión.
-      'no-console': ['error', { allow: ['warn', 'error'] }],
+      // Sin datos personales en la consola (RN-10): ningún método, ni siquiera warn/error.
+      'no-console': 'error',
     },
   },
   {
