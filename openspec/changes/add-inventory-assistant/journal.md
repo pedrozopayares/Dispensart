@@ -104,3 +104,19 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - `openspec validate add-inventory-assistant --strict`: válido.
 - Ancla de transporte: 34 hits, 0 sin ancla; escenario editado 0 hits (no afirma HTTP ni forma de error). Control positivo: línea `HTTP 422 … validation_failed` sin ancla → 1 hit, 0 anclas (el barrido la detectaría).
 - Supuestos: 0. Preguntas abiertas: ninguna. Queda para el Orchestrator cerrar la fila de § 6 de `verification.md` (registro, no código).
+
+## 2026-10-08 — devops-implementer: 7.1, 7.2, 9.1
+
+- Commits: `258258b` (variables del asistente en compose y plantillas), `b400e99` (paso de CI), `98214d5` (humo).
+- 7.1: `AI_PROVIDER` (`mock`), `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_TIMEOUT` y `extra_hosts` `host.docker.internal:host-gateway` en `api` y `api-tools`; documentadas en `software/.env.example` y `software/api/.env.example`, sin secretos. `config --quiet` código 0; bucle de variables sin salida (control `FALSA_X` impreso). El bucle marcaba `POSTGRES_*` por el `$${…}` del healthcheck de db: pasado a `$$VAR`, misma semántica. Ese cambio recreó el contenedor db de desarrollo al correr `api-tools` (volumen intacto).
+- 7.2: paso «Evaluación del asistente» tras Pest, `AI_PROVIDER: mock`, `LOG_LEVEL: warning` (oculta las 23 líneas `assistant.query` por stderr; sin cambio de código). CI `37781226508` sobre `98214d5`: éxito, log `Aciertos: 23/23`, 0 líneas `assistant.query`. `secrets.`: 3 hits previos, 0 nuevos. actionlint 1.7.7 código 0.
+- 9.1: `up -d --build --wait --no-deps api` código 0 (solo api, por instrucción); `/health` y `/ready` 200; api uid 1000, web uid 101. `assistant:eval` en `api-tools`: `Aciertos: 23/23`, código 0. Humo `software/docker/smoke/assistant-smoke.sh`: 12 comprobaciones, 0 fallas. Control con dos expectativas invertidas: 2 fallas, código 1. Contraseña nunca impresa (0 hits; control 1).
+- Respuestas del humo por `/api/assistant/ask`:
+  - anónimo → 401.
+  - regente, parte C (60 días, acetaminofén, farmacia central) → 200 `answered`, `find_expiring_lots` ok, lotes solo de Farmacia Central.
+  - regente, traslados en tránsito → 200 `no_results` (0 en tránsito en los datos de desarrollo), `get_transfer_status` ok.
+  - regente, estado del traslado 26 → 200 `answered`, `get_transfer_status` ok.
+  - regente, paciente Ana Sintética Pérez → 200 `out_of_scope`, sin herramientas.
+  - médico, lotes a 30 días → 200 `not_permitted`, `find_expiring_lots` denied, respuesta fija.
+- Ollama no ejercitado (no corre en el anfitrión; sin descarga de modelos).
+- Deuda (prosa, sin id): el humo del asistente no corre en el staging del CI (solo `smoke.sh`); tampoco lo hacen los humos de S1–S5. Agregarlos al staging exigiría usuarios sembrados en esa etapa.

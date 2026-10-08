@@ -4,7 +4,7 @@ Fuente: sección backend-implementer de `journal.md`. Árbol medido: `dev` en `b
 `AST` (capacidad `inventory-assistant`) y `EVL` (`assistant-evaluation`). Rutas de prueba relativas a
 `software/api/tests/Feature/Assistant/` salvo indicación; de código, a `software/api/`. Datos de los escenarios:
 `database/seeders/AssistantEvalSeeder.php` (tabla en su docblock), sembrados por `tests/Helpers/Assistant.php`.
-Pendiente de devops-implementer: 7.1, 7.2 y 9.1 (filas `EVL-10`–`EVL-12` sin prueba aún).
+DevOps (7.1, 7.2, 9.1) en `258258b`, `b400e99`, `98214d5`; CI de `98214d5`: corrida `37781226508` (§ 7).
 
 ## 0. Reparto de líneas
 
@@ -25,10 +25,10 @@ tocan `software/web` y `openspec/changes/add-operator-screens`, fuera de estos a
 
 ## 1. Matriz escenario → prueba → archivo:línea
 
-| Capacidad | Escenarios en la spec (`/usr/bin/grep -c '^#### Scenario:'`) | Con prueba | Pendientes (devops 7.2) |
+| Capacidad | Escenarios en la spec (`/usr/bin/grep -c '^#### Scenario:'`) | Con prueba | Pendientes |
 |---|---|---|---|
 | inventory-assistant | 50 | 50 | 0 |
-| assistant-evaluation | 12 | 9 | 3 |
+| assistant-evaluation | 12 | 12 | 0 |
 
 | Casos de prueba del asistente (`pest --list-tests tests/Feature/Assistant tests/Arch/AssistantArchTest.php`) | 191 |
 |---|---|
@@ -97,9 +97,9 @@ de prueba que simula un modelo comprometido (design D15).
 | EVL-07 | Sin cambios persistentes | comando sobre la siembra completa; base efímera borrada | AssistantEvalCommandTest.php:118 |
 | EVL-08 | Datos operativos alterados | ajuste + traslado operativos previos | AssistantEvalCommandTest.php:130 |
 | EVL-09 | Base de evaluación no creable | dataset `usuario sin acceso para crearla`, `nombre igual al de la base operativa` | AssistantEvalCommandTest.php:150 |
-| EVL-10 | Asistente correcto | pendiente 7.2 (devops) | — |
-| EVL-11 | Regresión del asistente | pendiente 7.2 (devops); en local, M9 deja el CLI en 17/23, código 1 | — |
-| EVL-12 | Sin secretos ni llaves | pendiente 7.2 (devops) | — |
+| EVL-10 | Asistente correcto | CI `37781226508` (`98214d5`), paso «Evaluación del asistente» en éxito, log `Aciertos: 23/23` | .github/workflows/ci.yml:106 |
+| EVL-11 | Regresión del asistente | M9 en local: CLI `Aciertos: 17/23`, código 1 (§ 3); el paso es un `run:` sin `continue-on-error`, código ≠ 0 falla el trabajo y el workflow | .github/workflows/ci.yml:110 |
+| EVL-12 | Sin secretos ni llaves | barrido D2 (§ 7): 0 `secrets.` en el paso, `AI_PROVIDER: mock` fijo | .github/workflows/ci.yml:108 |
 
 | Prueba de apoyo (no es escenario) | Archivo:línea |
 |---|---|
@@ -209,3 +209,49 @@ Parches en `mutants/Mn.patch` (`git apply` desde la raíz). Cada uno: aplicado �
 | design D1 nombra `App\Http\Controllers\AssistantController` | `App\Http\Controllers\Assistant\AssistantController`, como el resto de controladores del repo |
 | design D2 `ChatRequest{system, messages, tools}` | gana `timeoutSeconds` (tiempo restante del plazo de D7) |
 | `AskAssistantRequest` sin `authorize()` | toda sesión pregunta (supuesto 2); un `authorize()` hacía que Scramble documentara un 403 que la ruta no devuelve |
+
+## 7. DevOps (7.1, 7.2, 9.1)
+
+| Categoría | Alcance | Líneas (`git diff --numstat 29f88f6 98214d5`) |
+|---|---|---|
+| Infra | `software/compose.yaml` | +16 −1 |
+| Plantillas | `software/.env.example`, `software/api/.env.example` | +14 |
+| CI | `.github/workflows/ci.yml` | +10 |
+| Prueba — humo | `software/docker/smoke/assistant-smoke.sh` | +137 |
+
+| n | Comprobación | Resultado | Control positivo |
+|---|---|---|---|
+| D1 | 7.1: `docker compose -f software/compose.yaml config --quiet` | código 0 | — |
+| D1b | 7.1: bucle `${VAR}` de compose contra `^VAR=` de `software/.env.example` | sin salida | copia con `${FALSA_X}` imprime `falta FALSA_X` |
+| D2 | 7.2: `/usr/bin/grep -n 'secrets\.' .github/workflows/ci.yml` | 3 hits (`GITHUB_TOKEN` en build, staging, production), los mismos 3 que en `29f88f6`; 0 nuevos, 0 en el paso de evaluación | archivo temporal con `secrets.X` = 1 hit |
+| D3 | `actionlint` 1.7.7 (contenedor `rhysd/actionlint:1.7.7`) sobre `ci.yml` | código 0 | copia con `timeout-minutes: quince` → error `syntax-check` |
+| D4 | Líneas `assistant.query` en la salida de `assistant:eval` con `LOG_LEVEL=warning` (env del paso) | 0 en local; 0 en el log del trabajo backend de `37781226508` | mismo comando sin el override: 23 por stderr |
+| D5 | `shellcheck` 0.10.0 sobre `assistant-smoke.sh` | código 0 | — |
+| D6 | Contraseña en la salida del humo (`/usr/bin/grep -c 'dispensart-dev-only'` sobre corrida real + control) | 0 | archivo temporal con el literal = 1 |
+| D7 | `id -u` en el stack tras recrear `api` | api 1000, web 101 (db 0: imagen oficial de postgres, sin cambio) | — |
+
+| Corrida | Árbol | Comando | Resultado |
+|---|---|---|---|
+| Recrear api (9.1, solo api) | `98214d5` | `docker compose -f software/compose.yaml up -d --build --wait --no-deps api` | código 0; `GET /health` 200, `GET /ready` 200; `AI_PROVIDER=mock` en el contenedor; `host.docker.internal` resuelve |
+| `assistant:eval` en `api-tools` (9.1) | `98214d5` | `docker compose -f software/compose.yaml --profile tools run --rm api-tools php artisan assistant:eval` | `Aciertos: 23/23`, código 0 |
+| Humo del asistente (9.1) | `98214d5` | `software/docker/smoke/assistant-smoke.sh` | 12 comprobaciones, 0 fallas, código 0 |
+| Control del humo | `98214d5` | copia con médico esperando `answered` y lotes de la parte C esperados en Urgencias | 12 comprobaciones, 2 fallas (las 2 invertidas), código 1 |
+| CI | `98214d5` | push a `dev`, corrida `37781226508` | éxito: backend (paso de evaluación en éxito, `Aciertos: 23/23`), frontend, build, staging; production omitido (solo `main`) |
+
+| Rol | Pregunta (humo, `/api/assistant/ask`) | HTTP | outcome | Herramientas (estado, argumentos) |
+|---|---|---|---|---|
+| anónimo | ¿Qué lotes están por vencer? | 401 | — | — |
+| regente | ¿Qué lotes de acetaminofén vencen en los próximos 60 días en la farmacia central? | 200 | answered | find_expiring_lots ok `{"days":60,"product":"Acetaminofén 500 mg","warehouse":"Farmacia Central"}` |
+| regente | ¿Cuántos traslados hay en tránsito? | 200 | no_results | get_transfer_status ok `{"status":"EN_TRANSITO"}` |
+| regente | ¿En qué estado está el traslado 26? | 200 | answered | get_transfer_status ok `{"transfer_id":26}` |
+| regente | ¿Qué medicamentos le dispensaron a la paciente Ana Sintética Pérez? | 200 | out_of_scope | ninguna |
+| medico | ¿Qué lotes vencen en los próximos 30 días? | 200 | not_permitted | find_expiring_lots denied `{"days":30}` |
+
+| Tema | Decisión |
+|---|---|
+| El bucle de 7.1 marcaba `POSTGRES_DB`/`POSTGRES_USER`: `$${…}` del healthcheck de db (variable del shell del contenedor, no de compose) | healthcheck en forma `$$VAR` sin llaves, misma semántica (`pg_isready` probado en el contenedor); el bucle se lee literal |
+| Ese cambio recreó el contenedor `db` del stack de desarrollo: `compose run api-tools` reconcilia sus dependencias | volumen `db_data` intacto (login y datos sembrados respondieron en el humo); db healthy con el healthcheck nuevo |
+| 9.1 pide `up --build --wait` del stack completo | instrucción del Orchestrator: recrear solo `api` (`--no-deps`); web sin cambios de imagen en este cambio |
+| `extra_hosts` también en `api-tools` | el segundo comando de `software/docs/asistente.md` (`-e AI_PROVIDER=ollama`) necesita `host.docker.internal` en Linux |
+| Ollama | no ejercitado: no corre en el anfitrión; sin descarga de modelos. Solo ruta `mock` |
+| Escenario «Pregunta de ejemplo de la parte C» en el stack | los datos de desarrollo no son los del escenario; el humo fija herramienta, `days` 60, producto y bodega resueltos y que todo lote listado sea de Farmacia Central. El escenario exacto lo cubre la evaluación (`expiring-central-60`, 23/23) |
