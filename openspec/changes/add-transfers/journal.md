@@ -154,3 +154,24 @@ D-auv-3, anclas, barridos, reparto de líneas y corridas: `verification.md` §§
 - El mensaje de `lot_expired` («no admite ingreso de unidades», de S2) se lee raro al despachar o crear un traslado
   con un lote vencido; el código es correcto. Redacción en `lang/es/errors.php`, no cambia comportamiento.
 - La consulta de cantidades en tránsito (D5) no tiene endpoint; S5/S7 la derivan de `transfer_lines` cuando la usen.
+
+## 2026-10-08 — devops-implementer: 6.1 humo de traslados sobre el stack
+
+- Stack: `docker compose -f software/compose.yaml up -d --build --wait api` (solo `api`, sin `down -v`): api, db, web
+  sanos; `/health` 200, `/ready` 200; `api` corre como uid 1000.
+- Script nuevo `software/docker/smoke/transfer-smoke.sh` (bash + curl + jq, patrón de los humos S2/S3). Respuestas:
+  crear 201 `BORRADOR`, solicitar 200, aprobar (regente) 200, autoaprobación del regente 403 `segregation_of_duties`,
+  anular 200, despachar 200 (origen −2, `salida_traslado` −2), recibir parcial 200 `RECIBIDO_PARCIAL` (discrepancia
+  `pending` de 1, `entrada_traslado` +1), despachar de nuevo 409 `invalid_transfer_transition`, resolver 200 (`ajuste`
+  +1 en origen), resolver de nuevo 409 `discrepancy_already_resolved`, detalle 200.
+- Corridas 1–3: 28 comprobaciones, 0 fallas cada una. Puede fallar: contraseña errónea (1 falla), recepción completa
+  (7 fallas), aprobación por el solicitante (15 fallas); todas salen con código 1. Tablas en `verification.md` § 6.
+- Incidente corregido: la primera versión tomaba la existencia más grande y enviaba a cualquier otra bodega; creó la
+  fila BH/L-ACE-2403, que pasó a ser la primera de `GET /api/stock` y rompió `stock-smoke.sh` (esa fila no tiene
+  `entrada` semilla). Ahora el humo elige un lote vigente ya presente en dos bodegas (no crea filas). Base de
+  desarrollo limpiada por la API: ajuste −3 en BH/L-ACE-2403 y anulación de los traslados 9 y 19 que los controles
+  dejaron en `SOLICITADO`. Tras eso, `auth`, `stock` y `dispensation` humo: 0 fallas.
+
+Deuda (prosa): `stock-smoke.sh` depende del orden de `GET /api/stock` (ajusta la primera fila y exige que su kardex
+tenga una `entrada` semilla); cualquier flujo que cree una fila de existencia nueva que ordene primero lo rompe.
+Debería elegir una fila con `entrada` semilla en lugar de la primera.

@@ -13,6 +13,7 @@ Líneas añadidas por S4 + D-auv-3. Comando: `git diff --numstat d89d2dd^ 5ddb0a
 | Producto — API | `software/api/{app,database,routes,bootstrap,lang}` | 2139 |
 | Producto — SPA | `software/web` | 0 |
 | Producto — infraestructura | `software/compose.yaml`, `software/docker`, `.github` | 0 |
+| Humo — stack (6.1, devops) | `software/docker/smoke/transfer-smoke.sh` (`wc -l`) | 212 |
 | Prueba — API | `software/api/tests` (13 de ellas en `Catalog`, D-auv-3) | 1993 |
 | Generado | `software/api/openapi.json` | 2058 |
 | Registro | `openspec/changes/add-transfers/**/*.md` antes de este archivo (`wc -l`) | 932 |
@@ -193,3 +194,33 @@ Declarados: 17 (M1–M17); entregados: 17 + CAP + D-auv-3.
 | cierre | `pint --test && phpstan analyse --memory-limit=1G && php artisan test` | `5ddb0ae` | Pint pasa; Larastan 0 errores; Pest **737 pasan / 2907 aserciones** |
 | delta posterior | `php artisan test tests/Feature/Transfers/TransferReceiveEndpointTest.php` + Pint + Larastan (regla `in` de `line_id` solo con traslado enlazado) | `bc90997` | 18 pasan / 90 aserciones; Pint pasa; Larastan 0 errores |
 | OpenAPI | `composer openapi`; `npm run openapi:lint` | `bc90997` | 9 rutas de traslados con 401/403/404/409/419/422; Redocly válido (antes: 1 error `no-enum-type-mismatch` en `ReceiveTransferRequest`, corregido) |
+
+## 6. Humo sobre el stack (6.1, devops-implementer)
+
+Stack: `docker compose -f software/compose.yaml up -d --build --wait api` (solo `api`, sin `down -v`; migraciones y
+siembra en el arranque). Script: `software/docker/smoke/transfer-smoke.sh` contra `http://localhost:8090`. Lote
+elegido por el script: vigente con existencia en dos bodegas (semilla L-ACE-2402, FC → FU); no crea filas de existencia.
+
+| Escenario | Comprobación sobre el stack | Archivo:línea |
+|---|---|---|
+| TRF-18 Recorrido completo (hasta recepción parcial) | auxiliar crea 201 `BORRADOR` → solicita 200 `SOLICITADO` → regente aprueba 200 `APROBADO` (aprobador ≠ solicitante) → auxiliar despacha 200 `EN_TRANSITO` | software/docker/smoke/transfer-smoke.sh:146, :150, :154, :171 |
+| TRF-31 Solicitante regente intenta aprobar | regente crea y solicita otro traslado; su aprobación → 403 `segregation_of_duties`; sigue `SOLICITADO` sin aprobador; se anula 200 | software/docker/smoke/transfer-smoke.sh:162, :164, :166 |
+| TRF-45 Recepción parcial | 2 enviadas, 1 recibida → 200 `RECIBIDO_PARCIAL`, una discrepancia `pending` de faltante 1; existencia destino +1 | software/docker/smoke/transfer-smoke.sh:177, :181, :184 |
+| TRF-77 Trazabilidad en el kardex | origen: exactamente un movimiento nuevo `salida_traslado` −2 y existencia −2; destino: uno `entrada_traslado` +1 | software/docker/smoke/transfer-smoke.sh:173, :174, :185 |
+| TRF-19 Matriz de transiciones prohibidas (una celda) | despachar un `RECIBIDO_PARCIAL` → 409 `invalid_transfer_transition`; existencia de origen sin cambio | software/docker/smoke/transfer-smoke.sh:188, :190 |
+| Resolución de discrepancia | regente `returned_to_origin` → 200 `resolved`; origen: un `ajuste` +1, neto −1; segunda resolución → 409 `discrepancy_already_resolved`; detalle con la discrepancia resuelta | software/docker/smoke/transfer-smoke.sh:194, :197, :198, :199, :204 |
+
+| Corrida | Resultado | Código de salida |
+|---|---|---|
+| humo, corrida 1 | 28 comprobaciones, 0 fallas | 0 |
+| humo, corridas 2 y 3 (repetibilidad) | 28 comprobaciones, 0 fallas cada una | 0 y 0 |
+| control: `SEED_USER_PASSWORD=wrong-password` | login 422 → aborta; 2 comprobaciones, 1 falla | 1 |
+| control: copia en scratchpad con `RECEIVED=2` (recepción completa) | 7 fallas (no `RECIBIDO_PARCIAL`, sin discrepancia, resolución 404, sin `ajuste`) | 1 |
+| control: copia en scratchpad con el auxiliar (solicitante) aprobando | 15 fallas (aprobar 403, despacho 409, sin movimientos) | 1 |
+| `auth-smoke.sh`, `stock-smoke.sh`, `dispensation-smoke.sh` tras el rebuild | 38, 13 y 23 comprobaciones, 0 fallas | 0, 0 y 0 |
+| `/health`, `/ready` vía `localhost:8090` | 200 y 200 | — |
+| `docker compose exec api id -u` | 1000 | — |
+
+| Barrido | Resultado | Control positivo |
+|---|---|---|
+| `/usr/bin/grep -nE "(sk-\|ghp_\|AKIA\|password\s*=\s*['\"][^'\"$]{6,})"` sobre el script | 0 hits | archivo en scratchpad con `sk-abcdef123456` → 1 hit |

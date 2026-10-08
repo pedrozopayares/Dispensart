@@ -62,7 +62,7 @@ intercalar 3 y 4); no hay bloque `web`, así que no aplica la regla api ∥ web.
 
 ## 6. Integración y cierre
 
-- [ ] 6.1 Humo en el stack (`up --build --wait`): con usuarios semilla, crear, solicitar, aprobar, despachar y recibir parcial un traslado entre dos bodegas semilla; consultar kardex y detalle con la discrepancia. Cubre «Recorrido completo» y «Trazabilidad en el kardex» en el stack. Verifica: comandos y respuestas registrados en `journal.md`.
+- [x] 6.1 Humo en el stack (`up --build --wait`): con usuarios semilla, crear, solicitar, aprobar, despachar y recibir parcial un traslado entre dos bodegas semilla; consultar kardex y detalle con la discrepancia. Cubre «Recorrido completo» y «Trazabilidad en el kardex» en el stack. Verifica: comandos y respuestas registrados en `journal.md`.
 - [x] 6.2 Corrida completa de cierre: Pint, Larastan, Pest. Cimiento. Verifica: `docker compose -f software/compose.yaml run --rm api-tools sh -c 'vendor/bin/pint --test && vendor/bin/phpstan analyse && vendor/bin/pest'` sale con código 0; corrida registrada en `journal.md` dentro del presupuesto de 3.
 - [x] 6.3 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M17 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro; barrido `/usr/bin/grep` de `lockForUpdate`/`for update` y de `stocks` en `app/Actions/Transfers` = 0 escrituras o bloqueos propios de existencias, con control positivo en `StockLedger` (D4). Cimiento. Verifica: `npx openspec validate add-transfers --strict` válido y spec-validator sin hallazgos.
 
