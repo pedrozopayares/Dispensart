@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\Support\RaceRunner;
 
@@ -191,7 +192,10 @@ it('revierte las 4 migraciones de traslados con una fila transfer.approved en la
     $this->actingAs($this->regente)->postJson("/api/transfers/{$transfer->id}/approve")->assertOk();
     expect(AuditEvent::where('action', 'transfer.approved')->count())->toBe(1);
 
-    expect(Artisan::call('migrate:rollback', ['--step' => 4, '--force' => true]))->toBe(0);
+    // Las 4 de traslados y las posteriores (S5+): un conteo fijo dejaría de alcanzar `transfers`.
+    $steps = DB::table('migrations')->where('migration', '>=', '2026_10_10_000001_create_transfers_table')->count();
+    expect($steps)->toBeGreaterThanOrEqual(4)
+        ->and(Artisan::call('migrate:rollback', ['--step' => $steps, '--force' => true]))->toBe(0);
     expect(Schema::hasTable('transfers'))->toBeFalse()
         ->and(AuditEvent::where('action', 'transfer.approved')->count())->toBe(1);
 
