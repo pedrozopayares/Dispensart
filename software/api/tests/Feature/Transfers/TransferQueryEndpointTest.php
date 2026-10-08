@@ -76,9 +76,11 @@ it('devuelve data vacío sin resultados', function (string $query) {
     Transfer::factory()->create();
 
     $this->actingAs($this->auditor)->getJson("/api/transfers{$query}")->assertOk()->assertJsonPath('data', []);
-})->with(['sin anulados' => ['?status=ANULADO'], 'página 999' => ['?page=999']]);
+})->with(['sin anulados' => ['?status=ANULADO'], 'página 999' => ['?page=999'], 'página tope 1000000' => ['?page=1000000']]);
 
 it('rechaza filtros mal formados en el parámetro afectado', function (string $query, string $field) {
+    // Con al menos un traslado el paginador sí ejecuta la consulta con OFFSET: sin filas no la ejecuta.
+    Transfer::factory()->create();
     $this->actingAs($this->auditor)->getJson("/api/transfers{$query}")
         ->assertUnprocessable()
         ->assertJsonPath('code', 'validation_failed')
@@ -87,6 +89,9 @@ it('rechaza filtros mal formados en el parámetro afectado', function (string $q
     'estado desconocido' => ['?status=PERDIDO', 'status'],
     'bodega no numérica' => ['?origin_warehouse_id=abc', 'origin_warehouse_id'],
     'per_page 101' => ['?per_page=101', 'per_page'],
+    // Sin tope, una página enorme desborda el OFFSET en el constructor de consultas y responde 500.
+    'página 1000001' => ['?page=1000001', 'page'],
+    'página PHP_INT_MAX' => ['?page=9223372036854775807', 'page'],
 ]);
 
 it('responde 404 a un traslado inexistente', function () {

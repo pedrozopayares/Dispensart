@@ -120,7 +120,7 @@ it('devuelve data vacío para una página fuera de rango o un filtro sin resulta
     $this->actingAs(User::factory()->auditor()->create())->getJson("/api/kardex?{$query}")
         ->assertOk()
         ->assertJsonPath('data', []);
-})->with(['página 999' => ['page=999'], 'lote inexistente' => ['lot_id=999999']]);
+})->with(['página 999' => ['page=999'], 'página tope 1000000' => ['page=1000000'], 'lote inexistente' => ['lot_id=999999']]);
 
 it('rechaza parámetros mal formados', function (string $query, string $field) {
     $this->actingAs(User::factory()->auditor()->create())->getJson("/api/kardex?{$query}")
@@ -130,6 +130,9 @@ it('rechaza parámetros mal formados', function (string $query, string $field) {
 })->with([
     'producto no entero' => ['product_id=abc', 'product_id'],
     'per_page 101' => ['per_page=101', 'per_page'],
+    // Sin tope, una página enorme desborda el OFFSET en el constructor de consultas y responde 500.
+    'página 1000001' => ['page=1000001', 'page'],
+    'página PHP_INT_MAX' => ['page=9223372036854775807', 'page'],
 ]);
 
 it('rechaza con 403 a los roles sin lectura de inventario', function (Role $role) {

@@ -95,10 +95,10 @@ Líneas añadidas por S4 + D-auv-3. Comando: `git diff --numstat d89d2dd^ 5ddb0a
 | TRF-67 | Roles con lectura de traslados | lista del más reciente al más antiguo con meta para cada rol con lectura (dataset 3) | TransferQueryEndpointTest.php:19 |
 | TRF-68 | Filtro por estado | filtra por estado y bodegas combinados con Y | TransferQueryEndpointTest.php:33 |
 | TRF-69 | Detalle con discrepancias | devuelve el detalle con líneas, discrepancias y el actor y la fecha de cada transición | TransferQueryEndpointTest.php:46 |
-| TRF-70 | Sin resultados | devuelve data vacío sin resultados (dataset 2) | TransferQueryEndpointTest.php:75 |
-| TRF-71 | Filtros mal formados | rechaza filtros mal formados en el parámetro afectado (dataset 3) | TransferQueryEndpointTest.php:81 |
-| TRF-72 | Traslado inexistente | responde 404 a un traslado inexistente · ids fuera de rango (dataset 4) | TransferQueryEndpointTest.php:92, :96 |
-| TRF-73 | Roles sin lectura de traslados | rechaza con 403 la lista y el detalle a medico y admin (dataset 2 × 2 rutas) | TransferQueryEndpointTest.php:109 |
+| TRF-70 | Sin resultados | devuelve data vacío sin resultados (dataset 3, incluye página tope 1000000) | TransferQueryEndpointTest.php:75 |
+| TRF-71 | Filtros mal formados | rechaza filtros mal formados en el parámetro afectado (dataset 5, incluye página 1000001 y PHP_INT_MAX → 422) | TransferQueryEndpointTest.php:81 |
+| TRF-72 | Traslado inexistente | responde 404 a un traslado inexistente · ids fuera de rango (dataset 4) | TransferQueryEndpointTest.php:97, :101 |
+| TRF-73 | Roles sin lectura de traslados | rechaza con 403 la lista y el detalle a medico y admin (dataset 2 × 2 rutas) | TransferQueryEndpointTest.php:114 |
 | TRF-74 | Sin sesión | responde 401 sin sesión en las 7 escrituras sin cambiar traslados ni movimientos | TransferStateMachineEndpointTest.php:125 |
 | TRF-75 | Sin token CSRF desde la SPA | rechaza con 419 un despacho desde la SPA sin X-XSRF-TOKEN, sin movimiento, y lo acepta con él | TransferDispatchEndpointTest.php:123 |
 | TRF-76 | Acción sobre traslado inexistente | responde 404 a una acción sobre un traslado inexistente | TransferDispatchEndpointTest.php:136 |

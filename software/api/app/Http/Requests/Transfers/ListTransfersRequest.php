@@ -9,11 +9,14 @@ use Illuminate\Validation\Rule;
 
 /**
  * Consulta paginada de traslados (transfers "Consulta de traslados"): transfers.view; filtros por estado y
- * bodegas combinados con Y; per_page 1–100, 50 por defecto.
+ * bodegas combinados con Y; per_page 1–100, 50 por defecto; page 1–1 000 000 (una página mayor desborda el
+ * desplazamiento SQL y daría 500, no 422).
  */
 final class ListTransfersRequest extends FormRequest
 {
     public const DEFAULT_PER_PAGE = 50;
+
+    public const MAX_PAGE = 1_000_000;
 
     private const FILTERS = ['origin_warehouse_id', 'destination_warehouse_id'];
 
@@ -32,7 +35,7 @@ final class ListTransfersRequest extends FormRequest
             'origin_warehouse_id' => ['sometimes', 'integer', 'min:1'],
             'destination_warehouse_id' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            'page' => ['sometimes', 'integer', 'between:1,'.self::MAX_PAGE],
         ];
     }
 

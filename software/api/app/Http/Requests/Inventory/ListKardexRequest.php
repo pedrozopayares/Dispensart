@@ -6,11 +6,14 @@ use App\Models\KardexMovement;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Consulta paginada del kardex (kardex "Consulta del kardex"): mismos filtros que existencias, per_page 1–100.
+ * Consulta paginada del kardex (kardex "Consulta del kardex"): mismos filtros que existencias, per_page 1–100,
+ * page 1–1 000 000 (una página mayor desborda el desplazamiento SQL y daría 500, no 422).
  */
 final class ListKardexRequest extends FormRequest
 {
     public const DEFAULT_PER_PAGE = 50;
+
+    public const MAX_PAGE = 1_000_000;
 
     public function authorize(): bool
     {
@@ -25,7 +28,7 @@ final class ListKardexRequest extends FormRequest
         return [
             ...InventoryFilters::rules(),
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            'page' => ['sometimes', 'integer', 'between:1,'.self::MAX_PAGE],
         ];
     }
 
