@@ -190,6 +190,17 @@ describe('Dispensación › coautorización de control especial', () => {
     expect(authorizerPassword()).toHaveAttribute('type', 'password')
   })
 
+  // Hallazgo del recorrido 7.1: el navegador rellenó el correo del autorizador con el del usuario en
+  // sesión. Los campos llegan vacíos y piden al navegador no autocompletarlos con credenciales guardadas.
+  it('Campos del autorizador sin autorrelleno del navegador: vacíos, correo "off" y contraseña "new-password"', async () => {
+    await controlledReady({})
+
+    expect(authorizerEmail()).toHaveValue('')
+    expect(authorizerPassword()).toHaveValue('')
+    expect(authorizerEmail()).toHaveAttribute('autocomplete', 'off')
+    expect(authorizerPassword()).toHaveAttribute('autocomplete', 'new-password')
+  })
+
   it('Sin control especial no se piden y la confirmación no lleva credenciales', async () => {
     const { api } = await ready({
       [PREVIEW]: () => json(200, { data: fefoPreview }),

@@ -288,7 +288,9 @@ export function DispensationForm({
               <Input
                 id={`${ids}-authorizer-password`}
                 type="password"
-                autoComplete="off"
+                // "new-password": el navegador no trata el par como inicio de sesión ni rellena el
+                // correo y la clave guardados del usuario en sesión.
+                autoComplete="new-password"
                 aria-invalid={authorizerErrors.password !== undefined || undefined}
                 value={authorizerPassword}
                 onChange={(event) => setAuthorizerPassword(event.target.value)}
