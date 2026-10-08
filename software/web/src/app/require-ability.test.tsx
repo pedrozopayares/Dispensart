@@ -6,7 +6,7 @@ import { catalogRoutes, kardexPage, lots, stockRow, warehouses } from '@/test/fi
 import { renderAs } from '@/test/render'
 
 // Tarea 1.7 — operator-workspace › "Guarda de ruta por capacidad" (design D6).
-// Tarea 6.1 (parcial: Inventario y Kardex) — «Navegación por rol».
+// Tarea 6.1 (parcial: Dispensación, Inventario y Kardex) — «Navegación por rol».
 
 const stockRoutes = {
   ...catalogRoutes(),
@@ -56,7 +56,7 @@ describe('guarda de ruta por capacidad', () => {
   })
 })
 
-describe('menú por rol (Inventario y Kardex)', () => {
+describe('menú por rol (Dispensación, Inventario y Kardex)', () => {
   const menuOf = async () => {
     const header = await screen.findByRole('banner')
     await within(header).findByRole('button', { name: strings.shell.logout })
@@ -64,18 +64,23 @@ describe('menú por rol (Inventario y Kardex)', () => {
     return nav === null ? [] : within(nav).getAllByRole('link').map((link) => link.textContent)
   }
 
-  it('el auxiliar ve Inventario y Kardex, en ese orden', async () => {
+  it('el auxiliar ve Dispensación, Inventario y Kardex, en ese orden', async () => {
     renderAs('auxiliar_farmacia', '/')
-    expect(await menuOf()).toEqual([strings.nav.inventory, strings.nav.kardex])
+    expect(await menuOf()).toEqual([strings.nav.dispensations, strings.nav.inventory, strings.nav.kardex])
   })
 
-  it('el auditor ve Inventario y Kardex', async () => {
+  it('el auditor ve Dispensación, Inventario y Kardex', async () => {
     renderAs('auditor', '/')
-    expect(await menuOf()).toEqual([strings.nav.inventory, strings.nav.kardex])
+    expect(await menuOf()).toEqual([strings.nav.dispensations, strings.nav.inventory, strings.nav.kardex])
   })
 
-  it.each(['medico', 'admin'] as const)('%s no ve Inventario ni Kardex', async (role) => {
-    renderAs(role, '/')
+  it('Médico solo ve Dispensación', async () => {
+    renderAs('medico', '/')
+    expect(await menuOf()).toEqual([strings.nav.dispensations])
+  })
+
+  it('Admin sin pantallas de operación', async () => {
+    renderAs('admin', '/')
     expect(await menuOf()).toEqual([])
   })
 

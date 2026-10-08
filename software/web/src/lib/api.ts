@@ -45,7 +45,14 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 // Parámetros de consulta: los `undefined` no se envían.
 export type QueryParams = Record<string, string | number | undefined>
 
-export type RequestOptions = { query?: QueryParams }
+export type RequestOptions = {
+  query?: QueryParams
+  // Cabeceras propias de la operación (p. ej. `Idempotency-Key` de la dispensación).
+  headers?: Record<string, string>
+}
+
+// Cuerpo y cabeceras de una respuesta exitosa (p. ej. `Idempotent-Replayed`).
+export type ApiResponse<T> = { body: T; headers: Headers }
 
 // URL absoluta sobre el origen de la SPA (design D2): el `fetch` de Node rechaza rutas relativas.
 function toUrl(path: string, query: QueryParams = {}): string {
@@ -78,6 +85,7 @@ function isShortage(value: unknown): value is Shortage {
   return (
     typeof item === 'object' &&
     item !== null &&
+    typeof item.prescription_item_id === 'number' &&
     typeof item.product_id === 'number' &&
     typeof item.requested === 'number' &&
     typeof item.available === 'number'
@@ -119,7 +127,7 @@ async function attempt(
   body: unknown,
   options: RequestOptions,
 ): Promise<Response> {
-  const headers: Record<string, string> = { Accept: 'application/json' }
+  const headers: Record<string, string> = { ...options.headers, Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (WRITE_METHODS.has(method)) {
     if (readXsrfToken() === null) await fetchCsrfCookie()
@@ -132,13 +140,14 @@ async function attempt(
   )
 }
 
-// Petición a la API. Ante `csrf_token_mismatch` renueva la cookie y reintenta una sola vez.
-export async function apiRequest<T>(
+// Petición a la API con sus cabeceras de respuesta. Ante `csrf_token_mismatch` renueva la cookie y
+// reintenta una sola vez, con las mismas cabeceras (la misma `Idempotency-Key`).
+export async function apiRequestWithHeaders<T>(
   method: Method,
   path: string,
   body?: unknown,
   options: RequestOptions = {},
-): Promise<T> {
+): Promise<ApiResponse<T>> {
   let response = await attempt(method, path, body, options)
   if (!response.ok) {
     let error = await toApiError(response)
@@ -149,8 +158,18 @@ export async function apiRequest<T>(
     }
     if (!response.ok) throw error
   }
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
+  if (response.status === 204) return { body: undefined as T, headers: response.headers }
+  return { body: (await response.json()) as T, headers: response.headers }
+}
+
+// Petición a la API; solo el cuerpo.
+export async function apiRequest<T>(
+  method: Method,
+  path: string,
+  body?: unknown,
+  options: RequestOptions = {},
+): Promise<T> {
+  return (await apiRequestWithHeaders<T>(method, path, body, options)).body
 }
 
 // Usuario de la sesión; sin sesión (401) es `null`, no un error.

@@ -8,7 +8,7 @@ import { json, serveApi } from '@/test/http'
 describe('catálogo de mensajes por code', () => {
   it('Stock insuficiente con detalle: una línea por faltante con el nombre del producto', () => {
     const error = new ApiError(409, 'insufficient_stock', {}, [
-      { product_id: 10, requested: 5, available: 2 },
+      { prescription_item_id: 70, product_id: 10, requested: 5, available: 2 },
     ])
 
     const text = describeError(error, {
@@ -20,7 +20,7 @@ describe('catálogo de mensajes por code', () => {
 
   it('Stock insuficiente sin nombre conocido ni detalle: nunca el id crudo ni el código', () => {
     const withShortage = new ApiError(409, 'insufficient_stock', {}, [
-      { product_id: 77, requested: 3, available: 0 },
+      { prescription_item_id: 71, product_id: 77, requested: 3, available: 0 },
     ])
     expect(describeError(withShortage)).not.toContain('77')
     expect(describeError(new ApiError(409, 'insufficient_stock'))).toBe(

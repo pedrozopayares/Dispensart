@@ -44,3 +44,5 @@ export function useIdempotentIntent<Intent>() {
 
   return { keyFor, settleSuccess, settleError }
 }
+
+export type IdempotentIntent<Intent> = ReturnType<typeof useIdempotentIntent<Intent>>

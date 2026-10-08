@@ -8,6 +8,8 @@ export const queryKeys = {
   kardex: (filters: KardexQuery) => ['kardex', filters] as const,
   alerts: (filters: { warehouse_id?: number }) => ['alerts', filters] as const,
   patient: (patientId: number) => ['patient', patientId] as const,
+  // El término vive solo en memoria (nunca en la URL ni en almacenamiento del navegador).
+  patientSearch: (term: string) => ['patient-search', term] as const,
   warehouses: () => ['catalog', 'warehouses'] as const,
   products: () => ['catalog', 'products'] as const,
   lots: (filters: LotQuery) => ['catalog', 'lots', filters] as const,

@@ -39,12 +39,22 @@ export type Product = ResponseOf<'/products', 'get'>['data'][number]
 export type Lot = ResponseOf<'/lots', 'get'>['data'][number]
 export type LotQuery = QueryOf<'/lots', 'get'>
 export type ApiErrorBody = components['schemas']['ApiError']
+// Faltante por ítem de `insufficient_stock` en la dispensación (publicado por S3).
+export type Shortage = NonNullable<ApiErrorBody['shortages']>[number]
 
-// Tipado a mano: Scramble no infiere `shortages` del 409 `insufficient_stock` (S3 design, tabla de
-// contrato). Anotado en el journal por la tarea 0.2; se reemplaza si el documento lo publica.
-export type Shortage = {
-  prescription_item_id?: number
-  product_id: number
-  requested: number
-  available: number
-}
+// Pacientes, prescripciones y dispensación (S3).
+export type PatientSummary = ResponseOf<'/patients', 'get'>['data'][number]
+export type PatientRecord = ResponseOf<'/patients/{patient}', 'get'>['data']
+export type Prescription = NonNullable<PatientRecord['prescriptions']>[number]
+export type PrescriptionItem = Prescription['items'][number]
+export type NewPrescription = BodyOf<'/prescriptions', 'post'>
+export type CreatedPrescription = ResponseOf<'/prescriptions', 'post'>['data']
+export type PreviewRequest = BodyOf<'/dispensations/preview', 'post'>
+export type DispensationPreview = ResponseOf<'/dispensations/preview', 'post'>['data']
+export type PreviewItem = DispensationPreview['items'][number]
+export type DispensationRequest = BodyOf<'/dispensations', 'post'>
+export type Dispensation = ResponseOf<'/dispensations', 'post'>['data']
+
+// Tipado a mano: el documento publica `status` como `string`; los literales son los del enum
+// `PrescriptionStatus` de la API. Un valor fuera de la lista se muestra con la etiqueta genérica.
+export type PrescriptionStatus = 'vigente' | 'vencida' | 'agotada'
