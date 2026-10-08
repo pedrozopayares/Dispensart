@@ -307,3 +307,19 @@ bloque de la SPA supera 500 kB sin división por ruta (no-objetivo del diseño).
 - Limitaciones sin defecto de spec, a documentar en el README (S8 5.3), sin fila de deuda: las alertas filtran solo
   por bodega (la API no acepta producto); el bundle de la SPA supera 500 kB sin división por ruta.
 - Fase: auditoría final (tier B).
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, tier B)
+
+| Punto | Evidencia |
+|---|---|
+| Corrida de confirmación (última del presupuesto, copia en `75a42e6`) | lint 0, typecheck 0, 219/219 en 26 archivos, build OK (bundle 506 kB) |
+| Mutantes propios del auditor | reutilización de clave de idempotencia (4 fallan), coautorizador (7 y 2), alertas desde la API (3 y 1), guarda del médico (3 y 1) |
+| Barridos | textos 0 (control 2); consola/almacenamiento 0 fuera de pruebas; sin `window.confirm`/`alert`; `fetch` solo en `lib/api.ts` |
+| RN-10 | el auditor ve lo que devuelve la API, aviso «Datos enmascarados», sin desenmascarar; el término de búsqueda no va en la URL |
+| Rutas | sin huérfanas; tabla única en `app/screens.tsx` |
+| Tipos OpenAPI | regenerar no cambia nada; control: renombrar un campo hace fallar la deriva y `tsc` |
+| CI | 37779394130 sobre `2bc0764` en verde |
+
+- Notas de redacción sin reapertura (regla 12): `tasks.md` 1.1 nombra `gen:api`/`check:api` (el código usa
+  `api:types`/`api:types:check`, decisión registrada).
+- Fase: archivo.
