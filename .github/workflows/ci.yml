@@ -99,6 +99,16 @@ jobs:
       - name: Pruebas (Pest contra PostgreSQL)
         run: vendor/bin/pest
 
+      # Evaluación del asistente (S7) con el proveedor simulado: sin red, sin llaves, resultado estable.
+      # Crea y borra su propia base dispensart_test_assistant_eval. Sale con 0 solo si todas aciertan.
+      # LOG_LEVEL=warning: oculta las líneas info `assistant.query` (una por pregunta) que se mezclan con la
+      # tabla por stderr; avisos y errores siguen visibles.
+      - name: Evaluación del asistente (assistant:eval, modo simulado)
+        env:
+          AI_PROVIDER: mock
+          LOG_LEVEL: warning
+        run: php artisan assistant:eval
+
       # Deriva del contrato (design D9): re-exporta openapi.json desde el código (Scramble) y falla si
       # difiere del archivo versionado. Corre en el runner porque usa git diff sobre el checkout.
       - name: Contrato OpenAPI sin deriva
