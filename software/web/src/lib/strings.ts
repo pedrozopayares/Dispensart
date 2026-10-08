@@ -3,6 +3,8 @@
 export const strings = {
   app: {
     name: 'Dispensart',
+    // Error de arranque si `index.html` no trae el contenedor; no llega a la interfaz.
+    missingRoot: 'No existe el elemento #root en index.html',
   },
   shell: {
     welcomeTitle: 'Bienvenido',
