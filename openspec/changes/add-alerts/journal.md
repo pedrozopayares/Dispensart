@@ -218,3 +218,10 @@ EXIT=0
 - Deuda (prosa, sin id): el staging de CI no corre los humos por capacidad (auth, stock, dispensation, transfer,
   alerts); sumarlos daría la corrida desde volumen vacío que aquí se omitió. `actionlint` no está instalado; no se
   tocaron workflows.
+
+## 2026-10-08 — Orchestrator: verificación de cierre
+
+- `tasks.md`: 19 de 19 en `[x]`. `verification.md` presente (matrices, `[MUT]` 23 declaradas y 23 entregadas, § 6 humo).
+- S5 no agrega pantallas; el panel de alertas llega con S6 (`add-operator-screens` 4.2), sin rutas huérfanas.
+- Deuda: D-auv-4 (menor, humos de dominio fuera del staging de CI), a saldar en `add-delivery-pipeline`.
+- Fase: auditoría final (tier A).

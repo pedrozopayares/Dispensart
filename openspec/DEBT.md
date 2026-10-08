@@ -11,6 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
+| D-auv-4 | minor | add-alerts (devops-implementer, 6.1) | El trabajo de staging de CI arranca de base vacía pero solo corre `smoke.sh`; `alerts-smoke.sh` (y los humos de dominio) nunca corren sobre una base recién creada. | add-delivery-pipeline: invocar los humos de dominio desde `smoke.sh` o desde el trabajo de staging |
 
 ## Settled
 
