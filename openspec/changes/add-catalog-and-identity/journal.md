@@ -338,3 +338,83 @@ Fuera de este bloque: seed-data "Arranque desde cero" y "Cambios del admin sobre
 | `X-Forwarded-For` desde fuente no confiable se ignora | desde una fuente no confiable ignora X-Forwarded-For y cuenta por la IP de conexión | software/api/tests/Feature/Identity/LoginProxyTest.php:42 | `trustedproxy.proxies` = `*` → FALLA 1/2; restaurado → PASA 2/2 |
 
 Corrida delta `--filter=LoginProxyTest`: 2 pasan / 14 aserciones. Pint `--test` del archivo: pasa. Larastan: 0 errores. Sin cambios de código de aplicación. La primera fila de deuda de la sección anterior queda saldada.
+
+## 2026-10-08 — devops-implementer: grupo 7 (stack, humo, CI)
+
+Tareas 7.1–7.3 `[x]`. Decisión del Orchestrator aplicada: `APP_ENV=${APP_ENV:-local}` en compose;
+`SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}` sin valor por defecto en compose (D10, escenario "Lista
+cerrada"): el valor solo de desarrollo vive en `config/dispensart.php` y se documenta en `software/.env.example`.
+
+### Cambios
+
+| Archivo | Cambio |
+|---|---|
+| `software/docker/api/entrypoint.sh` | `db:seed --force` tras `migrate`; stdout de Artisan capturado, stderr (avisos JSON del seeder) pasa |
+| `software/docker/web/api-proxy.conf` | `Origin` y `Referer` explícitos; `X-Forwarded-For $remote_addr` (web es el borde: el cliente no inyecta IP al limitador; revisar en S8 si hay balanceador) |
+| `software/compose.yaml` | `APP_ENV` local; `SEED_USER_PASSWORD`, `SANCTUM_STATEFUL_DOMAINS` (sigue a `WEB_PORT`), `TRUSTED_PROXIES` |
+| `software/.env.example` | las 4 variables nuevas, contraseña semilla marcada solo desarrollo; vacías = valor por defecto |
+| `software/docker/api/Dockerfile` | `mkdir -p resources/views` (ver hallazgo) |
+| `software/docker/smoke/auth-smoke.sh` | humo versionado (bash + curl, tarro de cookies) |
+| `.github/workflows/ci.yml` | trabajo `backend`: `composer openapi:check` en el runner + `npm ci` raíz + `npm run openapi:lint`; `paths` suma `package.json`/`package-lock.json` raíz |
+
+### Hallazgo: S0 no arrancaba desde un clon limpio
+
+`software/api/resources/views` es un directorio vacío: git no lo versiona. En el árbol de trabajo existe; en un
+clon nuevo falta y `artisan optimize` (caché de vistas) sale con error → `api` reinicia en bucle, nunca sana.
+La verificación en frío de S0 corrió sobre el árbol de trabajo y no lo vio. Reproducido con `git worktree` de
+HEAD; corregido en la imagen. CI aún no construye imágenes (S8): la construcción desde checkout limpio lo cubrirá.
+
+### Verificación en frío (desde `git worktree` de HEAD + estos cambios)
+
+El árbol de trabajo principal tiene trabajo en curso del frontend (`software/web/src`, `App.test.tsx` no compila
+con `tsc`) y de otra sesión (`software/api`); la construcción de `web` falla ahí. Se verificó desde un worktree
+limpio de HEAD con solo los archivos devops superpuestos; sin tocar el trabajo ajeno.
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose config -q` | exit 0 |
+| `down -v` + `up --build --wait` | db, api, web `healthy` |
+| `/health` · `/ready` por `localhost:8090` | 200 · 200 |
+| `auth-smoke.sh` | 38 comprobaciones, 0 fallas, exit 0 |
+| Control positivo: `SEED_USER_PASSWORD=wrong-on-purpose auth-smoke.sh` | 15 fallas, exit 1 |
+| Conteos bodegas/productos/lotes/usuarios tras arranque desde cero | 3 / 6 / 14 / 5 |
+| Tras `up --force-recreate api` (siembra repetida) | 3 / 6 / 14 / 5 |
+| Admin renombra `FC` por PATCH vía proxy, luego recrea `api` | nombre nuevo conservado, 3 bodegas (sin duplicado) |
+| `APP_ENV=production` sin `SEED_USER_PASSWORD`, volúmenes vacíos | 3 / 6 / 14 / **0**; log `warning` "Usuarios semilla omitidos…" sin valor |
+| `id -u` en api · web | 1000 · 101 (db: upstream, `postgres` en los procesos del servidor) |
+| `git check-ignore` software/.env, api/.env, web/.env | 3 ignorados |
+| Plantilla completa: cada `${VAR}` de compose en `.env.example` | 12 de 12 (`POSTGRES_*` son `$${}` del contenedor) |
+
+### Escenario → evidencia en el stack
+
+| Capacidad | Escenario | Evidencia |
+|---|---|---|
+| seed-data | Arranque desde cero | `up --build --wait` + humo: login 200 de los 5 usuarios |
+| seed-data | Siembra repetida | conteos iguales tras recrear `api` |
+| seed-data | Cambios del admin sobreviven al reinicio | PATCH + recreación: nombre conservado, sin duplicado |
+| runtime-environment | Valor por defecto de la siembra inerte en producción | `APP_ENV=production`: 0 usuarios, aviso sin contraseña |
+| identity-access | Credenciales válidas | humo: `POST /api/auth/login` 200 con `role` esperado ×5 |
+| identity-access | Escritura con token CSRF caducado (sin token) | humo: `POST /api/warehouses` sin `X-XSRF-TOKEN` 419 ×5, con sesión válida |
+| identity-access | Cierre de sesión exitoso | humo: logout 204, luego `me` 401 ×5 |
+| identity-access | Origen ajeno a la SPA | humo: login sin `Origin` 403 `forbidden` |
+
+### CI (7.3)
+
+| Comprobación | Resultado |
+|---|---|
+| `actionlint` 1.7.12 (imagen local) sobre `ci.yml` | exit 0; control: workflow con `${{ github.nope }}` → exit 1 |
+| Deriva: `composer openapi` (api-tools) + `git diff --exit-code` | exit 0 |
+| Control: índice con `openapi.json` sin `/lots`, re-exportado | `git diff` exit 1; índice restaurado → exit 0 |
+| `npm run openapi:lint` (raíz) | válido |
+
+### Barrido de secretos (`/usr/bin/grep -rnE`, compose, `.env.example`, `docker/`, workflows)
+
+| Patrón | Hits | Control positivo |
+|---|---|---|
+| `base64:` ≥20 · `sk-`/`ghp_`/`AKIA` · `PASSWORD[=:]` literal | 6, todos de la lista cerrada: `DB_PASSWORD` desarrollo (3), CI efímera (2), valor solo desarrollo de semilla en el humo (1) | archivo plantado con `APP_KEY=base64:…` y `SEED_USER_PASSWORD=…` → 2 |
+
+### Deuda (prosa; el Orchestrator asigna id)
+
+- El humo repite el literal del valor solo de desarrollo de `SEED_USER_PASSWORD` (segunda fuente además de
+  `config/dispensart.php`); si cambia uno sin el otro el humo falla en rojo, no en falso verde.
+- CI no ejecuta el humo ni construye imágenes; ambos quedan para el trabajo de imágenes de S8.

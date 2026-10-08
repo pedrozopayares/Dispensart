@@ -67,10 +67,10 @@ en las de login, logout o CSRF (falso verde: el framework omite CSRF en pruebas 
 
 ## 7. DevOps
 
-- [ ] 7.1 (∥ bloque 6) Arranque de `api`: sembrar después de migrar; Nginx de `web` también proxifica `/sanctum/` y conserva `Origin`/`X-Forwarded-For`; compose pasa `SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}` sin valor por defecto (design D10); `software/.env.example` con `SEED_USER_PASSWORD` marcada solo desarrollo, dominios con estado y variables de sesión. Cubre seed-data "Arranque desde cero", "Siembra repetida", "Cambios del admin sobreviven al reinicio" en el stack. Verifica: `down -v` + `up --build --wait`, login con cada usuario semilla; segundo `up` con conteos iguales.
-- [ ] 7.2 Script de humo versionado contra `localhost:${WEB_PORT}` con cookies: cookie CSRF → login → `me` → escritura sin `X-XSRF-TOKEN` (419 real, sin el atajo de pruebas) → logout → `me` 401. Cubre identity-access "Credenciales válidas", "Escritura con token CSRF caducado", "Cierre de sesión exitoso" y seed-data "Arranque desde cero" sobre el stack real. Verifica: el script termina con código 0 sobre el stack en marcha.
+- [x] 7.1 (∥ bloque 6) Arranque de `api`: sembrar después de migrar; Nginx de `web` también proxifica `/sanctum/` y conserva `Origin`/`X-Forwarded-For`; compose pasa `SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}` sin valor por defecto (design D10); `software/.env.example` con `SEED_USER_PASSWORD` marcada solo desarrollo, dominios con estado y variables de sesión. Cubre seed-data "Arranque desde cero", "Siembra repetida", "Cambios del admin sobreviven al reinicio" en el stack. Verifica: `down -v` + `up --build --wait`, login con cada usuario semilla; segundo `up` con conteos iguales.
+- [x] 7.2 Script de humo versionado contra `localhost:${WEB_PORT}` con cookies: cookie CSRF → login → `me` → escritura sin `X-XSRF-TOKEN` (419 real, sin el atajo de pruebas) → logout → `me` 401. Cubre identity-access "Credenciales válidas", "Escritura con token CSRF caducado", "Cierre de sesión exitoso" y seed-data "Arranque desde cero" sobre el stack real. Verifica: el script termina con código 0 sobre el stack en marcha.
 
-- [ ] 7.3 CI: lint de OpenAPI y comprobación de deriva de 5.16 en el trabajo `backend`. Sin escenario propio; protege la tabla API contract de `design.md`. Verifica: workflow verde y control positivo (un endpoint quitado del archivo hace fallar la deriva). Cimiento.
+- [x] 7.3 CI: lint de OpenAPI y comprobación de deriva de 5.16 en el trabajo `backend`. Sin escenario propio; protege la tabla API contract de `design.md`. Verifica: workflow verde y control positivo (un endpoint quitado del archivo hace fallar la deriva). Cimiento.
 
 ## 8. Integración y cierre
 
