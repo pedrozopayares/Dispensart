@@ -24,8 +24,8 @@ use Dedoc\Scramble\Support\Generator\Types\StringType;
  * Ajusta el OpenAPI inferido por Scramble al contrato real (design D5, D9; solo desarrollo):
  * - todo rechazo con la forma {code, message[, errors]} y su `code` estable;
  * - 419 en toda escritura (CSRF), 403/422/429 propios del login;
- * - rechazos de dominio de inventario (S2) y de pacientes, prescripciones y dispensación (S3), con la cabecera
- *   Idempotency-Key de la dispensación y la cabecera Idempotent-Replayed de su repetición;
+ * - rechazos de dominio de inventario (S2), de pacientes, prescripciones y dispensación (S3), con la cabecera
+ *   Idempotency-Key de la dispensación y la cabecera Idempotent-Replayed de su repetición, y de traslados (S4);
  * - seguridad por cookie de sesión + cabecera X-XSRF-TOKEN, sin bearer; login público.
  */
 final class ApiErrorDocumentTransformer implements DocumentTransformer
@@ -35,7 +35,7 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         401 => ['codes' => ['unauthenticated'], 'description' => 'Sin sesión.'],
         403 => ['codes' => ['forbidden'], 'description' => 'Sin permiso para el rol, o login desde un origen ajeno a la SPA.'],
         404 => ['codes' => ['not_found'], 'description' => 'Recurso inexistente.'],
-        409 => ['codes' => ['insufficient_stock'], 'description' => 'La operación dejaría la existencia negativa o la existencia no existe; en la dispensación, con `shortages` por ítem.'],
+        409 => ['codes' => ['insufficient_stock', 'invalid_transfer_transition', 'discrepancy_already_resolved'], 'description' => 'La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta.'],
         419 => ['codes' => ['csrf_token_mismatch'], 'description' => 'Falta X-XSRF-TOKEN o no corresponde a la sesión.'],
         429 => ['codes' => ['too_many_attempts'], 'description' => 'Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After.'],
     ];
@@ -50,6 +50,14 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         'get patients/{patient}' => [404],
         'post dispensations/preview' => [422],
         'post dispensations' => [409, 422, 429],
+        'post transfers' => [422],
+        'get transfers/{transfer}' => [403, 404],
+        'post transfers/{transfer}/request' => [403, 404, 409],
+        'post transfers/{transfer}/approve' => [403, 404, 409],
+        'post transfers/{transfer}/dispatch' => [403, 404, 409, 422],
+        'post transfers/{transfer}/receive' => [403, 404, 409],
+        'post transfers/{transfer}/void' => [403, 404, 409],
+        'post transfers/{transfer}/discrepancies/{discrepancy}/resolve' => [403, 404, 409, 422],
     ];
 
     /**
@@ -65,6 +73,20 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
             .'inválidos (validation_failed, con errors); misma clave con otro cuerpo (idempotency_key_reused); '
             .'coautorización de control especial (authorization_required, authorizer_must_differ, invalid_authorizer); '
             .'prescripción (prescription_exhausted, prescription_expired, exceeds_prescription).',
+        'post transfers' => 'Datos inválidos (code: validation_failed, con errors) o lote vencido en alguna línea (code: lot_expired).',
+        'post transfers/{transfer}/dispatch' => 'Lote vencido en alguna línea, evaluado antes que las existencias (code: lot_expired).',
+        'post transfers/{transfer}/discrepancies/{discrepancy}/resolve' => 'Datos inválidos (code: validation_failed, con errors) o '
+            .'devolución al origen sobre un lote vencido (code: lot_expired).',
+    ];
+
+    /**
+     * Operaciones cuyo 403 incluye, además de forbidden, un rechazo de dominio.
+     *
+     * @var array<string, string>
+     */
+    private const DOMAIN_403 = [
+        'post transfers/{transfer}/approve' => 'Sin permiso para el rol (code: forbidden), o quien creó y solicitó el traslado '
+            .'intenta aprobarlo (code: segregation_of_duties, RN-08).',
     ];
 
     private const IDEMPOTENT_OPERATION = 'post dispensations';
@@ -74,7 +96,10 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
      *
      * @var list<string>
      */
-    private const WITHOUT_VALIDATION = ['get patients/{patient}'];
+    private const WITHOUT_VALIDATION = [
+        'get patients/{patient}', 'get transfers/{transfer}', 'post transfers/{transfer}/request',
+        'post transfers/{transfer}/approve', 'post transfers/{transfer}/dispatch',
+    ];
 
     public function handle(OpenApi $document, OpenApiContext $context): void
     {
@@ -137,6 +162,9 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
             $kept[] = match (true) {
                 $status === 422 && isset(self::DOMAIN_422[$key]) => Response::make(422)
                     ->setDescription(self::DOMAIN_422[$key])
+                    ->setContent('application/json', $apiError),
+                $status === 403 && isset(self::DOMAIN_403[$key]) => Response::make(403)
+                    ->setDescription(self::DOMAIN_403[$key])
                     ->setContent('application/json', $apiError),
                 $status === 422 => $this->validationResponse($validationError, $apiError, $isLogin),
                 default => $this->errorResponse($status, $apiError),
@@ -213,7 +241,8 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
                 'invalid_credentials', 'too_many_attempts', 'insufficient_stock', 'lot_expired', 'method_not_allowed',
                 'http_error', 'server_error', 'prescription_expired', 'prescription_exhausted', 'exceeds_prescription',
                 'authorization_required', 'authorizer_must_differ', 'invalid_authorizer', 'invalid_idempotency_key',
-                'idempotency_key_reused',
+                'idempotency_key_reused', 'invalid_transfer_transition', 'segregation_of_duties',
+                'discrepancy_already_resolved',
             ]))
             ->addProperty('message', (new StringType)->setDescription('Mensaje en español para el usuario.'))
             ->addProperty('errors', $this->fieldErrorsType())

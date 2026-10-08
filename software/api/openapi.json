@@ -94,7 +94,7 @@
                         }
                     },
                     "409": {
-                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe; en la dispensaci\u00f3n, con `shortages` por \u00edtem. code: insufficient_stock",
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1349,7 +1349,7 @@
                         }
                     },
                     "409": {
-                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe; en la dispensaci\u00f3n, con `shortages` por \u00edtem. code: insufficient_stock",
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1360,6 +1360,1055 @@
                     },
                     "422": {
                         "description": "Datos inv\u00e1lidos (code: validation_failed, con errors) o ingreso a un lote vencido (code: lot_expired).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers": {
+            "get": {
+                "operationId": "transfers.index",
+                "summary": "Traslados del m\u00e1s reciente al m\u00e1s antiguo, paginados y filtrables (transfers.view)",
+                "tags": [
+                    "Transfer"
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "BORRADOR",
+                                "SOLICITADO",
+                                "APROBADO",
+                                "EN_TRANSITO",
+                                "RECIBIDO",
+                                "RECIBIDO_PARCIAL",
+                                "ANULADO"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "origin_warehouse_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "destination_warehouse_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `TransferSummaryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TransferSummaryResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "transfers.store",
+                "summary": "Crea un traslado en BORRADOR (transfers.create). No mueve stock",
+                "tags": [
+                    "Transfer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreTransferRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos (code: validation_failed, con errors) o lote vencido en alguna l\u00ednea (code: lot_expired).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}": {
+            "get": {
+                "operationId": "transfers.show",
+                "summary": "Detalle con l\u00edneas, discrepancias y el actor y la fecha de cada transici\u00f3n (transfers.view)",
+                "tags": [
+                    "Transfer"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/request": {
+            "post": {
+                "operationId": "transfers.request",
+                "summary": "BORRADOR \u2192 SOLICITADO, solo por su creador",
+                "tags": [
+                    "TransferAction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/approve": {
+            "post": {
+                "operationId": "transfers.approve",
+                "summary": "SOLICITADO \u2192 APROBADO por un usuario con transfers.approve distinto del solicitante (RN-08)",
+                "tags": [
+                    "TransferAction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol (code: forbidden), o quien cre\u00f3 y solicit\u00f3 el traslado intenta aprobarlo (code: segregation_of_duties, RN-08).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/dispatch": {
+            "post": {
+                "operationId": "transfers.dispatch",
+                "summary": "APROBADO \u2192 EN_TRANSITO: un salida_traslado por l\u00ednea en origen, todo o nada",
+                "tags": [
+                    "TransferAction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Lote vencido en alguna l\u00ednea, evaluado antes que las existencias (code: lot_expired).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/receive": {
+            "post": {
+                "operationId": "transfers.receive",
+                "summary": "EN_TRANSITO \u2192 RECIBIDO | RECIBIDO_PARCIAL: entrada_traslado en destino y discrepancias por faltante",
+                "tags": [
+                    "TransferAction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReceiveTransferRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/void": {
+            "post": {
+                "operationId": "transfers.void",
+                "summary": "BORRADOR, SOLICITADO o APROBADO \u2192 ANULADO con motivo, sin stock",
+                "tags": [
+                    "TransferAction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VoidTransferRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/transfers/{transfer}/discrepancies/{discrepancy}/resolve": {
+            "post": {
+                "operationId": "transfers.discrepancies.resolve",
+                "summary": "Resuelve una discrepancia pendiente: devoluci\u00f3n al origen (ajuste) o p\u00e9rdida declarada (transfers.approve)",
+                "tags": [
+                    "TransferDiscrepancy"
+                ],
+                "parameters": [
+                    {
+                        "name": "transfer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transfer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "discrepancy",
+                        "in": "path",
+                        "required": true,
+                        "description": "The discrepancy ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResolveDiscrepancyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`TransferDiscrepancyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferDiscrepancyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Recurso inexistente. code: not_found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La operaci\u00f3n dejar\u00eda la existencia negativa o la existencia no existe (en la dispensaci\u00f3n, con `shortages` por \u00edtem); la acci\u00f3n no est\u00e1 permitida desde el estado del traslado; o la discrepancia ya fue resuelta. code: insufficient_stock, invalid_transfer_transition, discrepancy_already_resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos (code: validation_failed, con errors) o devoluci\u00f3n al origen sobre un lote vencido (code: lot_expired).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1815,7 +2864,10 @@
                             "authorizer_must_differ",
                             "invalid_authorizer",
                             "invalid_idempotency_key",
-                            "idempotency_key_reused"
+                            "idempotency_key_reused",
+                            "invalid_transfer_transition",
+                            "segregation_of_duties",
+                            "discrepancy_already_resolved"
                         ]
                     },
                     "message": {
@@ -1894,6 +2946,24 @@
                     "abilities"
                 ],
                 "title": "AuthenticatedUserResource"
+            },
+            "DiscrepancyResolution": {
+                "type": "string",
+                "description": "Resoluci\u00f3n de un faltante (design D10): devoluci\u00f3n al origen con ajuste positivo, o p\u00e9rdida sin movimiento.\n",
+                "enum": [
+                    "returned_to_origin",
+                    "written_off"
+                ],
+                "title": "DiscrepancyResolution"
+            },
+            "DiscrepancyStatus": {
+                "type": "string",
+                "description": "Estado de una discrepancia de recepci\u00f3n: nace pendiente y el regente la resuelve una sola vez.\n",
+                "enum": [
+                    "pending",
+                    "resolved"
+                ],
+                "title": "DiscrepancyStatus"
             },
             "DispensationPreviewResource": {
                 "type": "object",
@@ -2550,6 +3620,63 @@
                 ],
                 "title": "ProductSummaryResource"
             },
+            "ReceiveTransferRequest": {
+                "type": "object",
+                "description": "Recepci\u00f3n (transfers \"Recepci\u00f3n del traslado\", design D6): transfers.receive. Exactamente las l\u00edneas del\ntraslado, sin repetir, con 0 \u2264 recibido \u2264 cantidad de su l\u00ednea. La sobre-recepci\u00f3n solo se rechaza aqu\u00ed como\n422; m\u00e1s adentro es un defecto. Las l\u00edneas son inmutables tras crear: leerlas sin bloqueo es seguro.",
+                "properties": {
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "line_id": {
+                                    "type": "integer",
+                                    "enum": [
+                                        ""
+                                    ]
+                                },
+                                "received_quantity": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "required": [
+                                "line_id",
+                                "received_quantity"
+                            ]
+                        },
+                        "minItems": 0,
+                        "maxItems": 0,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "lines"
+                ],
+                "title": "ReceiveTransferRequest"
+            },
+            "ResolveDiscrepancyRequest": {
+                "type": "object",
+                "description": "Resoluci\u00f3n de una discrepancia (transfers \"Resoluci\u00f3n de discrepancias\"): transfers.approve, resoluci\u00f3n\nconocida y motivo obligatorio (\u2264 500; de solo espacios llega como null y falla `required`).",
+                "properties": {
+                    "resolution": {
+                        "type": "string",
+                        "enum": [
+                            "returned_to_origin",
+                            "written_off"
+                        ]
+                    },
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "resolution",
+                    "reason"
+                ],
+                "title": "ResolveDiscrepancyRequest"
+            },
             "StockResource": {
                 "type": "object",
                 "properties": {
@@ -2739,6 +3866,57 @@
                 ],
                 "title": "StoreStockAdjustmentRequest"
             },
+            "StoreTransferRequest": {
+                "type": "object",
+                "description": "Alta de traslado (transfers \"Creaci\u00f3n de traslados\"): solo transfers.create. Origen \u2260 destino, 1 a 50 l\u00edneas sin\nlote repetido. Estado, creador, aprobador y producto nunca se leen del cuerpo: solo `transfer()` llega a la\nacci\u00f3n, con las claves conocidas de cada l\u00ednea.",
+                "properties": {
+                    "origin_warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "destination_warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "lot_id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                }
+                            },
+                            "required": [
+                                "lot_id",
+                                "quantity"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "origin_warehouse_id",
+                    "destination_warehouse_id",
+                    "lines"
+                ],
+                "title": "StoreTransferRequest"
+            },
             "StoreUserRequest": {
                 "type": "object",
                 "description": "Alta de usuario (identity-access \"Alta de usuarios\"). El correo se normaliza antes de validar:\nla unicidad no distingue may\u00fasculas.",
@@ -2794,6 +3972,384 @@
                     "name"
                 ],
                 "title": "StoreWarehouseRequest"
+            },
+            "TransferDiscrepancyResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "line_id": {
+                        "type": "integer"
+                    },
+                    "lot_id": {
+                        "type": "integer"
+                    },
+                    "shortage": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/DiscrepancyStatus"
+                    },
+                    "resolution": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/DiscrepancyResolution"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "resolution_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "resolved_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "resolved_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "line_id",
+                    "lot_id",
+                    "shortage",
+                    "status",
+                    "resolution",
+                    "resolution_reason",
+                    "resolved_by",
+                    "resolved_at"
+                ],
+                "title": "TransferDiscrepancyResource"
+            },
+            "TransferResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/TransferStatus"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "origin_warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "destination_warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "created_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "requested_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "requested_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "approved_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "approved_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "dispatched_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "dispatched_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "received_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "received_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "voided_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "voided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "void_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "product": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "code",
+                                        "name"
+                                    ]
+                                },
+                                "lot": {
+                                    "$ref": "#/components/schemas/LotSummaryResource"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                },
+                                "received_quantity": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "product",
+                                "lot",
+                                "quantity",
+                                "received_quantity"
+                            ]
+                        }
+                    },
+                    "discrepancies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TransferDiscrepancyResource"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "status",
+                    "notes",
+                    "origin_warehouse",
+                    "destination_warehouse",
+                    "created_by",
+                    "created_at",
+                    "requested_by",
+                    "requested_at",
+                    "approved_by",
+                    "approved_at",
+                    "dispatched_by",
+                    "dispatched_at",
+                    "received_by",
+                    "received_at",
+                    "voided_by",
+                    "voided_at",
+                    "void_reason",
+                    "lines",
+                    "discrepancies"
+                ],
+                "title": "TransferResource"
+            },
+            "TransferStatus": {
+                "type": "string",
+                "description": "Estados del traslado con los literales de RN-07. Las transiciones viven solo en TransferTransitions; la base repite el conjunto en transfers_status_check.\n",
+                "enum": [
+                    "BORRADOR",
+                    "SOLICITADO",
+                    "APROBADO",
+                    "EN_TRANSITO",
+                    "RECIBIDO",
+                    "RECIBIDO_PARCIAL",
+                    "ANULADO"
+                ],
+                "title": "TransferStatus"
+            },
+            "TransferSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/TransferStatus"
+                    },
+                    "origin_warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "destination_warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "created_by": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "status",
+                    "origin_warehouse",
+                    "destination_warehouse",
+                    "created_by",
+                    "created_at"
+                ],
+                "title": "TransferSummaryResource"
             },
             "UpdateProductRequest": {
                 "type": "object",
@@ -2887,6 +4443,20 @@
                     "errors"
                 ],
                 "title": "ValidationError"
+            },
+            "VoidTransferRequest": {
+                "type": "object",
+                "description": "Anulaci\u00f3n con motivo (transfers \"Anulaci\u00f3n del traslado\"): creador o transfers.approve. `reason` de solo\nespacios llega como null (TrimStrings + ConvertEmptyStringsToNull) y falla `required`.",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "VoidTransferRequest"
             },
             "WarehouseResource": {
                 "type": "object",
