@@ -11,10 +11,11 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-2 | minor | add-stock-and-kardex (final-auditor) | `kardex_movements.created_at` usa `CURRENT_TIMESTAMP` (inicio de transacción); con transacciones solapadas el listado de `GET /api/kardex` (`InventoryQuery.php:50`, orden por `created_at`) puede mostrar la historia fuera del orden de `balance_after`. | add-dispensation: migración a `clock_timestamp()` + prueba de transacciones solapadas en orden inverso |
+| D-auv-3 | minor | add-dispensation (final-auditor, delta) | `PATCH /api/products/{product}` y `PATCH /api/warehouses/{warehouse}` (`routes/api.php:41,45`, S1) responden 500 con id `9999999999999999999` (desborde de `int`). | add-transfers: tope `[0-9]{1,18}` en esos parámetros + prueba de 404 |
 
 ## Settled
 
 | Id | Settled in | How |
 |---|---|---|
 | D-auv-1 | add-stock-and-kardex (`1349b07`) | `SpaClient` envía `X-XSRF-TOKEN` solo en escrituras; mutación sobre `GET /api/auth/me` hace fallar `CsrfTest.php:57`; verificado por final-auditor. |
+| D-auv-2 | add-dispensation (`fabb1c9`) | `created_at` del kardex con `clock_timestamp()`; prueba de transacciones solapadas falla con el valor anterior; verificado por final-auditor. |

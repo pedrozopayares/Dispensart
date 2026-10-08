@@ -222,3 +222,10 @@ Tareas 7.1–7.4 `[x]`. Commit `1aea2be`. Filas nuevas PAT-30..32, M15 y comprob
   archivo en modo escritura antes de leerlo, y eso borró los cambios sin confirmar de S4. Restauré la versión
   confirmada y reapliqué el reemplazo exacto de S4, tomado de su transcripción (+24 líneas, idénticas). Solo mi línea
   entró al commit, por blob preparado. S4 debe confirmar que su `routes/api.php` está como lo dejó.
+
+## 2026-10-08 — Orchestrator: GATE 2
+
+- final-auditor: OBSERVATIONS (1 major RN-10 búsqueda del auditor, 1 minor id desbordado) → corregidas en
+  `8960355` (spec), `1aea2be` (código + pruebas, M15), `81b6b11` (registro). Re-auditoría delta: `APPROVED`.
+- GATE 2: APPROVED
+- DEBT: D-auv-2 saldado. Filado D-auv-3 (minor, mismo desborde de id en rutas de S1) con arrastre a S4.
