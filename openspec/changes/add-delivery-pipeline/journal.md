@@ -255,3 +255,26 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 | Comando de evaluación del README, literal (`--profile tools run --rm api-tools php artisan assistant:eval`) | sale 0, `Aciertos: 24/24`; instaló dependencias (135 líneas `Installing\|Generating` en stderr) |
 | Control positivo: el mismo comando en el clon previo al arreglo (`ecae484`) | sale 255, `vendor/autoload.php` ausente |
 | Limpieza: `--profile tools down -v` del proyecto `dispensart-clon`, clon y 3 imágenes `:clon` borrados | 0 proyectos, 0 volúmenes `dispensart-clon`; `dispensart-{api,db,web}-1` siguen healthy; 24 contenedores en marcha antes y después |
+
+## 2026-10-08 — devops-implementer: 6.1 (verification.md)
+
+- `verification.md` en tablas: § 0 reparto de líneas por commit de S8, § 1 una fila por escenario (DP 22, PD 13,
+  CI 3), § 2 cláusula → ancla de las líneas con HTTP, § 3 saldo de D-auv-4/5/6, § 4 tareas Cimiento.
+- 6.1 queda `[x]` salvo las filas de 4.5 (DP › Espera de aprobación, Aprobado, Rechazado y § 5), presentes y
+  marcadas «pendiente: 4.5, run de main del usuario». Las completa el Orchestrator cuando el usuario fusione `dev`
+  → `main` y rechace/apruebe producción. 4.5 sigue `[ ]`.
+- DP › Staging fallido y DP › Construcción fallida se prueban por estructura (`needs`) más los runs negativos: no se
+  forzó un run de `main` con staging roto ni una construcción rota.
+
+| Verificación de 6.1 | Resultado |
+|---|---|
+| `npx openspec validate add-delivery-pipeline --strict` | `Change 'add-delivery-pipeline' is valid`, sale 0 |
+| bucle `SIN FILA` de 6.1 sobre los 38 escenarios | sin salida |
+| control positivo: mismo bucle sobre una copia sin la fila «Checkout sin credenciales persistidas» | `SIN FILA Checkout_sin_credenciales_persistidas` |
+| filas `DP-\|PD-\|CI-` en `verification.md` | 38 |
+| celdas «pendiente: 4.5, run de main del usuario» | 6 (3 escenarios + 3 pasos de § 5) |
+| barrido de secretos (`ghp_\|gho_\|github_pat_\|AKIA…\|-----BEGIN\|base64:…\|sk-…\|PASSWORD=[^$*. ]`) sobre `verification.md`, `journal.md`, `compose.yaml`, `asistente.md` | solo el texto de los propios patrones de barrido citados (4 líneas), ningún valor; control positivo `ghp_` sintético = 1 |
+
+- Deuda (prosa): el arreglo de `api-tools` escribe `vendor/` en `software/api` del anfitrión en el primer uso;
+  en Linux con un uid de anfitrión distinto de 1000 la instalación podría fallar por permisos del bind mount (no
+  probado: el anfitrión es macOS). CI no usa `api-tools`.
