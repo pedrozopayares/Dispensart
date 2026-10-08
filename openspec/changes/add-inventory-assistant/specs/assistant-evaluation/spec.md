@@ -42,7 +42,7 @@ SHALL terminar con código 0 solo si todas aciertan (parte C, § 7).
 
 #### Scenario: Proveedor no disponible
 - **WHEN** se ejecuta con `AI_PROVIDER=ollama` y el servidor Ollama no responde
-- **THEN** cada fila dice fallo por asistente no disponible, el comando termina sin excepción sin capturar y con código de salida distinto de 0
+- **THEN** el comando muestra una fila por entrada; cada fila que necesita al proveedor dice fallo con la expectativa incumplida `asistente no disponible`; las filas que el filtro previo responde sin llamar al proveedor (las preguntas sobre un paciente, `outcome` `out_of_scope`) dicen acierto; el comando termina sin excepción sin capturar y con código de salida 1, distinto de 0
 
 ### Requirement: Evaluación aislada de los datos operativos
 El comando SHALL evaluar sobre datos de evaluación propios y conocidos, de modo que su resultado no dependa de

@@ -95,3 +95,12 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   - `composer openapi:check` no corre dentro de `api-tools` (sin repositorio git en el contenedor, código 129); la deriva se verificó con `git diff` en el anfitrión. Preexistente.
   - `assistant:eval` imprime también las líneas JSON `assistant.query` por stderr junto a la tabla; cosmético en el log de CI.
 - Pendiente de devops-implementer: 7.1 (variables y `extra_hosts` en compose y `.env.example`), 7.2 (paso de CI) y 9.1 (humo en el stack).
+
+## 2026-10-08 — spec-engineer: redacción de EV «Proveedor no disponible»
+
+- Origen: deuda en prosa del backend-implementer (escenario decía "cada fila dice fallo"). Sin cambio de código ni de prueba.
+- Fuente contrastada: `AssistantEvalCommandTest.php:101` (código 1; una fila por entrada; toda fila FALLO lleva `asistente no disponible`; FALLO = entradas − 2), `AssistantEvalCommand.php:67` (captura `AssistantUnavailable` por fila), `QuestionPreFilter` (paciente o documento → `out_of_scope` sin proveedor), dataset: `patient-name` y `patient-document` esperan `out_of_scope`; `verification.md` § 5 (`Aciertos: 2/23`, código 1) y § 6.
+- Cambio: THEN de `specs/assistant-evaluation/spec.md` ahora dice: una fila por entrada; fila que necesita proveedor → fallo `asistente no disponible`; filas del filtro previo (preguntas de paciente, `out_of_scope`) → acierto; sin excepción sin capturar; código 1, distinto de 0. Requisito y título intactos: la fila EVL-06 de `verification.md` sigue mapeando por título.
+- `openspec validate add-inventory-assistant --strict`: válido.
+- Ancla de transporte: 34 hits, 0 sin ancla; escenario editado 0 hits (no afirma HTTP ni forma de error). Control positivo: línea `HTTP 422 … validation_failed` sin ancla → 1 hit, 0 anclas (el barrido la detectaría).
+- Supuestos: 0. Preguntas abiertas: ninguna. Queda para el Orchestrator cerrar la fila de § 6 de `verification.md` (registro, no código).
