@@ -75,3 +75,23 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Condición 4 (ADR / RN): costo cero (sin API externa de pago); ningún dato de paciente hacia el modelo (RN-10).
 - GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier A
 - Compromiso para el README: el servidor redacta la respuesta con datos de herramientas; el modelo solo elige herramientas.
+
+## 2026-10-08 — backend-implementer: apply (0.1, 1–6, 8.1, 9.2, 9.3)
+
+- **0.1 contraste** (`openspec validate --all --strict` válido; `/usr/bin/grep -rn 'class StockPolicy\|class TransferPolicy\|function scopeFilter\|function lowStock\|function expiringLots\|class RedactExceptionProcessor' software/api/app` con hit en cada costura). Diferencias, ninguna cambia un escenario:
+  - S5 no tiene Policy propia de alertas: `ListAlertsRequest` usa `StockPolicy::viewAny` (inventory.view). `get_low_stock_alerts` autoriza con el mismo sujeto (`Stock::class`).
+  - Firmas reales de S5: `AlertQuery::expiringLots(?int $warehouseId)` y `lowStock(?int $warehouseId)`. `expiringLots` gana `int $days = EXPIRY_WINDOW_DAYS, ?int $productId = null`; la ruta de alertas no los pasa (pruebas de S5 verdes en la corrida completa).
+  - `Transfer::scopeFilter` combina `status`/origen/destino con Y; "por bodega" del asistente es origen O destino: `where` propio en la herramienta, `status` por `filter()`.
+  - `ThrottleRequestsException` caía en `HttpExceptionInterface` → `too_many_attempts`; ahora tiene su rama `too_many_requests` (único `throttle:` del repo: el del asistente).
+- Commits: `e62b004` herramientas, `08930f5` asistente, `4de4a0e` pruebas de defensa, `b57602a` reglas arch, `df5f321` OpenAPI + `api-schema.ts`, `f9f931b` evaluación, `8699ed1` datasets de Ollama, `b6d6d02` documento.
+- Corrida completa única (9.2) en `b6d6d02`: Pint, Larastan y Pest verdes (cifras en `verification.md` § 5). Corridas delta solo por archivo o filtro. `assistant:eval` con `mock`: todas aciertan, código 0.
+- `[MUT]` M1–M9: cada uno falla aplicado y pasa restaurado (`verification.md` § 3, parches en `mutants/`). M4 sobrevivió al primer intento y destapó que `arch()->expect([ns1, ns2])->not->toUse()` de Pest pasa con arreglo de objetivos; se separó una regla por espacio de nombres.
+- Falsos verdes corregidos antes de cerrar: datasets de Pest con cierres anidados no llegaban a la prueba como se suponía (Ollama, comando); `Artisan::output()` devolvía la salida del `migrate` anidado; un filtro de log comparaba `ERROR` contra niveles PSR en minúscula.
+- Decisiones: controlador en `App\Http\Controllers\Assistant\` (convención del repo, no la ruta de design D1); `ChatRequest` lleva el tiempo restante del plazo; `AskAssistantRequest` sin `authorize()` (evita un 403 documentado que la ruta no devuelve); `AssistantEvalSeeder` es la única fuente de datos de los escenarios de ruta y del comando.
+- Deuda para el Orchestrator (en prosa, sin id):
+  - EV «Proveedor no disponible» dice que cada fila falla; las preguntas de pacientes las responde el filtro previo sin proveedor y aciertan. La prueba afirma el comportamiento real; corresponde ajustar la redacción del escenario (spec-engineer).
+  - La forma `expect([...])->not->toUse()` de Pest no protege nada; ninguna regla actual del repo la usa, pero conviene dejarlo escrito para reglas futuras.
+  - La calidad con Ollama real no se midió (sin Ollama en el anfitrión); el documento da el comando.
+  - `composer openapi:check` no corre dentro de `api-tools` (sin repositorio git en el contenedor, código 129); la deriva se verificó con `git diff` en el anfitrión. Preexistente.
+  - `assistant:eval` imprime también las líneas JSON `assistant.query` por stderr junto a la tabla; cosmético en el log de CI.
+- Pendiente de devops-implementer: 7.1 (variables y `extra_hosts` en compose y `.env.example`), 7.2 (paso de CI) y 9.1 (humo en el stack).

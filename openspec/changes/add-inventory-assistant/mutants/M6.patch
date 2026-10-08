@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Services/Assistant/AssistantOrchestrator.php b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+index ce11f78..90f90b0 100644
+--- a/software/api/app/Services/Assistant/AssistantOrchestrator.php
++++ b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+@@ -61,7 +61,7 @@ public function answer(User $user, string $question, ?QueryTrace $trace = null):
+             }
+ 
+             $trace->rounds++;
+-            $response = $this->provider->chat(new ChatRequest(SystemPrompt::TEXT, $messages, $this->registry->definitions(), $remaining));
++            $response = $this->provider->chat(new ChatRequest(SystemPrompt::TEXT.implode("\n", array_map(fn (ChatMessage $m): string => $m->content, array_filter($messages, fn (ChatMessage $m): bool => $m->role === ChatMessage::TOOL))), $messages, $this->registry->definitions(), $remaining));
+             if (! $response->hasToolCalls()) {
+                 break;
+             }

@@ -1,0 +1,15 @@
+diff --git a/software/api/app/Services/Assistant/AssistantOrchestrator.php b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+index ce11f78..335d126 100644
+--- a/software/api/app/Services/Assistant/AssistantOrchestrator.php
++++ b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+@@ -71,7 +71,9 @@ public function answer(User $user, string $question, ?QueryTrace $trace = null):
+                 foreach ($unknown as $call) {
+                     $trace->calls[] = new ToolCallRecord($call->name, ToolCallStatus::Rejected);
+                 }
+-                break;
++                $messages[] = ChatMessage::assistant($response->toolCalls);
++
++                continue;
+             }
+ 
+             $messages[] = ChatMessage::assistant($response->toolCalls);

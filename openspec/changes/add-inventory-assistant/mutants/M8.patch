@@ -1,0 +1,15 @@
+diff --git a/software/api/app/Services/Assistant/AssistantOrchestrator.php b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+index ce11f78..e9e6d65 100644
+--- a/software/api/app/Services/Assistant/AssistantOrchestrator.php
++++ b/software/api/app/Services/Assistant/AssistantOrchestrator.php
+@@ -76,10 +76,6 @@ public function answer(User $user, string $question, ?QueryTrace $trace = null):
+ 
+             $messages[] = ChatMessage::assistant($response->toolCalls);
+             foreach ($response->toolCalls as $call) {
+-                if (count($trace->calls) >= $maxCalls) {
+-                    $limitHit = true;
+-                    break 2;
+-                }
+                 $record = $this->execute($user, $call);
+                 $trace->calls[] = $record;
+                 $messages[] = ChatMessage::tool($record->tool, $call->id, $this->envelope->wrap($record, $call->id));

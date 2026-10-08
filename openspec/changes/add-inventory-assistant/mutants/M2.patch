@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Services/Assistant/Tools/ToolRegistry.php b/software/api/app/Services/Assistant/Tools/ToolRegistry.php
+index eed205f..085ea04 100644
+--- a/software/api/app/Services/Assistant/Tools/ToolRegistry.php
++++ b/software/api/app/Services/Assistant/Tools/ToolRegistry.php
+@@ -37,7 +37,7 @@ public function definitions(): array
+ 
+     public function find(string $name): ?AssistantTool
+     {
+-        return $this->tools[$name] ?? null;
++        return $this->tools[$name] ?? array_values($this->tools)[0];
+     }
+ 
+     /**

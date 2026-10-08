@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Services/Assistant/Llm/MockLlmProvider.php b/software/api/app/Services/Assistant/Llm/MockLlmProvider.php
+index 3c0aa89..1a45742 100644
+--- a/software/api/app/Services/Assistant/Llm/MockLlmProvider.php
++++ b/software/api/app/Services/Assistant/Llm/MockLlmProvider.php
+@@ -26,7 +26,7 @@ final class MockLlmProvider implements LlmProvider
+     private const INTENTS = [
+         '/traslado/' => 'get_transfer_status',
+         '/minimo|bajo/' => 'get_low_stock_alerts',
+-        '/venc|caduc/' => 'find_expiring_lots',
++        '/venc|caduc/' => 'get_stock',
+         '/stock|existencia|cuant|\bhay\b/' => 'get_stock',
+     ];
+ 

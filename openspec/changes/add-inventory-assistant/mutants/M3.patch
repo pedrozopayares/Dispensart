@@ -1,0 +1,15 @@
+diff --git a/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php b/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
+index e47c340..d2a57ba 100644
+--- a/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
++++ b/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
+@@ -26,10 +26,6 @@ final class ReadOnlyToolRunner
+      */
+     public function run(User $user, AssistantTool $tool, array $arguments): ToolCallRecord
+     {
+-        if (! Gate::forUser($user)->allows('viewAny', $tool->policySubject())) {
+-            return new ToolCallRecord($tool->name(), ToolCallStatus::Denied, $arguments);
+-        }
+-
+         DB::beginTransaction();
+         try {
+             DB::statement('SET LOCAL transaction_read_only = on');

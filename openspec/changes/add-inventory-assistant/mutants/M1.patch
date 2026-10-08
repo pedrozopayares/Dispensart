@@ -1,0 +1,12 @@
+diff --git a/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php b/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
+index e47c340..352dc6e 100644
+--- a/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
++++ b/software/api/app/Services/Assistant/Tools/ReadOnlyToolRunner.php
+@@ -32,7 +32,6 @@ public function run(User $user, AssistantTool $tool, array $arguments): ToolCall
+ 
+         DB::beginTransaction();
+         try {
+-            DB::statement('SET LOCAL transaction_read_only = on');
+             $data = $tool->run($arguments);
+         } catch (QueryException $e) {
+             if ($e->getCode() !== self::READ_ONLY_VIOLATION) {

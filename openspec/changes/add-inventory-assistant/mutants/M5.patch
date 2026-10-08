@@ -1,0 +1,12 @@
+diff --git a/software/api/app/Services/Assistant/QuestionPreFilter.php b/software/api/app/Services/Assistant/QuestionPreFilter.php
+index 9291c49..44fceee 100644
+--- a/software/api/app/Services/Assistant/QuestionPreFilter.php
++++ b/software/api/app/Services/Assistant/QuestionPreFilter.php
+@@ -15,6 +15,7 @@ final class QuestionPreFilter
+ 
+     public function blocks(string $question): bool
+     {
++        return false;
+         $text = Text::normalize($question);
+         // 9.999.010.001 → 9999010001: los separadores de miles no esconden un documento.
+         $digits = (string) preg_replace('/(?<=\d)\.(?=\d)/', '', $text);
