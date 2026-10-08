@@ -39,6 +39,9 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- Siembra determinista: sin contraseña de entorno salvo que la prueba la fije (design D10). -->
+        <env name="SEED_USER_PASSWORD" value="" force="true"/>
+        <server name="SEED_USER_PASSWORD" value="" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

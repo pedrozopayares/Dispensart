@@ -1,3 +1,3 @@
 <?php
 
-// API sin vistas: la SPA vive en software/web. Este grupo queda para las rutas de sesión de Sanctum (S1).
+// API sin vistas: la SPA vive en software/web. El grupo web solo sirve /sanctum/csrf-cookie (ruta de Sanctum).
