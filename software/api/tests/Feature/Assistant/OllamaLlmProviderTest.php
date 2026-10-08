@@ -70,9 +70,14 @@ test('Ollama con llamada a herramienta: petición con el modelo y las 4 herramie
     'argumentos texto JSON' => ['{"product":"acetaminofén","warehouse":"Farmacia Central"}'],
 ]);
 
-test('Ollama caído o lento: 503 assistant_unavailable sin URL, traza ni texto del proveedor', function (Closure $fake) {
+test('Ollama caído o lento: 503 assistant_unavailable sin URL, traza ni texto del proveedor', function (string $case) {
     useOllama();
-    Http::fake([OLLAMA_URL.'/*' => $fake]);
+    Http::fake([OLLAMA_URL.'/*' => match ($case) {
+        'refused' => Http::failedConnection('cURL error 7: Failed to connect to ollama.prueba port 11434'),
+        'timeout' => Http::failedConnection('cURL error 28: Operation timed out after 5000 milliseconds'),
+        'http_500' => Http::response(['error' => 'secreto-del-proveedor'], 500),
+        'no_message' => Http::response(['error' => 'secreto-del-proveedor'], 200),
+    }]);
 
     $response = ask(worldUser($this->world, Role::AuxiliarFarmacia), STOCK_QUESTION);
 
@@ -81,11 +86,13 @@ test('Ollama caído o lento: 503 assistant_unavailable sin URL, traza ni texto d
         'message' => 'El asistente no está disponible en este momento. Intenta más tarde.',
     ]);
     expect($response->getContent())->not->toContain('ollama')->not->toContain('11434')->not->toContain('secreto-del-proveedor');
+    // La petición sí llegó al borde HTTP simulado (control: el 503 no viene de otra parte).
+    Http::assertSentCount(1);
 })->with([
-    'conexión rechazada' => [fn () => Http::failedConnection('cURL error 7: Failed to connect to ollama.prueba port 11434')],
-    'HTTP 500' => [fn () => fn () => Http::response(['error' => 'secreto-del-proveedor'], 500)],
-    'tiempo agotado' => [fn () => Http::failedConnection('cURL error 28: Operation timed out after 5000 milliseconds')],
-    'JSON sin message' => [fn () => fn () => Http::response(['error' => 'secreto-del-proveedor'], 200)],
+    'conexión rechazada' => ['refused'],
+    'HTTP 500' => ['http_500'],
+    'tiempo agotado' => ['timeout'],
+    'JSON sin message' => ['no_message'],
 ]);
 
 test('Sin variable usa el modo simulado: answered y ninguna petición de red', function (?string $value) {
