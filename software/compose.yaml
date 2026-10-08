@@ -34,7 +34,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # API: PHP-FPM + Nginx bajo supervisord, no root (design D1). Migra y gestiona APP_KEY al arrancar (D2).
+  # API: PHP-FPM + Nginx bajo supervisord, no root (design D1). Gestiona APP_KEY (D2), migra y siembra al arrancar.
   api:
     build:
       context: .
@@ -44,7 +44,9 @@ services:
     environment:
       <<: *db-env
       APP_NAME: Dispensart
-      APP_ENV: ${APP_ENV:-production}
+      # Stack de evaluación local: APP_ENV=local permite el valor por defecto de SEED_USER_PASSWORD y así
+      # el arranque desde cero siembra los 5 usuarios. Con production, sin SEED_USER_PASSWORD no hay usuarios.
+      APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-false}
       # Vacía: el arranque la genera y la persiste en api_state. Si se define, se usa tal cual.
       APP_KEY: ${APP_KEY:-}
@@ -52,6 +54,12 @@ services:
       LOG_CHANNEL: stderr
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DB_CONNECT_TIMEOUT: 2
+      # Sin valor por defecto aquí (design D10): vacía = ausente y la API usa su valor SOLO de desarrollo.
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}
+      # Orígenes con sesión Sanctum: los de la SPA publicada en WEB_PORT.
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:${WEB_PORT:-8090},127.0.0.1:${WEB_PORT:-8090}}
+      # Proxies cuyo X-Forwarded-* se acepta: la red interna de compose (web) (design D3).
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
     volumes:
       - api_state:/var/lib/dispensart
     # Sin ports: solo alcanzable por la red interna, a través de web.
