@@ -210,3 +210,38 @@ mutaciones de comprobación; lint 0, tsc 0, build OK.
 **Deuda (prosa)**: la siembra solo trae un regente, así que el recorrido de aprobación segregada sobre el stack
 exige crear un segundo regente a mano; un usuario semilla adicional lo haría reproducible. El build avisa de un
 bloque mayor de 500 kB (división por ruta es no-objetivo del diseño).
+
+## 2026-10-08 — frontend-implementer: alertas sobre el contrato de S5 (0.2, 1.3, 4.2, 6.2, 6.3)
+
+**Cerradas**: 0.2, 1.3, 4.2, 6.2, 6.3. **Pendiente**: 7.1 (humo sobre el stack) y la corrida completa de cierre.
+Matriz y mutaciones e–j en `verification.md`.
+
+**0.2 — contraste final (S5)**
+- Barrido sin `/api`: 23 rutas de las 11 familias, `alerts` incluida; `"url": "/api"` → 1; cabeceras de
+  idempotencia → 3. `npm run api:types:check` limpio: los tipos de `db01342` están al día.
+- `GET /api/alerts`: `expiring_lots[]{warehouse, product, lot{id, lot_code, expires_on, is_expired}, quantity,
+  days_to_expiry}` y `low_stock[]{warehouse, product, minimum_quantity, available_quantity}`. Sin diferencias de
+  nombre de campo con la tabla de `add-alerts/design.md` ni con los escenarios de inventory-screen.
+- Diferencias acumuladas S1–S5 (ninguna cambia un escenario): `created_by` anulable en el detalle de traslado;
+  `PrescriptionStatus` publicado como `string` (literales a mano en `api-types.ts`); `abilities` como `unknown[]`
+  (unión `Ability` en `abilities.ts`). Sin otros tipos a mano.
+
+**Decisiones**
+- Alertas en una consulta propia (`useAlerts`, clave `alerts` ya invalidada tras cada escritura de stock) con la
+  bodega de la tabla; el producto no filtra alertas (la API solo admite bodega).
+- Resaltado solo desde la API: índice bodega + lote para `expiring_lots` y bodega + producto para `low_stock`
+  (`alert-index.ts`). Lote vigente en la lista → "Vence en {n} días" (singular para 1); lote vencido → "Vencido".
+- Fallo de alertas en su zona ("No pudimos cargar las alertas." + "Reintentar"): la tabla de existencias no se
+  oculta. `ErrorMessage` admite `message` (texto de la zona, del módulo de textos) en lugar del texto por código.
+- 6.2: `no-console` pasa a `error` sin excepciones (antes admitía `warn`/`error`). El espía de consola vive en
+  `src/test/console-spy.ts` y lo usa la prueba de la búsqueda fallida.
+- Las pruebas que montan `/inventory` sirven ahora `GET /api/alerts` (`noAlertsRoute()`): la red simulada rechaza
+  peticiones sin manejador.
+
+**Ejecuciones** (solo deltas; las corridas completas no se tocan): delta de desarrollo 56/56; mutaciones e–j
+fallan y se restauran; delta de cierre 104/104 (16 archivos), repetida una vez solo para leer el total; lint 0;
+typecheck 0.
+
+**Deuda (prosa)**: `main.tsx` lanza un `Error` en español si falta `#root`; no es texto visible de la interfaz
+pero queda fuera del módulo de textos. Las alertas no siguen el filtro de producto de la tabla: el panel "Productos
+bajo mínimo" lista todos los productos de la bodega aunque la tabla muestre uno solo.

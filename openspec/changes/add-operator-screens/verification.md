@@ -1,6 +1,6 @@
 # Verification — add-operator-screens (S6, tier B) — PARCIAL
 
-Aplicación temprana: solo tareas cuya API existe (S1–S4). 4.2, 6.2, 6.3 y 7 esperan S5 o el cierre.
+Aplicación temprana: S1–S5 contrastados; 4.2, 6.2 y 6.3 cerradas sobre el contrato de S5. 7.1 (humo) y el cierre completo quedan pendientes.
 Prefijos: `OW` operator-workspace, `DS` dispensation-screen (nivel de hook), `INV` inventory-screen, `TS` transfers-screen,
 `KDX` kardex-screen, `CIM` cimiento sin escenario. Rutas de prueba relativas a `software/web/src/`.
 
@@ -19,6 +19,9 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | Producto — SPA, Traslados (S4) | `features/transfers/*.ts(x)` sin pruebas + `components/pagination.tsx` (nuevas); `lib/`, `app/`, `home`, `kardex` (modificadas) | 1172 nuevas + 233 / −58 modificadas |
 | Prueba — SPA, Traslados (S4) | `features/transfers/*.test.*`, `test/transfer-fixtures.ts` (nuevas); `app/require-ability.test.tsx` (modificada) | 740 nuevas + 66 / −6 modificadas |
 | Generado — Traslados | `src/lib/api-schema.ts` (`npm run api:types`, commit propio) · `components/ui/textarea.tsx` (shadcn CLI) | 946 · 17 |
+| Producto — SPA, Alertas y privacidad (S5) | `features/inventory/{alert-index.ts,inventory-alerts.tsx}` (nuevas); `inventory-page.tsx`, `api.ts`, `queries.ts`, `lib/{api-types,query-keys,strings}.ts`, `components/error-message.tsx`, `eslint.config.js` (modificadas) | 115 nuevas + 103 / −39 modificadas |
+| Prueba — SPA, Alertas y privacidad (S5) | `features/inventory/inventory-alerts.test.tsx`, `test/console-spy.ts` (nuevas); `test/fixtures.ts`, `inventory/{api,inventory-page}.test.*`, `app/require-ability.test.tsx`, `dispensations/dispensation-page.test.tsx` (modificadas) | 213 nuevas + 75 / −10 modificadas |
+| Registro — Alertas y privacidad (S5) | `tasks.md`, `journal.md`, `verification.md` de este cambio | ver `git show --numstat` del commit de registro |
 
 ## 1. Matriz escenario → prueba → archivo:línea
 
@@ -35,19 +38,19 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | OW-09 | Bloqueo del doble envío: Botón rehabilitado tras un rechazo | Botón rehabilitado tras un rechazo | components/submit-button.test.tsx:95 |
 | OW-10 | Disposición común: Confirmación en diálogo propio | Confirmación en diálogo propio | components/confirm-dialog.test.tsx:32 |
 | OW-11 | Disposición común: Error anunciado | Error anunciado | components/confirm-dialog.test.tsx:59 |
-| OW-12 | Guarda de ruta: Acceso directo sin capacidad | Acceso directo sin capacidad (+ control positivo :27) | app/require-ability.test.tsx:17 |
-| OW-13 | Guarda de ruta: Acceso directo con capacidad | Acceso directo con capacidad | app/require-ability.test.tsx:35 |
-| OW-14 | Guarda de ruta: El servidor niega aunque la guarda permita | El servidor niega | app/require-ability.test.tsx:47 |
+| OW-12 | Guarda de ruta: Acceso directo sin capacidad | Acceso directo sin capacidad (+ control positivo :29) | app/require-ability.test.tsx:19 |
+| OW-13 | Guarda de ruta: Acceso directo con capacidad | Acceso directo con capacidad | app/require-ability.test.tsx:37 |
+| OW-14 | Guarda de ruta: El servidor niega aunque la guarda permita | El servidor niega | app/require-ability.test.tsx:49 |
 | DS-01 | Confirmación idempotente: Reintento tras fallo de red reutiliza la clave (hook) | Reintento tras fallo de red | lib/use-idempotent-intent.test.ts:29 |
 | DS-02 | Confirmación idempotente: Reintento tras autorizador corregido reutiliza la clave (hook) | Reintento tras autorizador corregido | lib/use-idempotent-intent.test.ts:37 |
 | DS-03 | Confirmación idempotente: Cambio de cantidad genera clave nueva (hook) | Cambio de cantidad | lib/use-idempotent-intent.test.ts:46 |
 | DS-04 | Confirmación idempotente: Nueva dispensación genera clave nueva (hook) | Nueva dispensación | lib/use-idempotent-intent.test.ts:55 |
 | DS-05 | Confirmación idempotente: Clave reutilizada con otros datos (hook) | idempotency_key_reused descarta | lib/use-idempotent-intent.test.ts:63 |
 | INV-01 | Existencias por bodega y lote: Consulta por bodega | Consulta por bodega | features/inventory/inventory-page.test.tsx:30 |
-| INV-02 | Existencias por bodega y lote: Sin existencias para el filtro | Sin existencias | features/inventory/inventory-page.test.tsx:54 |
-| INV-03 | Existencias por bodega y lote: Fallo de la consulta | Fallo de la consulta | features/inventory/inventory-page.test.tsx:64 |
-| INV-04 | Existencias por bodega y lote: Lote vencido marcado | Lote vencido marcado | features/inventory/inventory-page.test.tsx:90 |
-| INV-05 | Existencias por bodega y lote: Auditor sin controles de edición | Auditor sin controles | features/inventory/inventory-page.test.tsx:131 |
+| INV-02 | Existencias por bodega y lote: Sin existencias para el filtro | Sin existencias | features/inventory/inventory-page.test.tsx:55 |
+| INV-03 | Existencias por bodega y lote: Fallo de la consulta | Fallo de la consulta | features/inventory/inventory-page.test.tsx:66 |
+| INV-04 | Existencias por bodega y lote: Lote vencido marcado | Lote vencido marcado | features/inventory/inventory-page.test.tsx:93 |
+| INV-05 | Existencias por bodega y lote: Auditor sin controles de edición | Auditor sin controles | features/inventory/inventory-page.test.tsx:137 |
 | KDX-01 | Historial filtrable: Tipos en español | Tipos en español | features/kardex/kardex-page.test.tsx:20 |
 | KDX-02 | Historial filtrable: Cantidad con signo y usuario del sistema | Cantidad con signo | features/kardex/kardex-page.test.tsx:40 |
 | KDX-03 | Historial filtrable: Filtro por producto y lote | Filtro por producto y lote | features/kardex/kardex-page.test.tsx:69 |
@@ -60,19 +63,19 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | KDX-10 | Paginación y filtros en la URL: Primera y última página | Primera y última | features/kardex/kardex-page.test.tsx:161 |
 | KDX-11 | Movimientos inmutables: Regente sin edición | Regente sin edición | features/kardex/kardex-page.test.tsx:176 |
 | EXT-01 | (requisito) fecha en `America/Bogota` | fecha en Bogota con TZ del proceso en Asia/Tokyo | features/kardex/kardex-page.test.tsx:59 |
-| DS-06 | Búsqueda de paciente: Búsqueda con resultados | Búsqueda con resultados | features/dispensations/dispensation-page.test.tsx:27 |
-| DS-07 | Búsqueda de paciente: Término demasiado corto | Término demasiado corto | features/dispensations/dispensation-page.test.tsx:46 |
-| DS-08 | Búsqueda de paciente: Sin resultados | Sin resultados | features/dispensations/dispensation-page.test.tsx:57 |
-| DS-09 | Búsqueda de paciente: Fallo de la búsqueda | Fallo de la búsqueda | features/dispensations/dispensation-page.test.tsx:71 |
-| DS-10 | Búsqueda de paciente: Selección con teclado | Selección con teclado | features/dispensations/dispensation-page.test.tsx:96 |
-| DS-11 | Datos enmascarados: Auditor ve datos enmascarados | Auditor ve datos enmascarados | features/dispensations/dispensation-page.test.tsx:115 |
-| DS-12 | Datos enmascarados: Auditor sin forma de desenmascarar | Auditor sin forma de desenmascarar | features/dispensations/dispensation-page.test.tsx:126 |
-| DS-13 | Datos enmascarados: Auxiliar ve datos en claro | Auxiliar ve datos en claro | features/dispensations/dispensation-page.test.tsx:136 |
-| DS-14 | Prescripciones: Prescripción vigente elegible | Prescripción vigente elegible | features/dispensations/dispensation-page.test.tsx:147 |
-| DS-15 | Prescripciones: Vencida y agotada no elegibles | Vencida y agotada | features/dispensations/dispensation-page.test.tsx:167 |
-| DS-16 | Prescripciones: Paciente sin prescripciones | Paciente sin prescripciones | features/dispensations/dispensation-page.test.tsx:186 |
-| DS-17 | Prescripciones: Fallo al cargar la ficha | Fallo al cargar la ficha | features/dispensations/dispensation-page.test.tsx:193 |
-| DS-18 | Modo consulta: Auditor en modo consulta · Médico en modo consulta | `it.each` auditor, medico (+ control positivo :230) | features/dispensations/dispensation-page.test.tsx:216 |
+| DS-06 | Búsqueda de paciente: Búsqueda con resultados | Búsqueda con resultados | features/dispensations/dispensation-page.test.tsx:28 |
+| DS-07 | Búsqueda de paciente: Término demasiado corto | Término demasiado corto | features/dispensations/dispensation-page.test.tsx:47 |
+| DS-08 | Búsqueda de paciente: Sin resultados | Sin resultados | features/dispensations/dispensation-page.test.tsx:58 |
+| DS-09 | Búsqueda de paciente: Fallo de la búsqueda | Fallo de la búsqueda | features/dispensations/dispensation-page.test.tsx:72 |
+| DS-10 | Búsqueda de paciente: Selección con teclado | Selección con teclado | features/dispensations/dispensation-page.test.tsx:95 |
+| DS-11 | Datos enmascarados: Auditor ve datos enmascarados | Auditor ve datos enmascarados | features/dispensations/dispensation-page.test.tsx:114 |
+| DS-12 | Datos enmascarados: Auditor sin forma de desenmascarar | Auditor sin forma de desenmascarar | features/dispensations/dispensation-page.test.tsx:125 |
+| DS-13 | Datos enmascarados: Auxiliar ve datos en claro | Auxiliar ve datos en claro | features/dispensations/dispensation-page.test.tsx:135 |
+| DS-14 | Prescripciones: Prescripción vigente elegible | Prescripción vigente elegible | features/dispensations/dispensation-page.test.tsx:146 |
+| DS-15 | Prescripciones: Vencida y agotada no elegibles | Vencida y agotada | features/dispensations/dispensation-page.test.tsx:166 |
+| DS-16 | Prescripciones: Paciente sin prescripciones | Paciente sin prescripciones | features/dispensations/dispensation-page.test.tsx:185 |
+| DS-17 | Prescripciones: Fallo al cargar la ficha | Fallo al cargar la ficha | features/dispensations/dispensation-page.test.tsx:192 |
+| DS-18 | Modo consulta: Auditor en modo consulta · Médico en modo consulta | `it.each` auditor, medico (+ control positivo :229) | features/dispensations/dispensation-page.test.tsx:215 |
 | DS-19 | Vista previa FEFO: Lotes en orden FEFO | Lotes en orden FEFO | features/dispensations/dispensation-confirm.test.tsx:57 |
 | DS-20 | Vista previa FEFO: Unidades vencidas excluidas | Unidades vencidas excluidas | features/dispensations/dispensation-confirm.test.tsx:76 |
 | DS-21 | Vista previa FEFO: Faltante en la vista previa | Faltante | features/dispensations/dispensation-confirm.test.tsx:89 |
@@ -97,16 +100,16 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | DS-40 | Confirmación idempotente: Stock agotado entre la vista previa y la confirmación | Stock agotado | features/dispensations/dispensation-confirm.test.tsx:425 |
 | DS-41 | Confirmación idempotente: Clave reutilizada con otros datos | Clave reutilizada | features/dispensations/dispensation-confirm.test.tsx:446 |
 | DS-42 | Confirmación idempotente: Sesión del dispensador sin permiso | Sin permiso | features/dispensations/dispensation-confirm.test.tsx:467 |
-| OW-15 | Datos del paciente fuera del navegador: URL sin datos personales | Selección con teclado (URL) | features/dispensations/dispensation-page.test.tsx:96 |
-| OW-16 | Datos del paciente fuera del navegador: Error durante una consulta de paciente (adelantado de 6.2) | Fallo de la búsqueda (espía de consola) | features/dispensations/dispensation-page.test.tsx:71 |
-| OW-17 | Navegación por rol: Auxiliar ve sus cuatro pantallas | Auxiliar ve sus cuatro pantallas, en ese orden | app/require-ability.test.tsx:70 |
-| OW-18 | Navegación por rol: Auditor ve las cuatro en lectura | Auditor ve las cuatro | app/require-ability.test.tsx:75 |
-| OW-19 | Navegación por rol: Médico solo ve Dispensación | Médico solo ve Dispensación | app/require-ability.test.tsx:85 |
-| OW-20 | Navegación por rol: Admin sin pantallas de operación | Admin sin pantallas | app/require-ability.test.tsx:90 |
-| OW-21 | Navegación por rol: Navegación con teclado | abrir Kardex desde el menú lo marca como página actual | app/require-ability.test.tsx:95 |
-| OW-22 | Inicio con accesos del rol: Accesos del regente | Accesos del regente (+ menú del regente :80) | app/require-ability.test.tsx:120 |
-| OW-23 | Inicio con accesos del rol: Admin sin accesos (+ app-shell «Página de inicio sin pantallas aún», también app/shell-header.test.tsx:39) | Admin sin accesos | app/require-ability.test.tsx:141 |
-| OW-24 | app-shell «Página de inicio con saludo» | Página de inicio con saludo (+ médico solo Dispensación :158) | app/require-ability.test.tsx:150 |
+| OW-15 | Datos del paciente fuera del navegador: URL sin datos personales | Selección con teclado (URL) | features/dispensations/dispensation-page.test.tsx:95 |
+| OW-16 | Datos del paciente fuera del navegador: Error durante una consulta de paciente (6.2) | Fallo de la búsqueda (espía de consola `test/console-spy.ts`) | features/dispensations/dispensation-page.test.tsx:72 |
+| OW-17 | Navegación por rol: Auxiliar ve sus cuatro pantallas | Auxiliar ve sus cuatro pantallas, en ese orden | app/require-ability.test.tsx:72 |
+| OW-18 | Navegación por rol: Auditor ve las cuatro en lectura | Auditor ve las cuatro | app/require-ability.test.tsx:77 |
+| OW-19 | Navegación por rol: Médico solo ve Dispensación | Médico solo ve Dispensación | app/require-ability.test.tsx:87 |
+| OW-20 | Navegación por rol: Admin sin pantallas de operación | Admin sin pantallas | app/require-ability.test.tsx:92 |
+| OW-21 | Navegación por rol: Navegación con teclado | abrir Kardex desde el menú lo marca como página actual | app/require-ability.test.tsx:97 |
+| OW-22 | Inicio con accesos del rol: Accesos del regente | Accesos del regente (+ menú del regente :82) | app/require-ability.test.tsx:122 |
+| OW-23 | Inicio con accesos del rol: Admin sin accesos (+ app-shell «Página de inicio sin pantallas aún», también app/shell-header.test.tsx:39) | Admin sin accesos | app/require-ability.test.tsx:143 |
+| OW-24 | app-shell «Página de inicio con saludo» | Página de inicio con saludo (+ médico solo Dispensación :160) | app/require-ability.test.tsx:152 |
 | TS-01 | Listado: Listado con estados en español | Listado con estados en español | features/transfers/transfers-page.test.tsx:56 |
 | TS-02 | Listado: Filtro por estado | Filtro por estado (consulta enviada y vuelta a página 1) | features/transfers/transfers-page.test.tsx:72 |
 | TS-03 | Listado: Sin traslados | Sin traslados | features/transfers/transfers-page.test.tsx:89 |
@@ -139,6 +142,13 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | TS-30 | Anulación: Anulación exitosa | Anulación exitosa | features/transfers/transfer-detail.test.tsx:319 |
 | TS-31 | Anulación: Anulación sin motivo | Anulación sin motivo | features/transfers/transfer-detail.test.tsx:332 |
 | OW-25 | Mensajes de error: Error de campo junto al campo (en pantalla, `errors.reason` junto a "Motivo") | Error de campo del servidor | features/transfers/transfer-detail.test.tsx:341 |
+| INV-06 | Alertas: Lote por vencer resaltado | Lote por vencer resaltado (mismo lote en otra bodega sin resaltar) | features/inventory/inventory-alerts.test.tsx:82 |
+| INV-07 | Alertas: Lote por vencer resaltado (variante "Vencido") | lote ya vencido en la alerta: "Vencido" y no "Vence en" | features/inventory/inventory-alerts.test.tsx:96 |
+| INV-08 | Alertas: Lote fuera de la ventana sin resaltar | reloj del navegador fijado a 2027-06-20 (10 días antes de ACE-A1); control positivo: MOR-C3 alertado sí resaltado | features/inventory/inventory-alerts.test.tsx:110 |
+| INV-09 | Alertas: Producto bajo mínimo (+ consulta con la bodega elegida) | Producto bajo mínimo | features/inventory/inventory-alerts.test.tsx:127 |
+| INV-10 | Alertas: Producto bajo mínimo sin existencias | disponible 0 | features/inventory/inventory-alerts.test.tsx:155 |
+| INV-11 | Alertas: Sin alertas | Sin alertas | features/inventory/inventory-alerts.test.tsx:167 |
+| INV-12 | Alertas: Alertas fallan y existencias no | tabla completa + "Reintentar" con la misma consulta | features/inventory/inventory-alerts.test.tsx:180 |
 
 | Cimiento | Prueba | Archivo:línea |
 |---|---|---|
@@ -147,6 +157,7 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | CIM-1.3 recursos S3 (pacientes, prescripciones, vista previa, dispensación) | búsqueda · ficha · prescripción · vista previa · clave + `Idempotent-Replayed` · `shortages` | features/dispensations/api.test.ts:22, :29, :36, :47, :55, :75 |
 | CIM-1.3 invalidación | escritura de stock invalida 4 raíces, no el catálogo | lib/query-keys.test.ts:8 |
 | CIM-1.3 recursos S4 (traslados) | listado · detalle · creación con XSRF · 5 acciones con su cuerpo · rechazo con código | features/transfers/api.test.ts:15, :25, :32, :42, :56 |
+| CIM-1.3 recursos S5 (alertas) | bodega enviada y ambas listas · sin filtro | features/inventory/api.test.ts:25, :36 |
 
 ## 2. Mutaciones de comprobación (no declaradas `[MUT]`; anti-falso-verde)
 
@@ -156,6 +167,12 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | b | `require-ability.tsx`: guarda siempre permite | 1/9: Acceso directo sin capacidad | 9/9 |
 | c | `transfer-draft.ts`: `eligibleStock` devuelve todas las filas (sin excluir vencidos ni vacías) | 9/52: Lotes vencidos fuera de la lista y las 8 que esperan una sola opción elegible | 52/52 |
 | d | `transfer-detail-page.tsx`: sin recarga del detalle ante `invalid_transfer_transition` | 1/52 (misma corrida que c): Estado cambiado por otro usuario | 52/52 |
+| e | `inventory-page.tsx`: resaltado también por reloj del navegador (vence en ≤ 90 días según `Date.now()`) | 1/18: Lote fuera de la ventana | 18/18 |
+| f | `alert-index.ts`: índice de vencimiento por lote sin bodega | 2/18: Lote por vencer resaltado · Alertas fallan (dos "Vence en 20 días") | 18/18 |
+| g | `inventory-page.tsx`: `useAlerts({})` sin la bodega elegida | 1/18: Producto bajo mínimo | 18/18 |
+| h | `inventory-page.tsx`: fallo de alertas oculta la tabla de existencias | 1/18: Alertas fallan y existencias no | 18/18 |
+| i | `alert-index.ts`: marca "Bajo mínimo" siempre falsa | 1/18: Producto bajo mínimo | 18/18 |
+| j | `dispensations/queries.ts`: `console.error` con el término al fallar la búsqueda | 1/1 (`-t "Fallo de la búsqueda"`): la consola recibió una llamada; `eslint` 1 error `no-console` | 15/15 (archivo completo) |
 
 ### 2.1 `[MUT]` declarados (archivo `features/dispensations/dispensation-confirm.test.tsx`, 26 pruebas)
 
@@ -192,6 +209,15 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | Contrato 0.2 (S4) | mismo barrido de rutas sin `/api` | 22 rutas, 7 de `transfers`; falta `alerts` | `"url": "/api"` → 1 |
 | `fetch` fuera del cliente | `/usr/bin/grep -rnE '(^\|[^a-zA-Z])fetch\(' web/src/features web/src/components` | 0 | `web/src/lib/api.ts` → 1 |
 | Consola y almacenamiento | `/usr/bin/grep -rnE 'console\.\|localStorage\|sessionStorage' web/src` sin `.test.` | 0 | `src/app/providers.test.tsx` contiene `console` → 1 archivo; tras S3, `dispensation-confirm.test.tsx` (lee `localStorage`) → 1 archivo |
+| Contrato 0.2 (S5, cierre) | barrido de rutas sin `/api` de la tarea 0.2 | 23 rutas, 11 familias (`alerts` incluida) | `"url": "/api"` → 1; `"/auth/me"` presente |
+| Cabeceras de idempotencia (S5) | `/usr/bin/grep -cE 'Idempotency-Key\|Idempotent-Replayed' api/openapi.json` | 3 (≥ 2) | — |
+| Deriva de tipos (S5) | `npm run api:types:check` | árbol limpio tras regenerar (tipos de `db01342` al día) | — |
+| Delta Alertas (desarrollo) | `npx vitest --run src/features/inventory src/app/require-ability.test.tsx src/lib` | 56/56 (8 archivos) | mutaciones e–i § 2 |
+| Delta afectados (cierre 4.2, 6.2, 6.3) | `npx vitest --run src/features/inventory src/app src/lib src/test src/components src/features/dispensations/dispensation-page.test.tsx` | 104/104 (16 archivos); repetida una vez sobre el mismo árbol solo para leer el total | — |
+| Lint y tipos (S5) | `npm run lint` · `npm run typecheck` | exit 0 · exit 0 | `no-console` sin excepciones: `console.error` de la mutación j → 1 error |
+| Privacidad 6.2 | `/usr/bin/grep -rnE 'console\.\|localStorage\|sessionStorage' web/src`, sin `.test.` ni `src/test/` | 0 | mismo barrido sobre `src/test/` → 1 (`test/console-spy.ts:12`, el espía) |
+| Textos literales 6.3 (cierre) | `/usr/bin/grep -rnE --include='*.tsx' --exclude='*.test.tsx' '<patrón 6.3>' web/src` | 0 coincidencias (exit 1) | `printf '<p>Texto literal</p>\n<input placeholder="Buscar" />\n' \| grep -cE '<patrón 6.3>'` → 2 |
+| Textos literales, barrido complementario | `/usr/bin/grep -rnE` de cadenas entre comillas que empiezan con mayúscula y palabra, en `.ts`/`.tsx` sin pruebas, `strings.ts` ni `api-schema.ts` | 1 fuera de `src/test/`: `main.tsx:10` (`Error` de arranque sin `#root`, nunca visible en la interfaz) | 17 en `src/test/` (datos sintéticos de fixtures) |
 
 ## 4. Humo renderizado (http://localhost:8090, contenedor `web` reconstruido)
 
