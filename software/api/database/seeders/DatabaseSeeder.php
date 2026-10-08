@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             LotSeeder::class,
             StockSeeder::class,
+            StockMinimumSeeder::class,
             UserSeeder::class,
             PatientSeeder::class,
             PrescriptionSeeder::class,
