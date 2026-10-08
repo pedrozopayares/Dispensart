@@ -182,8 +182,9 @@ jobs:
       contents: read
       packages: write
     outputs:
-      api_digest: ${{ steps.api.outputs.digest }}
-      web_digest: ${{ steps.web.outputs.digest }}
+      # Digest ya publicado para este SHA o, si no existía, el recién construido.
+      api_digest: ${{ steps.existing.outputs.api_digest || steps.api.outputs.digest }}
+      web_digest: ${{ steps.existing.outputs.web_digest || steps.web.outputs.digest }}
       owner_lc: ${{ steps.owner.outputs.owner_lc }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -205,9 +206,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Idempotencia por SHA: si la etiqueta ya existe (re-ejecución del trabajo), se reutiliza su digest y no
+      # se construye ni se publica de nuevo; así la etiqueta nunca pasa a apuntar a otra imagen.
+      # Ausente = "not found" o acceso denegado (paquete aún inexistente; si de verdad faltara permiso, el push
+      # fallaría igual). Cualquier otro error (red, registro) corta el trabajo: no se publica a ciegas.
+      - name: Imágenes ya publicadas para este SHA
+        id: existing
+        env:
+          REGISTRY_PREFIX: ghcr.io/${{ steps.owner.outputs.owner_lc }}
+          SHA: ${{ github.sha }}
+        run: |
+          errlog="$(mktemp)"
+          for image in api web; do
+            ref="$REGISTRY_PREFIX/dispensart-$image:$SHA"
+            if manifest="$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' 2>"$errlog")"; then
+              digest="$(jq -r '.digest' <<<"$manifest")"
+              if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                echo "::error::Digest ilegible para $ref: $digest"
+                exit 1
+              fi
+              echo "REUTILIZA $image: $ref ya publicada con $digest; se omite construcción y push."
+              echo "${image}_digest=$digest" >> "$GITHUB_OUTPUT"
+            elif grep -qiE 'not found|manifest unknown|name unknown|denied|403 Forbidden' "$errlog"; then
+              echo "CONSTRUYE $image: $ref no existe en el registro."
+            else
+              cat "$errlog"
+              echo "::error::No se pudo consultar $ref en el registro: no se publica sin verificar."
+              exit 1
+            fi
+          done
+
       # provenance/sbom apagados: un solo manifiesto por imagen (firma y SBOM fuera de alcance, design).
       - name: Imagen api (etapa prod)
         id: api
+        if: steps.existing.outputs.api_digest == ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: software
@@ -225,6 +257,7 @@ jobs:
 
       - name: Imagen web
         id: web
+        if: steps.existing.outputs.web_digest == ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: software
@@ -241,11 +274,13 @@ jobs:
 
       - name: Digests publicados
         env:
-          API_DIGEST: ${{ steps.api.outputs.digest }}
-          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+          API_DIGEST: ${{ steps.existing.outputs.api_digest || steps.api.outputs.digest }}
+          WEB_DIGEST: ${{ steps.existing.outputs.web_digest || steps.web.outputs.digest }}
+          API_SOURCE: ${{ steps.existing.outputs.api_digest && 'reutilizada' || 'construida' }}
+          WEB_SOURCE: ${{ steps.existing.outputs.web_digest && 'reutilizada' || 'construida' }}
         run: |
-          echo "api: $API_DIGEST"
-          echo "web: $WEB_DIGEST"
+          echo "api ($API_SOURCE): $API_DIGEST"
+          echo "web ($WEB_SOURCE): $WEB_DIGEST"
 
   # Staging simulado en el runner con el mismo compose.yaml: imágenes publicadas por digest, sin
   # reconstruir; humo de software/docker/smoke.sh; el stack se baja con sus volúmenes siempre (D5).
