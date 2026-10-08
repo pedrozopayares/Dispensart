@@ -3,10 +3,11 @@ status: accepted
 date: 2026-10-07
 ---
 
-# Public repository under MIT; the test statement stays private
+# Repositorio público bajo MIT; el enunciado de la prueba se mantiene privado
 
-The repository is public from the first push. Own code is MIT (compatible with the vendored Apache-2.0 and
-MIT skills, see `THIRD_PARTY_NOTICES.md`). The original test statement (`project/`) is git-ignored and never
-published; scope is restated in `openspec/config.yaml` and `openspec/ROADMAP.md`. No secret, real
-`APP_KEY` or credential enters git: `.env.example` holds placeholders only, CI secrets live in GitHub
-Environments, the AI provider defaults to `mock`, and all seed data is synthetic.
+El repositorio es público desde el primer push. El código propio es MIT (compatible con las skills
+Apache-2.0 y MIT incluidas, ver `THIRD_PARTY_NOTICES.md`). El enunciado original de la prueba (`project/`)
+está en `.gitignore` y nunca se publica; el alcance se reformula en `openspec/config.yaml` y
+`openspec/ROADMAP.md`. Ningún secreto, `APP_KEY` real ni credencial entra a git: `.env.example` solo lleva
+marcadores de posición, los secretos de CI viven en GitHub Environments, el proveedor de IA arranca en
+`mock` y todos los datos semilla son sintéticos.

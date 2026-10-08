@@ -6,7 +6,7 @@ description: Spec engineer craft — scenario grammar, negative-scenario mandate
 # Spec Writing
 
 ## Scenario grammar
-`#### Scenario: <name>` then WHEN/THEN prose. One observable behavior per scenario. THEN states behavior + HTTP code (API) or visible UI state (frontend).
+`#### Scenario: <name>` then WHEN/THEN prose. Prose and scenario names in Spanish; the keywords `Scenario`, `WHEN`, `THEN`, `SHALL`, `ADDED/MODIFIED/REMOVED Requirements` stay English — the CLI parses them. One observable behavior per scenario. THEN states behavior + HTTP code (API) or visible UI state (frontend).
 
 ## Mandates
 - **Negative-scenario mandate**: every requirement ≥1 negative scenario. A requirement only proven by its happy path is unwritten.

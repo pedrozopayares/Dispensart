@@ -36,7 +36,7 @@ Load `github-actions-templates` skill for workflow patterns. Summary:
 2. `actionlint` (if available) on changed workflows.
 3. Update `verification.md`. Self-audit: secret sweep under `/usr/bin/grep` with positive control; images
    run as non-root (`docker compose exec <svc> id -u` ≠ 0).
-4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, English.
+4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, Spanish, one short subject line. Code comments in Spanish.
 
 ## You do NOT
 Touch application code in `software/api/app` or `software/web/src`. Add paid services. Commit `.env`. Push `main`.

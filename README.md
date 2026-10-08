@@ -1,64 +1,70 @@
 # Dispensart
 
-Medication dispensing, lot-level inventory (FEFO) and inter-warehouse transfers for a healthcare provider
-with several pharmacies and warehouses. Built as a senior full-stack technical test.
+Dispensación de medicamentos, inventario por lote (FEFO) y traslados entre bodegas para una IPS con varias
+farmacias y bodegas. Construido como prueba técnica de desarrollador full stack senior.
 
-> Status: harness and planning in place; application code starts with the first OpenSpec change (`S0`).
-> This README grows with the product. Final deliverable sections (run in one command, design trade-offs,
-> assumptions, what was left out) land with the last slice.
+> Estado: harness y planeación listos; el código de la aplicación empieza con el primer cambio OpenSpec (`S0`).
+> Este README crece con el producto. Las secciones finales del entregable (ejecución en un comando, decisiones
+> de diseño, supuestos, qué quedó fuera) llegan con la última tajada.
 
 ## Stack
 
-| Layer | Choice |
+| Capa | Elección |
 |---|---|
-| Backend | PHP 8.5 · Laravel 13 · REST API · Sanctum SPA auth · Policies/Gates · Form Requests · API Resources |
-| Frontend | React · TypeScript · Vite SPA · TanStack Query · Tailwind + shadcn/ui |
-| Database | PostgreSQL 16 (CHECK constraints, row locks, append-only kardex) |
-| Containers | Docker multi-stage (PHP-FPM + Nginx, non-root) · Docker Compose |
+| Backend | PHP 8.5 · Laravel 13 · API REST · Sanctum (SPA) · Policies/Gates · Form Requests · API Resources |
+| Frontend | React · TypeScript · Vite (SPA) · TanStack Query · Tailwind + shadcn/ui |
+| Base de datos | PostgreSQL 16 (restricciones CHECK, bloqueo de filas, kardex solo inserción) |
+| Contenedores | Docker multi-stage (PHP-FPM + Nginx, usuario no root) · Docker Compose |
 | CI/CD | GitHub Actions · Pint · Larastan · ESLint · Pest · Vitest |
-| AI assistant | Laravel service behind an `LlmProvider` interface · read-only tools · `AI_PROVIDER=mock` by default |
+| Asistente de IA | Servicio Laravel tras una interfaz `LlmProvider` · herramientas de solo lectura · `AI_PROVIDER=mock` por defecto |
 
-Business rules and scope live in `openspec/config.yaml` and `openspec/ROADMAP.md`.
+Las reglas de negocio y el alcance viven en `openspec/config.yaml` y `openspec/ROADMAP.md`.
 
-## Run the application
+## Ejecutar la aplicación
 
-Requires Docker only.
+Solo requiere Docker.
 
 ```sh
-git clone <repo-url> && cd Dispensart
+git clone <url-del-repo> && cd Dispensart
 docker compose up --build
 ```
 
-Available once `S0` ships: URLs, ports and one synthetic user per role will be listed here.
+Disponible cuando `S0` esté publicado: aquí irán las URLs, los puertos y un usuario sintético por rol.
 
-## Repository layout
+## Estructura del repositorio
 
-| Path | Holds |
+| Ruta | Contenido |
 |---|---|
-| `software/` | all application code: `api/` (Laravel), `web/` (React SPA), `docker/`, `compose.yaml` |
-| `openspec/` | spec-driven development: live specs, changes, roadmap, debt and retrospectives |
-| `docs/adr/` | architecture decision records (ADR-0001..0005: stack, Pest, TanStack Query, UI kit, license) |
-| `.claude/`, `CLAUDE.md` | AI harness: agents, skills, commands, hooks (see below) |
+| `software/` | todo el código de la aplicación: `api/` (Laravel), `web/` (SPA React), `docker/`, `compose.yaml` |
+| `openspec/` | desarrollo guiado por especificaciones: specs vigentes, cambios, roadmap, deuda y retrospectivas |
+| `docs/adr/` | registros de decisiones de arquitectura (ADR-0001..0006: stack, Pest, TanStack Query, kit de UI, licencia, idiomas) |
+| `.claude/`, `CLAUDE.md` | harness de IA: agentes, skills, comandos, hooks (ver abajo) |
 | `.github/workflows/` | CI/CD |
-| `package.json` | dev tooling only — pins the OpenSpec CLI. Not the app |
+| `package.json` | solo herramientas de desarrollo: fija la versión del CLI de OpenSpec. No es la aplicación |
 
-## Development with the AI harness
+## Idiomas
 
-The repo ships a [Claude Code](https://claude.com/claude-code) harness that drives an
-[OpenSpec](https://github.com/Fission-AI/OpenSpec) spec-driven workflow: propose → apply → archive, with
-human gates. Requires Node.js ≥ 20.19 and Claude Code.
+Código (identificadores, tablas, rutas, códigos de error) en inglés. Comentarios, commits, documentación y
+textos de la interfaz en español.
+
+## Desarrollo con el harness de IA
+
+El repo incluye un harness para [Claude Code](https://claude.com/claude-code) que conduce un flujo de
+desarrollo guiado por especificaciones con [OpenSpec](https://github.com/Fission-AI/OpenSpec): proponer →
+aplicar → archivar, con compuertas humanas. Requiere Node.js ≥ 20.19 y Claude Code.
 
 ```sh
-claude            # from the repo root; accept workspace trust
-/opsx:propose "…" # start a change
+claude            # desde la raíz del repo; aceptar la confianza del workspace
+/opsx:propose "…" # iniciar un cambio
 ```
 
-The first session installs the pinned OpenSpec CLI automatically (`npm ci`). Outside Claude:
-`npx openspec list`. Process rules: `CLAUDE.md`, `openspec/CYCLE-TIERS.md`.
+La primera sesión instala el CLI de OpenSpec fijado (`npm ci`) de forma automática. Fuera de Claude:
+`npx openspec list`. Reglas del proceso: `CLAUDE.md`, `openspec/CYCLE-TIERS.md` (en inglés: son
+instrucciones para el agente).
 
-AI usage for this test is declared in `AI_USAGE.md` (added with the final slice).
+El uso de IA en esta prueba se declara en `AI_USAGE.md` (llega con la última tajada).
 
-## License
+## Licencia
 
-See `LICENSE`. Third-party skills vendored under `.claude/skills/` keep their own licenses:
+Ver `LICENSE` (MIT). Las skills de terceros incluidas en `.claude/skills/` conservan sus propias licencias:
 `THIRD_PARTY_NOTICES.md`.

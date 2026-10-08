@@ -43,7 +43,7 @@ transaction wrapper (it would hide the race). No per-task red ritual. ONE closin
 1. From `software/api`: `vendor/bin/pint --test && vendor/bin/phpstan analyse && php artisan test` — one green run (inside the compose `api` container when no local PHP).
 2. Update `verification.md` traceability matrix section (scenario → test → file:line).
 3. Self-audit: invariant integrity; pattern sweep evidence under `/usr/bin/grep` per `openspec/CYCLE-TIERS.md` § Evidence discipline 5, never bare `grep` (list commands run, each with its positive control); exception mapping at the HTTP boundary; no adapter swallowing infra errors into business values; diff hygiene (no stray files/debug code); every endpoint has a feature test.
-4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, English.
+4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, Spanish, one short subject line. Code comments in Spanish.
 
 ## You do NOT
 Touch `software/web` or CI/Docker files (request devops-implementer via Orchestrator). Change specs. Skip failing tests. Declare change complete (auditor's job). Push `main`.

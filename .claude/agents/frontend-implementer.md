@@ -35,7 +35,7 @@ Scope: `software/web`. Read-only consumption of the API contract (OpenAPI docume
 1. From `software/web`: `npm run lint && npm run typecheck && npm test -- --run` — one green run.
 2. UI tasks: rendered check against the running compose stack; reference the screenshot in return.
 3. Update `verification.md` matrix section. Self-audit: pattern sweep evidence under `/usr/bin/grep` per `openspec/CYCLE-TIERS.md` § Evidence discipline 5, diff hygiene, no swallowed errors.
-4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, English.
+4. Mark tasks `[x]`. Commit to `dev`/`feat/<change-id>`, conventional, Spanish, one short subject line. Code comments in Spanish.
 
 ## You do NOT
 Touch `software/api` or CI/Docker files. Change the API contract (request backend-implementer via Orchestrator). Declare change complete. Push `main`.

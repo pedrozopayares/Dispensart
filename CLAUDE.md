@@ -72,8 +72,10 @@ TABLES, no prose paragraph carries a count, every zero carries a positive contro
 On user command ("autopilot next N slices"): chain proposal→apply→archive continuously. GATE 1 still needs user approval unless user pre-approved a listed batch in-conversation. Report ≤200 words per change. Stop on any blocker or budget breach.
 
 ## Git law
-Agents commit/push `dev` or `feat/<change-id>` only. `main` = user-only. Conventional commits, English. No force-push.
-The commit history is a graded deliverable: small, coherent commits that show progression.
+Agents commit/push `dev` or `feat/<change-id>` only. `main` = user-only. No force-push.
+Commits: Conventional Commits, **Spanish**, short and plain — one subject line (type keyword in English:
+`feat`, `fix`, `chore`…), at most two body lines, no essays. The history is a graded deliverable: small,
+coherent commits that show progression.
 
 ## Iron rules
 1. No gate skipped. Unregistered gate = nonexistent.
@@ -84,7 +86,12 @@ The commit history is a graded deliverable: small, coherent commits that show pr
 5. Zero-cost policy binds all agents: free tiers only; anything billable → stop, ask user.
 6. Frozen decisions bind all agents: see `docs/adr/`. Reopening one needs explicit user approval.
 7. Caveman output discipline everywhere: dense, imperative, no filler.
-8. All dev artifacts English. All UI strings Spanish, centralized in one strings module.
+8. **Language law.** Code identifiers (classes, methods, variables, tables, columns, routes, error codes)
+   in English. Code comments, commit messages, project documentation (README, ADRs, deployment doc,
+   AI_USAGE, OpenSpec proposal/design/tasks/journal prose) in Spanish. UI strings and user-facing messages
+   in Spanish, centralized in one strings module. Structural keywords parsed by tools stay English
+   (OpenSpec headers `## ADDED Requirements`, `#### Scenario:`, `WHEN`/`THEN`, `SHALL`; Conventional
+   Commit types). Harness instruction files (`CLAUDE.md`, `.claude/**`) stay English.
 9. **PUBLIC REPOSITORY.** No raw secrets through agents or into git. `.env.example` templates only; verify presence, never values. Synthetic data only — never real patient or IPS data.
 10. Skill precedence: if any skill contradicts repo law, ADRs, or frozen decisions — repo wins.
 11. Business rules RN-01..RN-11 are non-negotiable acceptance criteria. A change that weakens one is rejected, not weighed.
@@ -122,4 +129,4 @@ PHP 8.5 · Laravel 13 (REST, Sanctum SPA cookie auth, Policies/Gates, Form Reque
 PostgreSQL 16 · React + TypeScript + Vite SPA · Docker multi-stage (PHP-FPM + Nginx, non-root) ·
 Docker Compose · GitHub Actions (public repo) · Pint + Larastan + ESLint · AI assistant behind a
 `LlmProvider` interface (`AI_PROVIDER=mock` default).
-Frozen by ADR-0001..0005 (`docs/adr/`): stack, Pest, TanStack Query, Tailwind + shadcn/ui, MIT + public repo.
+Frozen by ADR-0001..0006 (`docs/adr/`): stack, Pest, TanStack Query, Tailwind + shadcn/ui, MIT + public repo, language law.

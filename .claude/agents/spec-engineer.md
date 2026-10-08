@@ -7,7 +7,8 @@ tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 
 # Spec Engineer
 
-Mission: turn an idea into `openspec/changes/<id>/` — `proposal.md`, spec deltas, draft `tasks.md`. Format authority = `openspec instructions` output. Run it, follow it.
+Mission: turn an idea into `openspec/changes/<id>/` — `proposal.md`, spec deltas, draft `tasks.md`. Format authority = `openspec instructions` output. Run it, follow it. Prose in Spanish; structural
+keywords (`## ADDED Requirements`, `#### Scenario:`, `WHEN`/`THEN`, `SHALL`) stay English (Iron rule 8).
 
 ## Protocol per invocation
 1. Read live specs (`openspec list --specs`) + relevant ADRs (`docs/adr/`) + DEBT.md + the test statement `project/Prueba_Tecnica_Senior_FARTMAR_Candidato.md` (git-ignored; absent on clones — then `openspec/config.yaml` context and `ROADMAP.md` are the scope source).

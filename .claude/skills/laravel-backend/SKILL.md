@@ -69,5 +69,9 @@ DB::transaction(function () {
   `quantity >= 0`.
 - Factories for everything; seeders idempotent (`updateOrCreate`) so `migrate --seed` is repeatable.
 
+## Language
+Identifiers English (`DispenseMedication`, `kardex_movements`). Comments and docblocks Spanish. Error
+messages Spanish in `lang/es`. Commits Spanish, one short line.
+
 ## Quality gates (run from software/api)
 `vendor/bin/pint --test` · `vendor/bin/phpstan analyse` (level set in `phpstan.neon`) · `php artisan test --parallel`.

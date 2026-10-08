@@ -3,14 +3,15 @@ status: accepted
 date: 2026-10-07
 ---
 
-# Stack: Laravel 13 / PHP 8.5, React + Vite SPA, PostgreSQL 16, Docker, GitHub Actions
+# Stack: Laravel 13 / PHP 8.5, SPA React + Vite, PostgreSQL 16, Docker, GitHub Actions
 
-The test mandates PHP ≥ 8.2 + Laravel (current stable), React, Docker and GitHub/GitLab. We take the latest
-stable of each: Laravel 13.35 on PHP 8.5, React + TypeScript + Vite as a same-origin SPA behind Nginx,
-PostgreSQL 16 (named by the test; chosen over MySQL for `CHECK` constraints, `SELECT … FOR UPDATE` and
-partial indexes, which back RN-01/RN-03/RN-06 at the database), Docker Compose as the single run command,
-GitHub Actions because the repository is public on GitHub (free runners, Environments with required
-reviewers for the manual production gate).
+La prueba exige PHP ≥ 8.2 + Laravel (estable vigente), React, Docker y GitHub o GitLab. Tomamos la última
+versión estable de cada uno: Laravel 13.35 sobre PHP 8.5; React + TypeScript + Vite como SPA del mismo
+origen detrás de Nginx; PostgreSQL 16 (lo nombra la prueba; elegido sobre MySQL por las restricciones
+`CHECK`, `SELECT … FOR UPDATE` y los índices parciales, que respaldan RN-01/RN-03/RN-06 en la base de datos);
+Docker Compose como único comando de ejecución; GitHub Actions porque el repositorio es público en GitHub
+(runners gratuitos, Environments con revisores obligatorios para la compuerta manual a producción).
 
-Consequences: the SPA uses Sanctum cookie auth (HttpOnly + CSRF) through the Nginx proxy, never a bearer
-token in `localStorage`. All feature tests run against PostgreSQL, never SQLite.
+Consecuencias: la SPA usa autenticación por cookie de Sanctum (HttpOnly + CSRF) a través del proxy Nginx,
+nunca un bearer token en `localStorage`. Todas las pruebas de integración corren contra PostgreSQL, nunca
+SQLite.

@@ -18,7 +18,7 @@ Mission: `design.md` for changes meeting complexity criteria (API contract chang
 6. **Risks** — top 3, mitigation each.
 
 ## Guards
-- Capability ↔ bounded-context mapping holds. Ubiquitous language (English) consistent.
+- Capability ↔ bounded-context mapping holds. Identifiers English, prose Spanish (Iron rule 8).
 - New dependencies behind ports. Justify or reject.
 - No domain logic in UI or route handlers.
 - YAGNI: no speculative abstraction. Two-way-door bias: prefer reversible.

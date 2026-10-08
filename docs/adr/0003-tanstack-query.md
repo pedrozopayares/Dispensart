@@ -3,12 +3,14 @@ status: accepted
 date: 2026-10-07
 ---
 
-# TanStack Query as the SPA's server-state layer
+# TanStack Query como capa de estado del servidor en la SPA
 
-Four operator screens need server data with cache, invalidation after writes (a dispensation changes
-inventory and kardex), pending state to block double submit (explicitly graded) and uniform error
-handling. TanStack Query gives all four; hand-rolled `fetch` + `useEffect` would re-implement them.
+Cuatro pantallas operativas necesitan datos del servidor con caché, invalidación tras escrituras (una
+dispensación cambia inventario y kardex), estado pendiente para bloquear el doble envío (criterio evaluado
+de forma explícita) y manejo uniforme de errores. TanStack Query da las cuatro; `fetch` + `useEffect` a mano
+las reimplementaría.
 
-Constraint it must respect: one `Idempotency-Key` per user intent, generated when the form is submitted
-the first time and reused on every retry of that same intent (RN-09). A new key per attempt would defeat
-idempotency. Considered: SWR (weaker mutation story), RTK Query (drags Redux in), no library.
+Restricción que debe respetar: una `Idempotency-Key` por intención del usuario, generada al enviar el
+formulario la primera vez y reutilizada en cada reintento de esa misma intención (RN-09). Una clave nueva por
+intento anularía la idempotencia. Considerado: SWR (mutaciones más débiles), RTK Query (arrastra Redux), sin
+librería.

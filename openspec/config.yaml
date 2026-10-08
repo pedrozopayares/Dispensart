@@ -14,8 +14,10 @@ context: |
   Repo layout: .claude/ + CLAUDE.md = harness at root, openspec/ = SDD working files, docs/adr/ = ADRs,
   software/ = all application source code, .github/ = CI at repo root.
   Public repository: no secrets committed, synthetic data only.
-  Capabilities named in ubiquitous language, English. All dev artifacts English; all UI strings Spanish
-  (centralized strings module). Conventional commits. Zero-cost policy: free tiers only.
+  Language: code identifiers English; comments, commits, documentation and OpenSpec artifact prose in
+  Spanish; UI strings Spanish (centralized strings module). OpenSpec structural keywords stay English
+  (## ADDED Requirements, #### Scenario:, WHEN/THEN, SHALL). Capability ids kebab-case English.
+  Conventional commits in Spanish. Zero-cost policy: free tiers only.
   Patient data is sensitive health data — Colombian Ley 1581/2012 governs handling.
 
 rules:
