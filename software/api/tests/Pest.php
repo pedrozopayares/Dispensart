@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
@@ -48,4 +49,24 @@ function makeDatabaseUnreachable(): void
 {
     config(['database.connections.pgsql.port' => 1]);
     DB::purge('pgsql');
+}
+
+/**
+ * Afirma que la base rechaza la escritura con el SQLSTATE dado (y la restricción nombrada, si se indica).
+ * La escritura corre en un punto de guardado: el fallo no aborta la transacción de RefreshDatabase.
+ */
+function expectRejectedByDatabase(callable $write, string $sqlState, ?string $constraint = null): void
+{
+    try {
+        DB::transaction(fn () => $write());
+    } catch (QueryException $e) {
+        expect($e->getCode())->toBe($sqlState);
+        if ($constraint !== null) {
+            expect($e->getMessage())->toContain($constraint);
+        }
+
+        return;
+    }
+
+    test()->fail("La base aceptó una escritura que debía rechazar (SQLSTATE {$sqlState} esperado).");
 }
