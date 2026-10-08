@@ -113,6 +113,9 @@ services:
       - ./api:/app
     environment:
       <<: *db-env
+      # Base de pruebas por defecto: un `artisan migrate:fresh` accidental nunca toca la de desarrollo.
+      # Para operar sobre la de desarrollo, explícito: `run --rm -e DB_DATABASE=dispensart api-tools ...`.
+      DB_DATABASE: dispensart_test
     depends_on:
       db:
         condition: service_healthy
