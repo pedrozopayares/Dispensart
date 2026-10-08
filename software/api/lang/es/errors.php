@@ -10,7 +10,7 @@ return [
     'validation_failed' => 'Los datos enviados no son válidos.',
     'invalid_credentials' => 'Correo o contraseña incorrectos.',
     'insufficient_stock' => 'No hay existencias suficientes para esta operación.',
-    'lot_expired' => 'El lote está vencido: no admite ingreso de unidades.',
+    'lot_expired' => 'El lote está vencido y no puede usarse en esta operación.',
     'prescription_expired' => 'La prescripción está vencida: no admite dispensación.',
     'prescription_exhausted' => 'La prescripción ya fue dispensada por completo.',
     'exceeds_prescription' => 'La cantidad pedida supera lo pendiente de la prescripción.',

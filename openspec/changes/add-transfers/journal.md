@@ -182,3 +182,45 @@ Debería elegir una fila con `entrada` semilla en lugar de la primera.
   `lot_code` en `/api/stock?warehouse_id=`, y opera sobre `/api/stock?warehouse_id=&lot_id=`. Requiere `jq`.
 - Cuatro humos, una corrida: 0 fallas. Control con lote inexistente: 2 fallas, salida 1. `verification.md` § 6.
   Sin deuda pendiente de 6.1.
+
+## 2026-10-08 — final-auditor: OBSERVATIONS (3 menores, 0 bloqueantes, 0 mayores)
+
+- Corrida de confirmación en base aislada `dispensart_test_audit_s4` (eliminada después): Pint pasa, Larastan sin
+  errores, Pest 737 pruebas; la única falla es `DatabaseConnectionTest`, que espera el nombre `dispensart_test`, y es
+  esperada en la base renombrada. CI 37738877314 sobre `c3bbe0a` en verde. Pin M9 reaplicado: falla 5 de 10.
+- Menor 1: `page` sin tope en `ListTransfersRequest` y `ListKardexRequest`; `page=9223372036854775807` devuelve 500.
+  Se enruta al backend-implementer: tope y prueba 422 por endpoint.
+- Menor 2: el mensaje de `lot_expired` habla solo de ingreso y confunde en despacho y creación de traslados.
+  Se enruta al backend-implementer.
+- Menor 3: D-auv-3 sigue en la sección Abiertas de DEBT, aunque `102c1a4` la saldó. Es solo de registro: lo
+  corrige el Orchestrator al archivar.
+- Fase: corrección de menores; después, re-auditoría delta.
+
+## 2026-10-08 — backend-implementer: corrección de los menores 1 y 2
+
+- Menor 1: `ListTransfersRequest` y `ListKardexRequest` limitan `page` a 1–1 000 000 (`MAX_PAGE`); una página
+  mayor responde 422 `validation_failed` en `page`. Pruebas nuevas por endpoint: 1 000 001 y PHP_INT_MAX dan 422;
+  la página 1 000 000 sigue en 200 con `data` vacío. La prueba de traslados crea un traslado: sin filas el
+  paginador no ejecuta la consulta con OFFSET y el 500 no se reproduce. `openapi.json` regenerado (`maximum`
+  en los dos `page`); `api-schema.ts` regenerado sin diferencias, no lleva límites. Commit `b54f20e`.
+- Menor 2: `errors.lot_expired` dice ahora «El lote está vencido y no puede usarse en esta operación.»; ninguna
+  prueba fija el texto literal (usan `__('errors.lot_expired')`). Docblock de `LotExpired` ajustado. El texto
+  del frontend (`strings.errors.lotExpired`) ya era neutral.
+- `verification.md`: filas TRF-70..TRF-73 con datasets y líneas nuevas.
+
+| Comando (api-tools, `dispensart_test`) | Resultado |
+|---|---|
+| `php artisan test` sobre 7 archivos (TransferQuery, Kardex, TransferCreate, TransferDispatch, TransferDiscrepancy, StockAdjustment, InventoryError) | 120 pasan, 632 aserciones, 0 fallas |
+| Control negativo: tope revertido, `--filter="rechaza"` en TransferQuery y Kardex | 4 fallas (200 y 500 en lugar de 422) |
+| Control negativo con traslado sembrado, `--filter="mal formados"` | 2 fallas: 1 000 001 → 200, PHP_INT_MAX → 500 |
+| `vendor/bin/pint --test` | 312 archivos, salida 0 |
+| `vendor/bin/phpstan analyse --memory-limit=1G` | sin errores, salida 0 |
+| `php artisan scramble:export` + diff | 2 líneas `maximum: 1000000` |
+| `npm run api:types` (web) | `api-schema.ts` sin diferencias |
+
+| Barrido (`/usr/bin/grep`, desde `software/api`) | Resultado | Control positivo |
+|---|---|---|
+| `'page' =>` en `app/Http/Requests` | 2 (traslados, kardex), ambos con `between:1,MAX_PAGE` | — |
+| `'page' => [...'min:1']` sin tope en `app/Http/Requests` | 0 | mismo patrón sobre `HEAD~1` de los dos archivos: 2 |
+| `aginate(` en `app` | 2 (`TransferQuery`, `InventoryQuery`): los mismos dos listados | — |
+| líneas con `{param}` sin `where(` en `routes/api.php`, fuera del grupo de traslados con `Route::where` | 0 | mismo filtro sin excluir el grupo: 7 |
