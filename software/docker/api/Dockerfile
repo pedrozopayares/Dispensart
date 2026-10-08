@@ -90,7 +90,10 @@ COPY --chmod=0755 docker/api/entrypoint.sh /usr/local/bin/entrypoint
 
 # Código propiedad de root (solo lectura para el proceso); escribibles solo storage y bootstrap/cache.
 COPY --from=vendor --chown=root:root /app /app
+# resources/views está vacío y git no versiona directorios vacíos: en un clon nuevo falta y
+# `artisan optimize` (caché de vistas) falla en el arranque. Se crea aquí, propiedad de root.
 RUN set -eux; \
+    mkdir -p resources/views; \
     mkdir -p storage/app/private storage/app/public storage/framework/cache/data \
              storage/framework/sessions storage/framework/views storage/logs bootstrap/cache; \
     chown root:root /app; \
