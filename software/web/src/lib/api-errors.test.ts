@@ -68,6 +68,17 @@ describe('catálogo de mensajes por code', () => {
     expect(fieldErrors(new ApiError(403, 'forbidden', { reason: ['x'] }))).toEqual({})
   })
 
+  // add-assistant-screen 1.1 — assistant-screen «Errores de la pregunta» a nivel de catálogo.
+  it('Demasiadas preguntas: too_many_requests con texto propio, sin el código', () => {
+    const text = describeError(new ApiError(429, 'too_many_requests'))
+    expect(text).toBe('Hiciste muchas preguntas seguidas. Espera un minuto e intenta de nuevo.')
+  })
+
+  it('Asistente no disponible: assistant_unavailable con texto propio, sin el código', () => {
+    const text = describeError(new ApiError(503, 'assistant_unavailable'))
+    expect(text).toBe('El asistente no está disponible en este momento. Intenta más tarde.')
+  })
+
   it('hasCode distingue el código del rechazo', () => {
     expect(hasCode(new ApiError(422, 'lot_expired'), 'lot_expired')).toBe(true)
     expect(hasCode(new ApiError(422, 'lot_expired'), 'forbidden')).toBe(false)

@@ -70,6 +70,9 @@ export const strings = {
     segregationOfDuties: 'Quien solicitó el traslado no puede aprobarlo.',
     invalidTransferTransition:
       'El traslado cambió de estado mientras lo revisabas. Actualizamos la información.',
+    // Solo la ruta del asistente tiene límite por minuto (`throttle:assistant`).
+    tooManyRequests: 'Hiciste muchas preguntas seguidas. Espera un minuto e intenta de nuevo.',
+    assistantUnavailable: 'El asistente no está disponible en este momento. Intenta más tarde.',
   },
   common: {
     retry: 'Reintentar',
@@ -88,6 +91,7 @@ export const strings = {
     transfers: 'Traslados',
     inventory: 'Inventario',
     kardex: 'Kardex',
+    assistant: 'Asistente',
   },
   guard: {
     forbidden: 'No tienes permiso para ver esta pantalla.',
@@ -385,6 +389,63 @@ export const strings = {
       reasonRequired: 'Escribe el motivo de la anulación.',
       confirm: 'Confirmar anulación',
     },
+  },
+  // Pantalla Asistente (assistant-screen). Etiquetas por literal de la API como clave: nunca el
+  // literal crudo en pantalla.
+  assistant: {
+    title: 'Asistente de inventario',
+    description: 'Pregunta en español por existencias, vencimientos, stock mínimo y traslados.',
+    question: 'Tu pregunta',
+    counter: '{n}/500',
+    hint: 'Enter envía; Shift+Enter agrega una línea.',
+    submit: 'Preguntar',
+    submitting: 'Consultando…',
+    pending: 'Consultando al asistente…',
+    tooShort: 'Escribe al menos 3 caracteres.',
+    privacy:
+      'No escribas nombres ni documentos de pacientes: el asistente solo responde sobre inventario y traslados.',
+    examplesTitle: 'Preguntas de ejemplo',
+    examples: [
+      '¿Cuánto stock hay de acetaminofén en la farmacia central?',
+      '¿Qué lotes de acetaminofén vencen en los próximos 60 días en la farmacia central?',
+      '¿Qué productos están por debajo del stock mínimo?',
+      '¿Cuántos traslados hay en tránsito?',
+    ],
+    empty: 'Aún no has hecho preguntas. Prueba con uno de los ejemplos.',
+    history: 'Preguntas recientes',
+    outcomes: {
+      answered: 'Respondida',
+      no_results: 'Sin resultados',
+      out_of_scope: 'Fuera de alcance',
+      not_permitted: 'Sin permiso',
+      unknown: 'Sin respuesta',
+    },
+    toolCalls: 'Consultas hechas',
+    noToolCalls: 'Sin consultas a herramientas.',
+    tools: {
+      get_stock: 'Existencias',
+      find_expiring_lots: 'Lotes por vencer',
+      get_low_stock_alerts: 'Stock bajo mínimo',
+      get_transfer_status: 'Estado de traslados',
+    },
+    unknownTool: 'Herramienta fuera del catálogo',
+    callStatus: {
+      ok: 'Consultada',
+      denied: 'Sin permiso',
+      rejected: 'Rechazada',
+      invalid_arguments: 'Argumentos inválidos',
+      failed: 'Falló',
+    },
+    unknownCallStatus: 'Sin estado',
+    arguments: {
+      product: 'Producto',
+      warehouse: 'Bodega',
+      days: 'Días',
+      transfer_id: 'Traslado',
+      status: 'Estado',
+    },
+    unknownArgument: 'Dato',
+    argument: '{label}: {value}',
   },
   a11y: {
     loading: 'Cargando',

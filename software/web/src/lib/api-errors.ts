@@ -26,6 +26,8 @@ const messagesByCode: Record<string, string> = {
   idempotency_key_reused: strings.errors.idempotencyKeyReused,
   segregation_of_duties: strings.errors.segregationOfDuties,
   invalid_transfer_transition: strings.errors.invalidTransferTransition,
+  too_many_requests: strings.errors.tooManyRequests,
+  assistant_unavailable: strings.errors.assistantUnavailable,
 }
 
 export type DescribeOptions = {

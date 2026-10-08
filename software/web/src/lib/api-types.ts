@@ -76,3 +76,10 @@ export type Alerts = ResponseOf<'/alerts', 'get'>['data']
 export type AlertsQuery = QueryOf<'/alerts', 'get'>
 export type ExpiringLot = Alerts['expiring_lots'][number]
 export type LowStock = Alerts['low_stock'][number]
+
+// Asistente de inventario (S7, parte C): pregunta, respuesta decidida por el servidor y consultas hechas.
+export type AskAssistantRequest = BodyOf<'/assistant/ask', 'post'>
+export type AssistantAnswer = ResponseOf<'/assistant/ask', 'post'>['data']
+export type AssistantOutcome = AssistantAnswer['outcome']
+export type AssistantToolCall = AssistantAnswer['tool_calls'][number]
+export type ToolCallStatus = AssistantToolCall['status']
