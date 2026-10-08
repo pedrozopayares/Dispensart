@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             LotSeeder::class,
             StockSeeder::class,
             UserSeeder::class,
+            PatientSeeder::class,
+            PrescriptionSeeder::class,
         ]);
     }
 }
