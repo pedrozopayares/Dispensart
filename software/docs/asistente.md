@@ -59,7 +59,7 @@ sin permiso → `not_permitted`. Argumentos inválidos o límite alcanzado → `
 
 ## Evaluación
 
-`software/api/resources/assistant/evaluation-set.json`: 23 preguntas con rol, herramienta, argumentos y
+`software/api/resources/assistant/evaluation-set.json`: 24 preguntas con rol, herramienta, argumentos y
 fragmentos esperados. El comando las responde con el servicio de la ruta sobre una base desechable
 (`<base>_assistant_eval`, creada y borrada por corrida) e imprime una fila por pregunta y `Aciertos: N/T`. Sale
 con 0 solo si todas aciertan; CI lo corre con `mock`.
