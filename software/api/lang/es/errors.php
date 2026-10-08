@@ -22,6 +22,8 @@ return [
     'invalid_transfer_transition' => 'El traslado no admite esta acción en su estado actual.',
     'segregation_of_duties' => 'Quien solicitó el traslado no puede aprobarlo: debe hacerlo otro usuario.',
     'discrepancy_already_resolved' => 'La discrepancia ya fue resuelta.',
+    'too_many_requests' => 'Hiciste demasiadas preguntas al asistente. Espera un momento antes de volver a intentar.',
+    'assistant_unavailable' => 'El asistente no está disponible en este momento. Intenta más tarde.',
     'too_many_attempts' => 'Demasiados intentos. Espera un momento antes de volver a intentar.',
     'http_error' => 'La solicitud no pudo procesarse.',
     'server_error' => 'Ocurrió un error interno. Informe a soporte el identificador de correlación.',

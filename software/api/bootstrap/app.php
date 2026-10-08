@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\ApiExceptionRenderer;
+use App\Exceptions\AssistantUnavailable;
 use App\Exceptions\AuthorizationRequired;
 use App\Exceptions\AuthorizerMustDiffer;
 use App\Exceptions\DiscrepancyAlreadyResolved;
@@ -73,6 +74,8 @@ return Application::configure(basePath: dirname(__DIR__))
             AuthorizationRequired::class, AuthorizerMustDiffer::class, InvalidAuthorizer::class,
             TooManyAuthorizerAttempts::class, InvalidIdempotencyKey::class, IdempotencyKeyReused::class,
             InvalidTransferTransition::class, SegregationOfDutiesViolation::class, DiscrepancyAlreadyResolved::class,
+            // El asistente ya escribe su línea `assistant.query` con outcome assistant_unavailable (design D13 de S7).
+            AssistantUnavailable::class,
         ]);
 
         // La contraseña del autorizador de control especial nunca vuelve a la sesión (RN-05, design D6).

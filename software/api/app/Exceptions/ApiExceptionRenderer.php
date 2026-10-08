@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -44,6 +45,9 @@ final class ApiExceptionRenderer
             $e instanceof InvalidTransferTransition => self::error('invalid_transfer_transition', 409),
             $e instanceof SegregationOfDutiesViolation => self::error('segregation_of_duties', 403),
             $e instanceof DiscrepancyAlreadyResolved => self::error('discrepancy_already_resolved', 409),
+            // Limitador de rutas (`throttle:`), hoy solo el del asistente: otro código que el del login (design D12 de S7).
+            $e instanceof ThrottleRequestsException => self::error('too_many_requests', 429, headers: $e->getHeaders()),
+            $e instanceof AssistantUnavailable => self::error('assistant_unavailable', 503),
             $e instanceof HttpExceptionInterface => self::error(
                 self::codeForStatus($e->getStatusCode()), $e->getStatusCode(), headers: $e->getHeaders(),
             ),

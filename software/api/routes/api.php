@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
@@ -91,4 +92,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/transfers/{transfer}/discrepancies/{discrepancy}/resolve', [TransferDiscrepancyController::class, 'resolve'])
             ->scopeBindings()->name('transfers.discrepancies.resolve');
     });
+
+    // Asistente de inventario (S7). Abierto a toda sesión: cada herramienta autoriza con la Policy de su fuente
+    // (not_permitted, no 403). Precedencia (design D12): 419 → 401 → 429 (limitador por usuario) → 422 → 200/503.
+    Route::post('/assistant/ask', AssistantController::class)
+        ->middleware('throttle:assistant')
+        ->name('assistant.ask');
 });
