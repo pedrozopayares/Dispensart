@@ -296,3 +296,14 @@ previa, nada dispensado.
 **Deuda (prosa)**: el navegador sin interfaz no guarda credenciales, así que el autorrelleno real de un perfil con contraseñas guardadas
 no se reprodujo: queda para el siguiente recorrido manual. Las alertas siguen sin el filtro de producto de la tabla (anotado en S5). El
 bloque de la SPA supera 500 kB sin división por ruta (no-objetivo del diseño).
+
+## 2026-10-08 — Orchestrator: verificación de cierre
+
+- `tasks.md`: 32 de 32 en `[x]`. `verification.md` en tablas: 123 escenarios mapeados, § 0 con la división de líneas.
+- Corrida completa de cierre del frontend: lint 0, typecheck 0, 219/219 pruebas, build OK (aviso de bundle > 500 kB).
+- Hallazgos del recorrido 7.1 corregidos (`fcd03b5`, `905d082`, `3ef82a0`), cada uno con su prueba; error de arranque
+  movido al módulo de textos (`43f21e0`).
+- Todas las pantallas se alcanzan desde la navegación (tabla rol × menú del recorrido 7.1); sin rutas huérfanas.
+- Limitaciones sin defecto de spec, a documentar en el README (S8 5.3), sin fila de deuda: las alertas filtran solo
+  por bodega (la API no acepta producto); el bundle de la SPA supera 500 kB sin división por ruta.
+- Fase: auditoría final (tier B).
