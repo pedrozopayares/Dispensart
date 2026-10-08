@@ -249,3 +249,100 @@ autenticación y `HttpResponseException` conservan el render de Laravel (S1 los 
 - `phpunit.xml` fuerza `APP_KEY` vacía (paridad con CI sin `.env`); S1 (sesión Sanctum, cookies cifradas)
   necesitará una clave de prueba generada en la corrida, no escrita en el repo.
 - La corrida 1 consumió presupuesto de suite: el cambio lleva dos corridas completas del backend.
+
+## 2026-10-08 — devops-implementer: tareas 4.1–4.5, 5.1, 5.2
+
+Commits: `b41420a` (imágenes + compose), `7851138` (CI), `18baa0a` (CI: `.env` desde plantilla), `4f1fef2` (tareas).
+Imágenes fijadas: `php:8.5.11-fpm-alpine3.24`, `composer:2.10.3`, `node:22.23.1-alpine3.23`,
+`nginxinc/nginx-unprivileged:1.30.3-alpine3.23`, `postgres:16.15-alpine3.24`. Acciones: `checkout@v7`,
+`setup-php@v2`, `cache@v6`, `setup-node@v7` (etiqueta mayor, design D7).
+
+### Verificación integral (4.5), stack del proyecto `dispensart` únicamente
+
+| Comprobación | Comando | Resultado clave |
+|---|---|---|
+| Sin `.env` | `test -e software/.env` | no existe |
+| Config | `docker compose -f software/compose.yaml config -q` | exit 0 |
+| Arranque en frío | `down -v` (borra `db_data`, `api_state`) → `up --build -d --wait` | exit 0 en 16 s; db, api, web `healthy` |
+| Puertos | `ps --format json` (Publishers con PublishedPort) | api `[]`; db `127.0.0.1:5434->5432`; web `0.0.0.0:8090->8080` |
+| /health vía web | `curl -H 'X-Correlation-Id: s0-cold-002' :8090/health` | 200 `application/json`, cid `s0-cold-002` |
+| /ready vía web | idem `/ready` | 200 `{"status":"ready","checks":{"database":"ok","migrations":"ok"}}` |
+| API desconocida | `curl -H 'Accept: application/json' :8090/api/no-existe` | 404 JSON `{"code":"not_found",…}`, cid presente |
+| Shell y enlace profundo | `curl :8090/` y `:8090/inventario` + `diff` | 200 `text/html`, `<html lang="es">`, mismo documento |
+| Shell renderizado | `chrome-headless-shell --dump-dom :8090/inventario` | `<h1>Dispensart</h1>`, `Bienvenido`, mensaje de bienvenida |
+| No root | `exec api id -u` / `exec web id -u`; `ps -o user` | 1000 / 101; supervisord, php-fpm, nginx como `app` |
+| Migraciones al arrancar | log de arranque + `select count(*) from migrations` | `"applied":3` y 3 filas; bases `dispensart`, `dispensart_test` |
+| Log JSON | cada línea de `logs api` y `logs web` por `jq -e` | api 6/6, web 5/5 JSON; cid `s0-cold-002` en ambos |
+| Sin query string en log | `GET /inventario?documento=SINTETICO123`, `/health?…` | 0 coincidencias en logs (control positivo: 1) |
+| API inalcanzable | `curl localhost:8080`, `curl <ip-api>:8080` desde el host | exit 7 / exit 28; control vía web 200 (`:9000` responde 403: es `kitepms-minio-1`, ajeno) |
+| APP_KEY ausente | sha256 de `bootstrap/cache/config.php` vs `/var/lib/dispensart/app_key` | iguales (`9a49a645…`), archivo `600 app`; `base64:` en logs: 0, fragmento de clave: 0 (control 1) |
+| Reinicio con datos | fila sintética en `users` → `down` (sin -v) → `up -d --wait` | fila presente (1), misma clave, log `"source":"volume"`, `"applied":0` |
+| APP_KEY provista | `APP_KEY=<sintética> up -d --wait api` | clave efectiva = sha256 provista; volumen sin cambio; log `"source":"env"` |
+| Puertos alternativos | `WEB_PORT=8095 DB_PORT=5440 up -d --wait` | 8095 `/ready` 200; 8090 exit 7; 5440 acepta; 5434 sin escucha |
+| Base caída | `stop db`, sondeo cada 5 s | `/ready` 503 inmediato `{"database":"fail","migrations":"skipped"}`; api `unhealthy` a los 30 s (3 intervalos); `/health` 200 |
+| Dependencia no sana | proyecto aparte `dispensart-depcheck` con healthcheck de db `exit 1` | `dependency failed to start`; api y web `Created`, nunca iniciados; luego `down -v` |
+| Credencial reemplazable | proyecto aparte con `DB_PASSWORD=s0_synthetic_override` | `/ready` 200; `POSTGRES_PASSWORD` y `DB_PASSWORD` = valor provisto; luego `down -v` |
+| Imagen api | `find / -name .env`; `vendor/` | 0 `.env` (control: `software/api/.env` existe en el árbol); sin pestphp, larastan, phpstan, phpunit, tests, node; código `root`, `storage` `app` |
+| Imagen web | `find / -name node_modules -o -name '*.ts*' -o -name .env` | 0; solo `index.html`, `favicon.svg`, `assets/` |
+| `.env` ignorado | `git check-ignore -v software/.env software/api/.env software/web/.env` | las tres ignoradas |
+| Plantilla | `${VAR}` de compose vs claves de `software/.env.example` | 9 = 9 (`$${POSTGRES_*}` son del contenedor); `APP_KEY=` vacía |
+| api-tools intacto | `run --rm api-tools php -v` | PHP 8.5.11 |
+
+### CI (5.1, 5.2)
+
+| Escenario | Verificado | Evidencia |
+|---|---|---|
+| CI › Cambio en el código de la aplicación | push real | run `37727682908` (`7851138`, incluye `b41420a` en `software/`): success |
+| CI › Cambio en el workflow | push real | run `37727881919` (`18baa0a`, solo `ci.yml`): success |
+| CI › Cambio solo de documentación de proceso | push real | `4f1fef2` (solo `openspec/`): `gh run list` sin corrida para ese SHA |
+| CI › Backend correcto / Pruebas contra PostgreSQL | push real | backend: PHP 8.5.11, Pint PASS 42 archivos, Larastan `[OK] No errors`, Pest 26 passed (143) sobre `postgres:16.15` |
+| CI › Frontend correcto | push real | `npm ci`, lint, typecheck, Vitest: success |
+| CI › Violación de formato | local, mismo comando | `pint --test` sobre archivo mal formateado: exit 1, md5 sin cambio; control limpio exit 0 |
+| CI › Hallazgo de análisis estático o prueba fallida | local | `phpstan analyse` (retorno int en método string): exit 1, control exit 0; `pest` prueba rota: exit 1 |
+| CI › Pruebas contra PostgreSQL (sin servicio) | local | `DB_HOST=db-no-existe pest DatabaseConnectionTest`: exit 2 `SQLSTATE[08006]`, sin SQLite; control exit 0 |
+| CI › Error de lint o prueba fallida | local | `eslint` archivo con 3 errores: exit 1; `vitest run` prueba rota: exit 1; controles exit 0 |
+| CI › Lockfile desincronizado | local, copia en scratchpad | `npm ci` con `left-pad` ausente del lock: exit 1 `Missing: left-pad@1.3.0 from lock file` |
+| CI › Permisos / sin secretos / fork | lectura + barrido | `permissions: contents: read` (ci.yml:15-16), ningún job lo amplía; `secrets.\|docker push\|registry\|environment:` 0 coincidencias |
+| actionlint | `rhysd/actionlint:1.7.12` | ci.yml exit 0; control con expresión inválida exit 1 |
+
+Las negativas se hicieron en local con los mismos comandos del workflow, no con commits rotos en
+`feat/add-project-skeleton` (instrucción del Orchestrator: menor costo; el árbol quedó limpio, `git status` vacío).
+
+### Anclas de transporte (RE)
+
+| Escenario | Ancla | Archivo:línea |
+|---|---|---|
+| RE › Arranque desde cero sin .env (`/ready` vía web) | proxy `/health`, `/ready` | `software/docker/web/default.conf.template:15` |
+| RE › Ruta de API desconocida no cae en la SPA | proxy `/api`, `/sanctum` | `software/docker/web/default.conf.template:10` |
+| RE › Shell en la raíz / Enlace profundo | respaldo SPA | `software/docker/web/default.conf.template:28-29` |
+| (todas por web) correlation id | cabecera reenviada | `software/docker/web/api-proxy.conf:8` |
+| RE › Base caída marca la API como no sana | healthcheck `/ready` | `software/compose.yaml:61-63` |
+| RE › Solo dos puertos / loopback | publicación | `software/compose.yaml:24`, `:80` |
+| RE › Migraciones aplicadas al arrancar | entrypoint | `software/docker/api/entrypoint.sh:34` |
+| RE › APP_KEY ausente / provista | entrypoint | `software/docker/api/entrypoint.sh:15-25` |
+
+### Barridos (`/usr/bin/grep`)
+
+| Barrido | Resultado | Control positivo |
+|---|---|---|
+| Secretos (`base64:…`, `api_key/secret/token=`, `sk-`, `AKIA`, llave privada) en `software/docker`, `compose.yaml`, `.env.example`, `.github/workflows` | 0 (exit 1) | 2 en `scratchpad/secret-control.txt` |
+| `set -x` fuera de comentarios en `software/docker` | 0 (exit 1) | la línea comentada sí aparece sin el filtro |
+
+### Decisiones
+
+- `.dockerignore` por imagen como lista blanca (`docker/<img>/Dockerfile.dockerignore`, BuildKit): contexto `software/`.
+- `web` resuelve `api` en cada petición (`resolver` + variable): sobrevive a la recreación de `api`.
+- Log de acceso de `web` en JSON sin IP ni query string (`$request_path`); `api` no duplica log de Nginx.
+- `cap_drop: [ALL]` y `no-new-privileges` en `api` y `web`.
+- CI copia `.env.example` a `.env`: sin archivo, Pest marcaba 22 pruebas como advertencia (lectura de `.env`).
+- `verification.md` no se escribe aquí: el registro se escribe una vez, al cierre (Cost discipline).
+
+### Deuda (prosa; el Orchestrator la fila)
+
+- Sin `.env`, Pest reporta como advertencia la lectura del archivo (Dotenv) en cada prueba de Feature; CI lo
+  evita copiando la plantilla. Causa raíz en el manejador de errores de Pest, no investigada (backend).
+- El healthcheck de `api` escribe una línea de log `/ready` cada 10 s; filtrable cuando haya agregador de logs.
+- `web` publica en `0.0.0.0`; restringir a loopback si el puesto del jurado lo exige.
+- Imagen `api` 306 MB (supervisord/Python, design D1).
+- Sin seeders al arrancar en S0 (el `DatabaseSeeder` por defecto usa Faker, dependencia de desarrollo); S1
+  debe añadir semillas idempotentes sin Faker y `db:seed --force` al entrypoint.
