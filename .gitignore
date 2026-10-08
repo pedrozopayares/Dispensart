@@ -1,0 +1,26 @@
+# deps
+node_modules/
+vendor/
+
+# env — public repository: never commit real secrets
+.env
+.env.*
+!.env.example
+
+# builds
+dist/
+build/
+coverage/
+.phpunit.cache/
+.phpunit.result.cache
+
+# test statement — private, never published
+/project/
+
+# Claude Code local state
+.claude/settings.local.json
+/.claude/worktrees/
+
+# misc
+.DS_Store
+*.log

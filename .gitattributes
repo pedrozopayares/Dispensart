@@ -1,0 +1,5 @@
+# Normalize line endings so shell scripts and Docker entrypoints work from any OS checkout.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

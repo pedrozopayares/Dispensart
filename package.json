@@ -1,0 +1,12 @@
+{
+  "name": "dispensart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dispensart — FARTMAR technical test. Root package holds dev tooling only (OpenSpec CLI); app code lives in software/.",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "1.14.1"
+  }
+}
