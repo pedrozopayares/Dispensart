@@ -42,12 +42,12 @@ escenario propio, verificado por el comando que la tarea nombra.
 
 ## 3. Pantalla Traslados
 
-- [ ] 3.1 Listado con estados en español, filtro por estado, paginación y estados de carga/vacío/error. Cubre transfers-screen «Listado de traslados»: todos. Verifica: pruebas verdes.
-- [ ] 3.2 Detalle con actores, fechas, motivo de anulación, líneas enviada/recibida y sección "Discrepancias"; traslado inexistente. Cubre «Detalle con estado y discrepancias»: todos. Verifica: pruebas verdes.
-- [ ] 3.3 Creación: bodegas, lotes elegibles del origen (no vencidos, con existencia), líneas, observaciones, validación local, `lot_expired`, apertura del borrador creado. Cubre «Creación de traslado»: todos. Verifica: pruebas verdes, incluida la de doble clic que cuenta una sola petición.
-- [ ] 3.4 Acciones por estado y rol (Solicitar, Aprobar oculto para el solicitante con su aviso, Anular con motivo), recarga tras éxito, `segregation_of_duties` e `invalid_transfer_transition`. Cubre «Acciones según estado y rol»: todos; «Anulación con motivo»: todos. Verifica: pruebas verdes por rol.
-- [ ] 3.5 Despacho con diálogo de confirmación y recepción por línea con aviso de discrepancia. Cubre «Despacho confirmado»: todos; «Recepción por línea»: todos. Verifica: pruebas verdes.
-- [ ] 3.6 [MUT] M4: mostrar "Aprobar" a todo usuario con `transfers.approve` sin comparar con el solicitante → «Acciones según estado y rol: Solicitante no ve Aprobar» FALLA; restaurar → PASA. Verifica: fila M4 en `verification.md`.
+- [x] 3.1 Listado con estados en español, filtro por estado, paginación y estados de carga/vacío/error. Cubre transfers-screen «Listado de traslados»: todos. Verifica: pruebas verdes.
+- [x] 3.2 Detalle con actores, fechas, motivo de anulación, líneas enviada/recibida y sección "Discrepancias"; traslado inexistente. Cubre «Detalle con estado y discrepancias»: todos. Verifica: pruebas verdes.
+- [x] 3.3 Creación: bodegas, lotes elegibles del origen (no vencidos, con existencia), líneas, observaciones, validación local, `lot_expired`, apertura del borrador creado. Cubre «Creación de traslado»: todos. Verifica: pruebas verdes, incluida la de doble clic que cuenta una sola petición.
+- [x] 3.4 Acciones por estado y rol (Solicitar, Aprobar oculto para el solicitante con su aviso, Anular con motivo), recarga tras éxito, `segregation_of_duties` e `invalid_transfer_transition`. Cubre «Acciones según estado y rol»: todos; «Anulación con motivo»: todos. Verifica: pruebas verdes por rol.
+- [x] 3.5 Despacho con diálogo de confirmación y recepción por línea con aviso de discrepancia. Cubre «Despacho confirmado»: todos; «Recepción por línea»: todos. Verifica: pruebas verdes.
+- [x] 3.6 [MUT] M4: mostrar "Aprobar" a todo usuario con `transfers.approve` sin comparar con el solicitante → «Acciones según estado y rol: Solicitante no ve Aprobar» FALLA; restaurar → PASA. Verifica: fila M4 en `verification.md`.
 
 ## 4. Pantalla Inventario
 
@@ -61,7 +61,7 @@ escenario propio, verificado por el comando que la tarea nombra.
 
 ## 6. Navegación y espacio de trabajo
 
-- [ ] 6.1 Rutas `/dispensations`, `/transfers`, `/transfers/:id`, `/inventory`, `/kardex` dentro del shell con su guarda; menú y guarda leídos de una sola tabla `src/app/routes.tsx` (design D6), página actual marcada; inicio con accesos del rol. Cubre operator-workspace «Navegación por rol»: todos; «Inicio con accesos del rol»: todos; app-shell «Encabezado con sesión y cierre»: «Página de inicio sin pantallas aún», «Página de inicio con saludo». Verifica: pruebas por cada uno de los 5 roles verdes; ninguna ruta de pantalla sin enlace de menú.
+- [x] 6.1 Rutas `/dispensations`, `/transfers`, `/transfers/:id`, `/inventory`, `/kardex` dentro del shell con su guarda; menú y guarda leídos de una sola tabla `src/app/routes.tsx` (design D6), página actual marcada; inicio con accesos del rol. Cubre operator-workspace «Navegación por rol»: todos; «Inicio con accesos del rol»: todos; app-shell «Encabezado con sesión y cierre»: «Página de inicio sin pantallas aún», «Página de inicio con saludo». Verifica: pruebas por cada uno de los 5 roles verdes; ninguna ruta de pantalla sin enlace de menú.
 - [ ] 6.2 Privacidad en el cliente: regla ESLint `no-console` como error, ningún uso de `localStorage`/`sessionStorage` con datos de paciente, prueba con espía de consola en el fallo de búsqueda. Cubre operator-workspace «Datos del paciente fuera del navegador persistente»: «Error durante una consulta de paciente». Verifica: `run lint` verde y barrido `/usr/bin/grep -rnE 'console\.|localStorage|sessionStorage' software/web/src` sin usos fuera de pruebas (control positivo: el mismo barrido sobre `src/test/` encuentra el espía).
 - [ ] 6.3 Barrido de textos: ningún texto visible literal fuera del módulo central. Cimiento. Verifica: `/usr/bin/grep -rnE --include='*.tsx' --exclude='*.test.tsx' '>[[:space:]]*[A-Za-zÁÉÍÓÚÑáéíóúñ¿¡][^<>{}]*<|(aria-label|placeholder|title|alt)="[^"]*[A-Za-zÁÉÍÓÚÑáéíóúñ]' software/web/src` sin coincidencias; control positivo: `printf '<p>Texto literal</p>\n<input placeholder="Buscar" />\n' | /usr/bin/grep -cE '>[[:space:]]*[A-Za-zÁÉÍÓÚÑáéíóúñ¿¡][^<>{}]*<|(aria-label|placeholder|title|alt)="[^"]*[A-Za-zÁÉÍÓÚÑáéíóúñ]'` devuelve 2; ambos resultados en `verification.md`.
 

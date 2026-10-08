@@ -170,3 +170,43 @@ El ítem `invalid_idempotency_key` no tiene texto propio (cae en el genérico): 
 ## 2026-10-08 — spec-engineer: tarea 0.2
 
 - Barrido de rutas sin prefijo `/api` (las claves de `paths` lo omiten; va en `servers[0].url`). Hoy: 14 rutas, faltan `alerts` y `transfers` hasta archivar S4/S5. Validación estricta: válida.
+
+## 2026-10-08 — frontend-implementer: Traslados sobre el contrato de S4 (3.1–3.6, 6.1; parciales 0.2, 1.3)
+
+**Cerradas**: 3.1–3.6 (M4 en `verification.md` § 2.2), 6.1 (cuatro rutas y `/transfers/:id` desde la tabla de
+pantallas, menú y accesos del inicio para los 5 roles). **Parciales, sin marcar**: 0.2 y 1.3 (falta `alerts`, S5).
+
+**Tipos**: `npm run api:types` regenerado y comprometido aparte (`fix: tipos de la SPA alineados con el contrato
+de traslados`, `c793acb`) antes de cualquier código.
+
+**0.2 — contraste S4**
+- Barrido sin `/api`: 22 rutas; 7 de `transfers` (listado, detalle, 5 acciones, resolución de discrepancias).
+- Campos iguales a la tabla de contrato de `add-transfers/design.md`. Única diferencia: `created_by` del detalle
+  es anulable en el documento (`TransferResource`); el resumen del listado no. La SPA lo trata como anulable.
+- Sin tipos a mano para traslados: estados, cuerpos y respuestas salen del documento.
+
+**Decisiones**
+- `transfer-rules.ts`: acciones por estado y rol en una función pura; Aprobar compara con quien solicitó
+  (`requested_by`, respaldo `created_by`: iguales por `transfers_requester_is_creator`). Anular = creador con
+  `transfers.create` o `transfers.approve`, igual que la Policy.
+- La tabla de pantallas gana `description` (acceso del inicio) y `children` (detalle bajo la misma guarda y el
+  mismo enlace de menú): ninguna ruta sin menú.
+- Lotes elegibles = `GET /stock?warehouse_id=<origen>` filtrado a no vencidos con existencia; cambiar el origen
+  vacía los lotes elegidos; un lote no se ofrece dos veces.
+- Tras cada acción el detalle toma la respuesta de la API; `invalid_transfer_transition` cierra el diálogo,
+  avisa y recarga el detalle; despacho y recepción invalidan stock, kardex, alertas y ficha.
+- `describeError` admite `overrides` por operación (texto propio de `insufficient_stock` al despachar, desde
+  el módulo de textos). `Pagination` extraída a `components/` y reutilizada por Kardex.
+- `strings.home.emptyMessage` pasa a "Tu rol no tiene pantallas de operación en esta versión." (delta de app-shell).
+
+**Ejecuciones** (solo deltas; las 3 corridas completas no se tocan): `src/features/transfers` 40/52 → 52/52 tras
+corregir ayudantes de prueba; afectados (app, App, kardex, api-errors, query-keys, transfers) 111/111; M4 y dos
+mutaciones de comprobación; lint 0, tsc 0, build OK.
+
+**Humo**: `web` reconstruido; regente crea y solicita (#23, sin Aprobar y con aviso), un segundo regente sintético
+`regente2@dispensart.test` (creado por el admin vía `POST /api/users`) aprueba, el auxiliar despacha y recibe 2 de 3
+→ "Recibido parcial" con faltante 1 "Pendiente". Capturas `captures/s6-traslado*-*.png`, `s6-inicio-accesos-regente.png`.
+
+**Deuda (prosa)**: la siembra solo trae un regente, así que el recorrido de aprobación segregada sobre el stack
+exige crear un segundo regente a mano; un usuario semilla adicional lo haría reproducible. El build avisa de un
+bloque mayor de 500 kB (división por ruta es no-objetivo del diseño).
