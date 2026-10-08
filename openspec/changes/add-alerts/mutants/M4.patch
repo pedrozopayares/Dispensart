@@ -1,0 +1,12 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..4da2f18 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -67,7 +67,6 @@ public function lowStock(?int $warehouseId): Collection
+             ->select('stocks.warehouse_id', 'stocks.product_id')
+             ->selectRaw('SUM(stocks.quantity) AS quantity')
+             ->join('lots', 'lots.id', '=', 'stocks.lot_id')
+-            ->where('lots.expires_on', '>', $today->toDateString())
+             ->groupBy('stocks.warehouse_id', 'stocks.product_id');
+ 
+         return StockMinimum::query()

@@ -1,0 +1,17 @@
+diff --git a/software/api/database/migrations/2026_10_11_000001_create_stock_minimums_table.php b/software/api/database/migrations/2026_10_11_000001_create_stock_minimums_table.php
+index 6768137..b974bef 100644
+--- a/software/api/database/migrations/2026_10_11_000001_create_stock_minimums_table.php
++++ b/software/api/database/migrations/2026_10_11_000001_create_stock_minimums_table.php
+@@ -18,10 +18,10 @@ public function up(): void
+             $table->id()->generatedAs();
+             $table->foreignId('warehouse_id')
+                 ->constrained('warehouses', indexName: 'stock_minimums_warehouse_id_foreign')
+-                ->restrictOnDelete();
++                ->cascadeOnDelete();
+             $table->foreignId('product_id')
+                 ->constrained('products', indexName: 'stock_minimums_product_id_foreign')
+-                ->restrictOnDelete();
++                ->cascadeOnDelete();
+             $table->integer('minimum_quantity');
+             $table->timestampsTz();
+ 

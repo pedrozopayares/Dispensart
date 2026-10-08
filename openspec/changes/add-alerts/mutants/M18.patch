@@ -1,0 +1,16 @@
+diff --git a/software/api/database/seeders/StockMinimumSeeder.php b/software/api/database/seeders/StockMinimumSeeder.php
+index 07caeea..8e008a4 100644
+--- a/software/api/database/seeders/StockMinimumSeeder.php
++++ b/software/api/database/seeders/StockMinimumSeeder.php
+@@ -37,9 +37,8 @@ public function run(): void
+                 continue;
+             }
+ 
+-            StockMinimum::query()->firstOrCreate(
+-                ['warehouse_id' => $warehouseId, 'product_id' => $productId],
+-                ['minimum_quantity' => $minimum],
++            StockMinimum::query()->create(
++                ['warehouse_id' => $warehouseId, 'product_id' => $productId, 'minimum_quantity' => $minimum],
+             );
+         }
+     }

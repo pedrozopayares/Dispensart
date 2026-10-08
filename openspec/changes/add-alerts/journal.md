@@ -127,3 +127,31 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   (backend y frontend). No consume corrida completa local.
 - Presupuesto: cierre del implementer (6.2) y confirmación del auditor; tope de 3.
 - Orden: backend-implementer 1–5 y 6.2–6.5; luego devops-implementer 6.1 (humo). No hay tareas de frontend en S5.
+
+## 2026-10-08 — backend-implementer: apply de 1–5 y cierre 6.2–6.5
+
+- Tareas cerradas: 1.1–1.3, 2.1–2.2, 3.1–3.5, 4.1–4.3, 5.1, 6.2–6.5. 6.1 (humo) queda para devops-implementer.
+- Commits en `dev`: `ff4c137` mínimos en base, `9bed223` consultas, `c208a5b` siembra, `da49eb6` endpoint,
+  `db01342` contrato OpenAPI + `api-schema.ts`, `6bdf70f` arreglo de la reversión de S4, y el del registro.
+- Decisiones:
+  - `App\Queries\InventoryAlerts` (DTO de solo lectura con las dos colecciones) como recurso de `AlertsResource`:
+    con un arreglo, Scramble no infería el modelo (aviso JR001) y documentaba ambas listas como `string`. Con
+    `@mixin InventoryAlerts`, el esquema queda tipado. No altera D8: el recurso sigue envolviendo ambas listas.
+  - El disponible de stock bajo es una constante `AlertQuery::AVAILABLE`, usada en el `SELECT` y en el `WHERE`.
+    Así el valor servido y el comparado no divergen. M12 y M13 la mutan.
+  - Escenarios de alerta con datos y afirmación en `tests/Helpers/Alerts.php`, uno por título literal. Los recorren
+    la prueba de consulta y el dataset de la ruta (mismos datos, misma afirmación, rol del WHEN).
+- Incidente `[MUT]`: la primera cadena de 3.4 trajo M12 y M13 con un error de sintaxis (comilla de cierre). La
+  «FALLA» venía de un `ParseError`, no de la propiedad, y `ctl M12` lo destapó. Se rehicieron los parches, se pasó
+  `php -l` sobre los 15 de `AlertQuery.php` y se repitió la cadena completa, que salió 0. Detalle en
+  `verification.md` § 3.
+- Corrida completa 6.2 (una, en `db01342`): Pint y Larastan pasan; en Pest falla una prueba de S4,
+  `TransferRaceTest` «revierte las 4 migraciones de traslados…». Usaba `--step=4` fijo y la migración de S5 es ahora
+  la última. Arreglo: contar los pasos desde la primera migración de S4. Se saneó con una corrida delta del archivo,
+  que pasa. No se repitió la suite completa, por el tope de 3. La confirmación completa en verde queda para la
+  corrida del auditor. Cifras en `verification.md` § 5.
+- `composer openapi:check` no corre dentro del contenedor (`git` no ve el repositorio). La deriva se comprobó con
+  re-export en el contenedor y `git diff --exit-code` en el host, sin diferencias. En CI corre en el runner.
+- Deuda (prosa, sin id): edición de mínimos por API (`admin` o `regente`), ya anotada como candidata por
+  spec-engineer y architect. Fragilidad general: las pruebas de reversión que dependen de que su migración sea la
+  última. Barrido S7: hoy no queda otra.

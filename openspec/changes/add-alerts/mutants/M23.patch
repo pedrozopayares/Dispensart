@@ -1,0 +1,32 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..3ffa600 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -71,16 +71,20 @@ public function lowStock(?int $warehouseId): Collection
+             ->groupBy('stocks.warehouse_id', 'stocks.product_id');
+ 
+         return StockMinimum::query()
+-            ->select('stock_minimums.*')
++            ->from('warehouses')
++            ->crossJoin('products')
++            ->leftJoin('stock_minimums', function (JoinClause $join): void {
++                $join->on('stock_minimums.warehouse_id', '=', 'warehouses.id')
++                    ->on('stock_minimums.product_id', '=', 'products.id');
++            })
++            ->selectRaw('warehouses.id AS warehouse_id, products.id AS product_id, COALESCE(stock_minimums.minimum_quantity, 1) AS minimum_quantity')
+             ->selectRaw('CAST('.self::AVAILABLE.' AS integer) AS available_quantity')
+-            ->join('warehouses', 'warehouses.id', '=', 'stock_minimums.warehouse_id')
+-            ->join('products', 'products.id', '=', 'stock_minimums.product_id')
+             ->leftJoinSub($available, 'available', function (JoinClause $join): void {
+-                $join->on('available.warehouse_id', '=', 'stock_minimums.warehouse_id')
+-                    ->on('available.product_id', '=', 'stock_minimums.product_id');
++                $join->on('available.warehouse_id', '=', 'warehouses.id')
++                    ->on('available.product_id', '=', 'products.id');
+             })
+-            ->whereRaw(self::AVAILABLE.' < stock_minimums.minimum_quantity')
+-            ->when($warehouseId !== null, fn (Builder $query) => $query->where('stock_minimums.warehouse_id', $warehouseId))
++            ->whereRaw(self::AVAILABLE.' < COALESCE(stock_minimums.minimum_quantity, 1)')
++            ->when($warehouseId !== null, fn (Builder $query) => $query->where('warehouses.id', $warehouseId))
+             ->with(['warehouse', 'product'])
+             ->orderBy('warehouses.name')
+             ->orderBy('products.name')

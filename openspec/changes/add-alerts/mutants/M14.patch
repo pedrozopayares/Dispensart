@@ -1,0 +1,12 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..8803f8c 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -40,7 +40,6 @@ public function expiringLots(?int $warehouseId): Collection
+             ->selectRaw('(lots.expires_on - CAST(? AS date)) AS days_to_expiry', [$today->toDateString()])
+             ->join('lots', 'lots.id', '=', 'stocks.lot_id')
+             ->join('warehouses', 'warehouses.id', '=', 'stocks.warehouse_id')
+-            ->where('stocks.quantity', '>', 0)
+             ->where('lots.expires_on', '<=', $horizon->toDateString())
+             ->when($warehouseId !== null, fn (Builder $query) => $query->where('stocks.warehouse_id', $warehouseId))
+             ->with(['warehouse', 'product', 'lot'])

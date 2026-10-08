@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php b/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
+index 3709efa..7cebdb8 100644
+--- a/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
++++ b/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
+@@ -14,7 +14,7 @@ final class ListAlertsRequest extends FormRequest
+ {
+     public function authorize(): bool
+     {
+-        return (bool) $this->user()?->can('viewAny', Stock::class);
++        return true;
+     }
+ 
+     /**

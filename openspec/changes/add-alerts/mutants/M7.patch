@@ -1,0 +1,28 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..b7eb444 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -64,11 +64,11 @@ public function lowStock(?int $warehouseId): Collection
+         // El predicado de no vencido va dentro de la subconsulta: fuera borraría los pares sin existencias.
+         $available = Stock::query()
+             ->toBase()
+-            ->select('stocks.warehouse_id', 'stocks.product_id')
++            ->select('stocks.product_id')
+             ->selectRaw('SUM(stocks.quantity) AS quantity')
+             ->join('lots', 'lots.id', '=', 'stocks.lot_id')
+             ->where('lots.expires_on', '>', $today->toDateString())
+-            ->groupBy('stocks.warehouse_id', 'stocks.product_id');
++            ->groupBy('stocks.product_id');
+ 
+         return StockMinimum::query()
+             ->select('stock_minimums.*')
+@@ -76,8 +76,7 @@ public function lowStock(?int $warehouseId): Collection
+             ->join('warehouses', 'warehouses.id', '=', 'stock_minimums.warehouse_id')
+             ->join('products', 'products.id', '=', 'stock_minimums.product_id')
+             ->leftJoinSub($available, 'available', function (JoinClause $join): void {
+-                $join->on('available.warehouse_id', '=', 'stock_minimums.warehouse_id')
+-                    ->on('available.product_id', '=', 'stock_minimums.product_id');
++                $join->on('available.product_id', '=', 'stock_minimums.product_id');
+             })
+             ->whereRaw(self::AVAILABLE.' < stock_minimums.minimum_quantity')
+             ->when($warehouseId !== null, fn (Builder $query) => $query->where('stock_minimums.warehouse_id', $warehouseId))

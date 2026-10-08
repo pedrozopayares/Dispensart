@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php b/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
+index 3709efa..1230528 100644
+--- a/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
++++ b/software/api/app/Http/Requests/Inventory/ListAlertsRequest.php
+@@ -23,7 +23,7 @@ public function authorize(): bool
+     public function rules(): array
+     {
+         return [
+-            'warehouse_id' => ['sometimes', 'integer', 'min:1'],
++            'warehouse_id' => ['sometimes', 'integer'],
+         ];
+     }
+ 

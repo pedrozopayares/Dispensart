@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..5e5573e 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -33,7 +33,7 @@ final class AlertQuery
+     public function expiringLots(?int $warehouseId): Collection
+     {
+         $today = BusinessCalendar::today();
+-        $horizon = $today->addDays(self::EXPIRY_WINDOW_DAYS);
++        $horizon = $today->addDays(self::EXPIRY_WINDOW_DAYS + 1);
+ 
+         return Stock::query()
+             ->select('stocks.*')

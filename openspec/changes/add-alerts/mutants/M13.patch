@@ -1,0 +1,14 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..1a0fb48 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -22,7 +22,8 @@ final class AlertQuery
+      * Disponible de un par bodega + producto: suma de existencias no vencidas; sin filas, 0 (design D4).
+      * Solo lee `stocks`: lo despachado y aún no recibido ya salió del origen y no entró al destino.
+      */
+-    private const AVAILABLE = 'COALESCE(available.quantity, 0)';
++    private const AVAILABLE = '(COALESCE(available.quantity, 0) - COALESCE((SELECT SUM(tl.quantity) FROM transfer_lines tl JOIN transfers t ON t.id = tl.transfer_id '
++        ."WHERE t.status = 'EN_TRANSITO' AND t.origin_warehouse_id = stock_minimums.warehouse_id AND tl.product_id = stock_minimums.product_id), 0))";
+ 
+     /**
+      * Existencias con cantidad > 0 cuyo lote vence en la ventana, ya vencidas incluidas (sin límite inferior),

@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Queries/AlertQuery.php b/software/api/app/Queries/AlertQuery.php
+index 809e376..30c58ff 100644
+--- a/software/api/app/Queries/AlertQuery.php
++++ b/software/api/app/Queries/AlertQuery.php
+@@ -79,7 +79,7 @@ public function lowStock(?int $warehouseId): Collection
+                 $join->on('available.warehouse_id', '=', 'stock_minimums.warehouse_id')
+                     ->on('available.product_id', '=', 'stock_minimums.product_id');
+             })
+-            ->whereRaw(self::AVAILABLE.' < stock_minimums.minimum_quantity')
++            ->whereRaw(self::AVAILABLE.' <= stock_minimums.minimum_quantity')
+             ->when($warehouseId !== null, fn (Builder $query) => $query->where('stock_minimums.warehouse_id', $warehouseId))
+             ->with(['warehouse', 'product'])
+             ->orderBy('warehouses.name')
