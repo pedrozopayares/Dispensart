@@ -1,58 +1,80 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import App from '@/App'
-import { AppProviders } from '@/app/providers'
 import { strings } from '@/lib/strings'
+import { apiError, csrfCookieHandler, deferred, installFakeApi, json, user } from '@/test/fake-api'
+import { renderApp } from '@/test/render-app'
 
-// Aplana el módulo de textos a la lista de valores permitidos en pantalla.
+// Tarea 6.2 — cada texto visible sale del módulo central (app-shell; runtime-environment ›
+// "Textos del shell desde el módulo central"). Plantillas `{x}` aceptan cualquier valor de datos.
+
 function catalogValues(node: unknown): string[] {
   if (typeof node === 'string') return [node]
   if (node && typeof node === 'object') return Object.values(node).flatMap(catalogValues)
   return []
 }
 
-// Textos visibles del árbol renderizado que no salen del módulo central.
-function textsOutsideCatalog(root: HTMLElement): { visible: string[]; outside: string[] } {
-  const catalog = new Set(catalogValues(strings))
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Textos visibles que no salen del módulo central. `data` = valores que vienen de la API
+// (nombre del usuario), no son textos de interfaz.
+function textsOutsideCatalog(root: HTMLElement, data: string[] = []) {
+  const patterns = catalogValues(strings).map(
+    (value) =>
+      new RegExp(`^${escapeRegExp(value).replace(/\\\{\w+\\\}/g, '.+')}$`),
+  )
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   const visible: string[] = []
   while (walker.nextNode()) {
     const text = walker.currentNode.textContent?.trim()
     if (text) visible.push(text)
   }
-  return { visible, outside: visible.filter((text) => !catalog.has(text)) }
-}
-
-function renderShell() {
-  return render(
-    <AppProviders>
-      <App />
-    </AppProviders>,
+  const outside = visible.filter(
+    (text) => !data.includes(text) && !patterns.some((pattern) => pattern.test(text)),
   )
+  return { visible, outside }
 }
 
-describe('página shell (RE › Shell en la raíz)', () => {
-  it('muestra el nombre del producto y el mensaje de bienvenida en español', () => {
-    renderShell()
-    expect(screen.getByRole('heading', { level: 1, name: strings.app.name })).toBeInTheDocument()
-    expect(screen.getByText(strings.shell.welcomeTitle)).toBeInTheDocument()
-    expect(screen.getByText(strings.shell.welcomeMessage)).toBeInTheDocument()
-  })
+describe('textos de la SPA desde el módulo central', () => {
+  it('pantalla /login con errores de campo y de la API', async () => {
+    installFakeApi({
+      'GET /api/auth/me': () => apiError(401, 'unauthenticated'),
+      'GET /sanctum/csrf-cookie': csrfCookieHandler(),
+      'POST /api/auth/login': () => json(422, { code: 'invalid_credentials', message: 'x' }),
+    })
+    const { container } = renderApp('/login')
+    fireEvent.click(await screen.findByRole('button', { name: strings.login.submit }))
+    await screen.findAllByText(strings.login.required)
+    fireEvent.change(screen.getByLabelText(strings.login.email), { target: { value: 'a@b.test' } })
+    fireEvent.change(screen.getByLabelText(strings.login.password), { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: strings.login.submit }))
+    await screen.findByText(strings.errors.invalidCredentials)
 
-  it('monta un componente de shadcn/ui (tarjeta)', () => {
-    const { container } = renderShell()
-    expect(container.querySelector('[data-slot="card"]')).toBeInTheDocument()
-    expect(container.querySelector('[data-slot="card-title"]')).toHaveTextContent(
-      strings.shell.welcomeTitle,
-    )
-  })
-})
-
-describe('textos del shell (RE › Textos del shell desde el módulo central)', () => {
-  it('cada texto visible coincide con un valor del módulo central', () => {
-    const { container } = renderShell()
     const { visible, outside } = textsOutsideCatalog(container)
-    expect(visible.length).toBeGreaterThanOrEqual(3)
+    expect(visible.length).toBeGreaterThanOrEqual(6)
+    expect(outside).toEqual([])
+  })
+
+  it('carga de sesión, fallo con "Reintentar" y shell con inicio', async () => {
+    const me = deferred<Response>()
+    installFakeApi({
+      'GET /api/auth/me': [
+        () => me.promise,
+        () => json(200, { data: user({ name: 'Rita Regente', role: 'regente_farmacia' }) }),
+      ],
+    })
+    const { container } = renderApp('/')
+    expect(textsOutsideCatalog(container).outside).toEqual([])
+
+    me.resolve(json(503, { code: 'server_error', message: 'x' }))
+    await screen.findByText(strings.session.loadFailed)
+    expect(textsOutsideCatalog(container).outside).toEqual([])
+
+    fireEvent.click(screen.getByRole('button', { name: strings.session.retry }))
+    await screen.findByText(strings.home.emptyMessage)
+    const { visible, outside } = textsOutsideCatalog(container, ['Rita Regente'])
+    expect(visible).toContain('Bienvenido, Rita Regente')
     expect(outside).toEqual([])
   })
 
@@ -63,5 +85,10 @@ describe('textos del shell (RE › Textos del shell desde el módulo central)', 
       </p>,
     )
     expect(textsOutsideCatalog(container).outside).toEqual(['Texto suelto'])
+  })
+
+  it('control positivo: el código crudo de un rol no pasa como texto del módulo', () => {
+    const { container } = render(<span>regente_farmacia</span>)
+    expect(textsOutsideCatalog(container).outside).toEqual(['regente_farmacia'])
   })
 })

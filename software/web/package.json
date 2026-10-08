@@ -9,7 +9,9 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
     "test": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "api:types": "npx --yes openapi-typescript@7.13.0 ../api/openapi.json -o src/lib/api-schema.ts",
+    "api:types:check": "npm run api:types && git diff --exit-code -- src/lib/api-schema.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",
@@ -18,7 +20,8 @@
     "lucide-react": "^1.52.0",
     "radix-ui": "^1.7.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
