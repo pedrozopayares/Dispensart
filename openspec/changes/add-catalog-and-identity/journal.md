@@ -315,3 +315,26 @@ Fuera de este bloque: seed-data "Arranque desde cero" y "Cambios del admin sobre
 - Falta una prueba de `TrustProxies`: que `X-Forwarded-For` desde un proxy privado separe los contadores del limitador y que el mismo encabezado desde una IP pública se ignore (riesgo 3 del design). Las pruebas actuales fijan `REMOTE_ADDR` 127.0.0.1, fuera de los rangos de confianza.
 - Si el admin cambia el código de un producto semilla, la siguiente siembra recrea el producto original con su código (la clave natural es el código). Ningún escenario lo cubre; impacto bajo.
 - `npm audit` en la raíz: 4 vulnerabilidades altas transitivas de `@fission-ai/openspec` (braces/micromatch), previas a este cambio; `@redocly/cli` no añade ninguna. Herramienta de desarrollo, no se despliega.
+
+## 2026-10-08 — Orchestrator: bloque api cerrado, web ∥ devops
+
+- Backend 1.1–5.16 `[x]`. Corrida de cierre backend (corrida 2 de 3): Pint limpio, Larastan 0, Pest 166 / 686.
+  M1–M11 aplicados → FALLA, restaurados → PASA (tabla en la sección del backend).
+- Decisión del Orchestrator (pregunta abierta del backend): el stack de compose es el de evaluación local;
+  `APP_ENV=local` por defecto y `SEED_USER_PASSWORD` con valor por defecto solo de desarrollo, ambos
+  sobrescribibles por `.env` (dentro del delta MODIFIED de `runtime-environment`). Así "Arranque desde
+  cero" siembra los 5 usuarios.
+- Deuda del backend: prueba de proxy de confianza → se salda dentro de S1 (delta). Resiembra por clave
+  natural tras cambiar el código de un producto semilla → comportamiento esperado de la siembra
+  idempotente; va a supuestos del README (S8), sin fila. `npm audit` en dependencias de la CLI de
+  OpenSpec (herramienta de desarrollo en la raíz, no producto) → sin fila.
+- Delegación: frontend-implementer (grupo 6) ∥ devops-implementer (grupo 7). Sin contrato nuevo entre ellos.
+
+## 2026-10-08 — backend-implementer: deuda de proxy saldada (delta)
+
+| Escenario (design D3, riesgo 3) | Prueba | Archivo:línea | Mutación → resultado |
+|---|---|---|---|
+| Tras proxy privado de confianza el limitador usa la IP reenviada | tras un proxy privado de confianza, cuenta los fallos por la IP reenviada del cliente | software/api/tests/Feature/Identity/LoginProxyTest.php:26 | `trustedproxy.proxies` = `127.0.0.2` → FALLA 1/2; restaurado → PASA 2/2 |
+| `X-Forwarded-For` desde fuente no confiable se ignora | desde una fuente no confiable ignora X-Forwarded-For y cuenta por la IP de conexión | software/api/tests/Feature/Identity/LoginProxyTest.php:42 | `trustedproxy.proxies` = `*` → FALLA 1/2; restaurado → PASA 2/2 |
+
+Corrida delta `--filter=LoginProxyTest`: 2 pasan / 14 aserciones. Pint `--test` del archivo: pasa. Larastan: 0 errores. Sin cambios de código de aplicación. La primera fila de deuda de la sección anterior queda saldada.
