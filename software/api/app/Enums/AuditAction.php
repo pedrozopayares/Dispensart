@@ -12,12 +12,16 @@ enum AuditAction: string
     case DispensationCreated = 'dispensation.created';
     case ControlledDrugAuthorized = 'controlled_drug.authorized';
     case ControlledDrugAuthorizationFailed = 'controlled_drug.authorization_failed';
+    case TransferApproved = 'transfer.approved';
+    case TransferVoided = 'transfer.voided';
+    case TransferDiscrepancyResolved = 'transfer.discrepancy_resolved';
 
     public function subjectType(): string
     {
         return match ($this) {
             self::PrescriptionCreated, self::ControlledDrugAuthorizationFailed => 'prescription',
             self::DispensationCreated, self::ControlledDrugAuthorized => 'dispensation',
+            self::TransferApproved, self::TransferVoided, self::TransferDiscrepancyResolved => 'transfer',
         };
     }
 }
