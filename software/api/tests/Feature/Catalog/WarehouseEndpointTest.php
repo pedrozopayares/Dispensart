@@ -153,6 +153,13 @@ describe('PATCH /api/warehouses/{id}', function () {
             ->assertExactJson(['code' => 'not_found', 'message' => 'El recurso solicitado no existe.']);
     });
 
+    it('responde 404 sin 500 a un id que no cabe en bigint', function () {
+        $this->actingAs($this->admin)
+            ->patchJson('/api/warehouses/9999999999999999999', ['name' => 'X'])
+            ->assertNotFound()
+            ->assertExactJson(['code' => 'not_found', 'message' => 'El recurso solicitado no existe.']);
+    });
+
     it('rechaza con 403 a un regente sin cambiar la bodega', function () {
         $this->actingAs(User::factory()->regente()->create())
             ->patchJson("/api/warehouses/{$this->warehouse->id}", ['name' => 'Intento'])

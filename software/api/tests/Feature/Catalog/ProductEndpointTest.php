@@ -155,6 +155,12 @@ describe('PATCH /api/products/{id}', function () {
         expect((string) $response->getContent())->not->toContain('Product')->not->toContain('App\\');
     });
 
+    it('responde 404 sin 500 a un id que no cabe en bigint', function () {
+        $this->actingAs($this->admin)->patchJson('/api/products/9999999999999999999', ['name' => 'X'])
+            ->assertNotFound()
+            ->assertExactJson(['code' => 'not_found', 'message' => 'El recurso solicitado no existe.']);
+    });
+
     it('rechaza con 403 a un auditor sin cambiar el producto', function () {
         $this->product->update(['is_controlled' => true]);
 

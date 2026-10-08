@@ -41,11 +41,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/warehouses', [WarehouseController::class, 'index'])->can('viewAny', Warehouse::class)->name('warehouses.index');
     Route::post('/warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
-    Route::patch('/warehouses/{warehouse}', [WarehouseController::class, 'update'])->whereNumber('warehouse')->name('warehouses.update');
+    Route::patch('/warehouses/{warehouse}', [WarehouseController::class, 'update'])->where('warehouse', '[0-9]{1,18}')->name('warehouses.update');
 
     Route::get('/products', [ProductController::class, 'index'])->can('viewAny', Product::class)->name('products.index');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::patch('/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');
+    Route::patch('/products/{product}', [ProductController::class, 'update'])->where('product', '[0-9]{1,18}')->name('products.update');
 
     Route::get('/lots', LotController::class)->name('lots.index');
 
