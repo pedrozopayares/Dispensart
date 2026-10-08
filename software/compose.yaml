@@ -118,6 +118,9 @@ services:
       dockerfile: docker/api/Dockerfile
       target: dev
     working_dir: /app
+    # Un clon limpio trae ./api sin vendor/: se instala (con dependencias de desarrollo) antes del primer comando,
+    # así los comandos del README funcionan tal cual. Con vendor/ presente solo cuesta un test -f.
+    entrypoint: ["sh", "-c", "{ test -f vendor/autoload.php || composer install --no-interaction --no-progress --prefer-dist >&2; } && exec docker-php-entrypoint \"$$@\"", "--"]
     volumes:
       - ./api:/app
     environment:
