@@ -155,3 +155,66 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Deuda (prosa, sin id): edición de mínimos por API (`admin` o `regente`), ya anotada como candidata por
   spec-engineer y architect. Fragilidad general: las pruebas de reversión que dependen de que su migración sea la
   última. Barrido S7: hoy no queda otra.
+
+## 2026-10-08 — devops-implementer: humo de alertas (6.1)
+
+- Tarea cerrada: 6.1. Script nuevo `software/docker/smoke/alerts-smoke.sh` con el patrón de `stock-smoke.sh`
+  (bash + curl + jq, contraseña nunca impresa, sale 0 solo si las 18 comprobaciones pasan; solo lectura).
+- Desvío del comando de 6.1: sin `down -v` inicial, por orden del Orchestrator (el volumen del stack de desarrollo lo
+  usan otros agentes). La migración de S5 no estaba aplicada: `stock_minimums` nació en el `up --build`, y la
+  resiembra se ejerció con `up --wait --force-recreate api` (el entrypoint corre `db:seed` siempre). Sin
+  `migrate:fresh`. El staging de CI arranca desde volumen vacío (migra y siembra) pero solo corre `smoke.sh`:
+  el humo de alertas sobre volumen vacío no tiene corrida.
+- Corridas: 3 del humo, 18/18 cada una; `stock_minimums` 4 antes y 4 después de la resiembra; comando compuesto
+  sale 0. Controles negativos: contraseña errónea sale 1; aserción invertida (FC/MED-001 exigido en `low_stock`)
+  sale 1. Humos existentes tras las corridas: auth, stock, dispensation y transfer salen 0, sin fallas. Tablas en
+  `verification.md` § 6.
+- Salida del comando de 6.1 (sin las líneas de contenedores de compose):
+
+```
+Humo de alertas de inventario contra http://localhost:8090
+PASA  [regente] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [regente] POST /api/auth/login: HTTP 200
+PASA  [regente] GET /api/alerts: HTTP 200
+PASA  expiring_lots no vacía
+PASA  low_stock no vacía
+PASA  L-ACE-2401 listado con is_expired true y days_to_expiry < 0
+PASA  low_stock contiene FC/MED-006
+PASA  low_stock contiene BH/MED-004
+PASA  low_stock contiene BH/MED-006
+PASA  low_stock no contiene FC/MED-001 (con mínimo, sin alerta)
+PASA  cada fila de low_stock con available_quantity < minimum_quantity
+PASA  [auditor] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [auditor] POST /api/auth/login: HTTP 200
+PASA  [auditor] GET /api/alerts: HTTP 200
+PASA  [auditor] cuerpo idéntico al del regente
+PASA  [medico] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [medico] POST /api/auth/login: HTTP 200
+PASA  [medico] GET /api/alerts: HTTP 403
+Comprobaciones: 18, fallas: 0
+Humo de alertas de inventario contra http://localhost:8090
+PASA  [regente] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [regente] POST /api/auth/login: HTTP 200
+PASA  [regente] GET /api/alerts: HTTP 200
+PASA  expiring_lots no vacía
+PASA  low_stock no vacía
+PASA  L-ACE-2401 listado con is_expired true y days_to_expiry < 0
+PASA  low_stock contiene FC/MED-006
+PASA  low_stock contiene BH/MED-004
+PASA  low_stock contiene BH/MED-006
+PASA  low_stock no contiene FC/MED-001 (con mínimo, sin alerta)
+PASA  cada fila de low_stock con available_quantity < minimum_quantity
+PASA  [auditor] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [auditor] POST /api/auth/login: HTTP 200
+PASA  [auditor] GET /api/alerts: HTTP 200
+PASA  [auditor] cuerpo idéntico al del regente
+PASA  [medico] GET /sanctum/csrf-cookie: HTTP 204
+PASA  [medico] POST /api/auth/login: HTTP 200
+PASA  [medico] GET /api/alerts: HTTP 403
+Comprobaciones: 18, fallas: 0
+n1=4 n2=4
+EXIT=0
+```
+- Deuda (prosa, sin id): el staging de CI no corre los humos por capacidad (auth, stock, dispensation, transfer,
+  alerts); sumarlos daría la corrida desde volumen vacío que aquí se omitió. `actionlint` no está instalado; no se
+  tocaron workflows.

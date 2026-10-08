@@ -13,6 +13,7 @@ Líneas añadidas por S5 desde GATE 1. Comando: `git diff --numstat f8b6e5f 6bdf
 | Producto — API | `software/api/{app,database,routes,bootstrap,lang}` | 429 |
 | Producto — SPA | `software/web` salvo `api-schema.ts` | 0 |
 | Producto — infraestructura | `software/compose.yaml`, `software/docker`, `.github` | 0 |
+| Producto — infraestructura (6.1, posterior a `6bdf70f`) | `software/docker/smoke/alerts-smoke.sh` (`wc -l`) | 115 |
 | Prueba — API | `software/api/tests` (incluye el arreglo de `Transfers/TransferRaceTest.php`) | 796 |
 | Generado | `software/api/openapi.json` | 148 |
 | Generado | `software/web/src/lib/api-schema.ts` | 91 |
@@ -169,3 +170,47 @@ Declarados: 23 (M1–M23); entregados: 23.
 | cierre del implementer (6.2, local) | 1 |
 | confirmación del auditor (pendiente) | 1 |
 | total frente al tope de 3 | 3 |
+
+## 6. Humo en el stack (6.1)
+
+Script `software/docker/smoke/alerts-smoke.sh` (bash + curl + jq; solo lectura). Árbol: `c24c749` + el script.
+Stack de desarrollo `dispensart` (8090, 127.0.0.1:5434), imágenes reconstruidas por el propio comando.
+
+| Desvío del comando de 6.1 | Motivo | Efecto |
+|---|---|---|
+| sin `down -v` inicial | orden del Orchestrator: no borrar el volumen del stack de desarrollo, en uso por otros agentes | la base no estaba recién creada; `stock_minimums` no existía (migración de S5 sin aplicar) y nació en el `up --build`. El resto del comando, literal |
+
+| Corrida | Comando | Comprobaciones | Fallas | Salida | `stock_minimums` |
+|---|---|---|---|---|---|
+| 1 | `up --build --wait` → `alerts-smoke.sh` | 18 | 0 | 0 | n1 = 4 |
+| 2 | `up --wait --force-recreate api` (entrypoint: `migrate` + `db:seed`, log `siembra al dia`) → `alerts-smoke.sh` | 18 | 0 | 0 | n2 = 4 |
+| 3 | `alerts-smoke.sh` | 18 | 0 | 0 | — |
+| comando compuesto | `… && [ "$n1" -eq 4 ] && [ "$n1" -eq "$n2" ]` | — | — | 0 | 4 = 4 |
+
+| Comprobación (18 por corrida) | Rol | Esperado | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| csrf-cookie + login | regente, auditor, médico | 204 + 200 (6 comprobaciones) | PASA | PASA | PASA |
+| `GET /api/alerts` | regente | 200, ambas listas son arreglos | PASA | PASA | PASA |
+| `expiring_lots` no vacía; `low_stock` no vacía | regente | 2 comprobaciones | PASA | PASA | PASA |
+| `L-ACE-2401` con `is_expired` true, `days_to_expiry` < 0, `quantity` > 0 | regente | presente | PASA | PASA | PASA |
+| FC/MED-006, BH/MED-004, BH/MED-006 en `low_stock` | regente | presentes (3 comprobaciones) | PASA | PASA | PASA |
+| FC/MED-001 en `low_stock` | regente | ausente | PASA | PASA | PASA |
+| toda fila de `low_stock` con `available_quantity < minimum_quantity` | regente | verdadero | PASA | PASA | PASA |
+| `GET /api/alerts` | auditor | 200 | PASA | PASA | PASA |
+| cuerpo del auditor = cuerpo del regente (`jq -S`) | auditor | idéntico | PASA | PASA | PASA |
+| `GET /api/alerts` | médico | 403 `code == "forbidden"` | PASA | PASA | PASA |
+
+| Control negativo (debe salir 1) | Comando | Salida | Fallas |
+|---|---|---|---|
+| contraseña errónea | `SEED_USER_PASSWORD=<errónea> bash alerts-smoke.sh` | 1 | 1 de 2 (login 422; aborta) |
+| aserción invertida | copia en el scratchpad con `low FC MED-001` `== 0` → `> 0` (`diff`: 1 línea) | 1 | 1 de 18 (`low_stock no contiene FC/MED-001`) |
+
+| Barrido / regresión | Comando | Resultado | Control positivo |
+|---|---|---|---|
+| contraseña nunca impresa | `cat <logs de las 3 corridas, 2 controles y 4 humos> \| /usr/bin/grep -c 'dispensart-dev-only\|<errónea>'` | 0 | `/usr/bin/grep -c 'dispensart-dev-only' software/docker/smoke/alerts-smoke.sh` → 1 |
+| no root | `docker compose exec -T <svc> id -u` | api 1000, web 101 | `db` (imagen oficial de postgres, fuera de este cambio) → 0 |
+| salud | `curl localhost:8090/health`, `/ready` | 200, 200 | — |
+| `auth-smoke.sh` | una corrida tras las de alertas | 38 comprobaciones, 0 fallas, sale 0 | — |
+| `stock-smoke.sh` | ídem | 15, 0, sale 0 | — |
+| `dispensation-smoke.sh` | ídem | 23, 0, sale 0 | — |
+| `transfer-smoke.sh` | ídem | 28, 0, sale 0 | — |
