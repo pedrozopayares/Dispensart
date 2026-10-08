@@ -125,3 +125,44 @@ Mutaciones de comprobación a y b en `verification.md` § 2.
 
 **Deuda (prosa)**: la tarea 0.2 queda abierta hasta S3–S5 con su patrón de búsqueda a corregir. Una página del
 kardex más allá de la última (p. ej. `?page=9`) muestra vacío sin paginador para volver.
+
+## 2026-10-08 — frontend-implementer: Dispensación sobre el contrato de S3 (2.1–2.9, parciales 0.2, 1.3, 6.1)
+
+**Cerradas**: 2.1–2.9 (M1–M3 en `verification.md` § 2.1). **Parciales, sin marcar**: 0.2 (S1–S3 contrastados;
+faltan `alerts`, `transfers`), 1.3 (faltan alertas y traslados), 6.1 (ruta `/dispensations` y entrada de menú
+en la tabla de pantallas; faltan Traslados y el inicio con accesos).
+
+**Tipos**: `npm run api:types` regenerado y comprometido aparte (`fix: tipos de la SPA alineados con el contrato
+de dispensación`) antes de cualquier código.
+
+**0.2 — contraste S3**
+- El patrón `"/api/(…)"` de la tarea sigue dando 0: las rutas del documento no llevan `/api` (servidor `/api`).
+  Con `"/(…)"`: `patients`, `patients/{patient}`, `prescriptions`, `dispensations`, `dispensations/preview`.
+  `Idempotency-Key` e `Idempotent-Replayed`: 3 apariciones. El patrón es del spec-engineer: no lo edito.
+- Ningún nombre de campo difiere de la tabla de contrato de S3 ni de los escenarios.
+- `Shortage` deja de ser tipo a mano: el documento publica `shortages` (con `prescription_item_id` obligatorio).
+- Sigue a mano: `PrescriptionStatus` (`vigente|vencida|agotada`); el documento publica `status: string`.
+
+**Decisiones**
+- `apiRequestWithHeaders` en el cliente: cabeceras propias por petición (`Idempotency-Key`, reenviada igual en el
+  reintento por 419) y lectura de `Idempotent-Replayed`; `apiRequest` queda como envoltura.
+- Hook de intención a nivel de pantalla, no del formulario: cerrar y reabrir el formulario no regenera la clave,
+  y "Nueva dispensación" solo cambia la clave por `settleSuccess` (la prueba lo distingue).
+- La intención guardada junto a la vista previa es el cuerpo confirmado: huella y cuerpo salen de la misma
+  función (`buildDispensationIntent`).
+- Rechazos `prescription_*` en vista previa o confirmación: aviso en la ficha (sobrevive al desmontaje del
+  formulario cuando la prescripción deja de estar Vigente) y recarga de la ficha.
+- Búsqueda como `combobox` + `listbox` propio con `aria-activedescendant`; el término solo en memoria.
+- Invalidación tras dispensar sin esperar la recarga (`void`), para no retener "Confirmando…".
+
+**Ejecuciones**: delta `src/features/dispensations` (47/47) durante el desarrollo; cierre completo = ejecución 2
+de 3 del presupuesto: lint 0, tsc 0, 150/150, build OK. Repetí `npm test -- --run` sobre el mismo árbol solo para
+leer el total que la salida truncó (150/150): queda registrado como lectura, no como ejecución nueva de cambios.
+
+**Humo**: `web` reconstruido; auxiliar dispensa (FEFO con vencido excluido) y dispensa morfina con coautorización
+del regente (201); auditor ve ficha enmascarada sin botón de dispensar; médico en modo consulta. Capturas
+`captures/s6-dispensacion-*.png`, tabla en `verification.md` § 4.
+
+**Deuda (prosa)**: el patrón de búsqueda de la tarea 0.2 debe perder el prefijo `/api`. La ficha del paciente
+semilla Ana acumula prescripciones agotadas creadas por pruebas previas contra el stack (datos, no código).
+El ítem `invalid_idempotency_key` no tiene texto propio (cae en el genérico): la SPA siempre envía una clave válida.
