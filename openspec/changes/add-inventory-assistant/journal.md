@@ -120,3 +120,17 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   - médico, lotes a 30 días → 200 `not_permitted`, `find_expiring_lots` denied, respuesta fija.
 - Ollama no ejercitado (no corre en el anfitrión; sin descarga de modelos).
 - Deuda (prosa, sin id): el humo del asistente no corre en el staging del CI (solo `smoke.sh`); tampoco lo hacen los humos de S1–S5. Agregarlos al staging exigiría usuarios sembrados en esa etapa.
+
+## 2026-10-08 — Orchestrator: verificación de cierre
+
+- `tasks.md`: 34 de 34 en `[x]`. `verification.md` con matrices, `[MUT]` M1–M9 entregados y § 7 (CI y humo).
+- Corrida completa (9.2, la única del implementer): Pint, Larastan 0, Pest 987 pasan. CI 37781226508 sobre
+  `98214d5` en verde, con el paso `assistant:eval` en modo simulado (23/23, sin `secrets.`).
+- Plantillas `.env.example`: solo `AI_PROVIDER=mock` y parámetros de Ollama local; sin claves.
+- Desajuste de redacción de «Proveedor no disponible» (fila 1 de `verification.md` § 6): saldado en `29f88f6`.
+- El asistente no tiene pantalla en la SPA (fuera del alcance de S7; se documenta en el README de S8); sin rutas huérfanas.
+- Deuda: humos por rol fuera del staging de CI, ya cubierto por D-auv-4 (se salda en S8). Calidad con Ollama real
+  sin medir (Ollama no corre en esta máquina): limitación documentada en `software/docs/asistente.md` y el README.
+- Pedido explícito al auditor: la regla de S0 `expect([...])->toBeFinal()` agrupa namespaces como el patrón que M4
+  mostró inerte con `not->toUse()`; verificar si protege.
+- Fase: auditoría final (tier A).
