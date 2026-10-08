@@ -187,3 +187,43 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 | `dispensaron\|dispensad\|para dispensar\|f[oó]rmula\|formul` en `app tests resources database` y `software/web/src`, `software/docker`, `.github` | solo preguntas de paciente ya bloqueadas y comentarios de dominio; ninguna pregunta de inventario | `AssistantOrchestratorTest.php` cuenta 1 `dispensaron` |
 | `$call->name` en `app/` (sumideros del nombre crudo) | solo búsqueda en el registro, construcción de `ToolCallRecord` y eco al proveedor en `OllamaLlmProvider:63` (no log ni respuesta) | 6 `new ToolCallRecord` en `app/` |
 | `Log::` en rutas del asistente | solo `AssistantQueryLogger` (lee `ToolCallRecord::$tool`) y `assistant.eval.drop_failed` sin contexto | — |
+
+## 2026-10-08 — devops-implementer: 0.1, 5.3, 5.4, 5.6 (README y AI_USAGE)
+
+- Alcance: `README.md` y `AI_USAGE.md` en la raíz, por encargo del Orchestrator (fuera del alcance declarado del
+  rol, que nombra solo `software/docs/deployment.md`). Sin cambios en `software/`.
+
+| Tarea | Comando | Salida |
+|---|---|---|
+| 0.1 | `test -f openspec/specs/assistant-evaluation/spec.md && npx openspec validate --all --strict` | sale 0; 23 passed, 0 failed |
+| 0.1 | `/usr/bin/grep -cE '^\| D-' openspec/DEBT.md` | 6 (abiertas: D-auv-4, D-auv-5, D-auv-6; saldadas: D-auv-1..3) |
+| 0.1 | control positivo `/usr/bin/grep -c '^\| Id' openspec/DEBT.md` | 2 |
+| 5.3 | `/usr/bin/grep -cE '^### Compromiso' README.md` (patrón elegido `### Compromiso N · …`) | 6 |
+| 5.3 | `/usr/bin/grep -ciE 'bitácora\|mínimo privilegio' README.md` | 4 |
+| 5.3 | `/usr/bin/grep -c 'última tajada' README.md` | 0 |
+| 5.3 | control positivo `/usr/bin/grep -c 'compose.yaml' README.md` | 8 |
+| 5.4 | bucle de rutas sobre `README.md` y `AI_USAGE.md` (24 y 25 rutas citadas) | sin salida |
+| 5.4 | control positivo: copia en scratchpad con `` `software/no-existe.md` `` | `FALTA README-copia software/no-existe.md` |
+| 5.6 | `/usr/bin/grep -ciE '^## .*(herramientas\|tareas\|aceptad\|rechazad\|corregid)' AI_USAGE.md` | 4 |
+| barrido | `ghp_\|gho_\|github_pat_\|AKIA…\|-----BEGIN\|base64:…\|sk-…\|PASSWORD=[^$ ]` sobre ambos | sin salida (rc 1); control con `ghp_` sintético = 1 |
+
+| Cita de `AI_USAGE.md` | `/usr/bin/grep -n` | Línea |
+|---|---|---|
+| S3 hallazgo mayor del auditor por prefijo | `major\] búsqueda del auditor por prefijo` en `archive/2026-10-08-add-dispensation/journal.md` | 212 |
+| S3 GATE 2 | `^- GATE 2: APPROVED` en el mismo journal | 230 |
+| S5 `[MUT]` ejecutables | ``\[MUT\]` ejecutables`` en `archive/2026-10-08-add-alerts/journal.md` | 95 |
+| S5 M22 y M23 | `^- M22:\|^- M23:` en el mismo journal | 104, 105 |
+| S7 M4 falso verde de `arch()` | `M4 sobrevivía` en `archive/2026-10-08-add-inventory-assistant/verification.md` | 178 |
+| S7 M4 en journal | `M4 sobrevivió` en `archive/2026-10-08-add-inventory-assistant/journal.md` | 88 |
+| S5 M12/M13 con `ParseError` | `Incidente` en journal de add-alerts; `ParseError` en su verification | 144; 133 |
+| Regla 12 | `Iron rule 12` en `add-delivery-pipeline/journal.md`; `regla 12` en journal de add-alerts | 60; 121 |
+| `general-purpose` rechazado | `general-purpose` en `archive/2026-10-07-add-project-skeleton/journal.md` | 68, 73 |
+| Tier de S5 a A por el usuario | `tier A completo` en journal de add-alerts | 36 |
+
+- Mensaje del Orchestrator a mitad de tarea: README suma «Compromiso 6» (filtro de pacientes por palabras clave,
+  riesgo aceptado, cita `QuestionPreFilter.php`; `3c8e709` existe) y la deuda abierta queda vacía con referencia a
+  `openspec/DEBT.md` (D-auv-4/5/6 saldadas en `59db1e7`, `3c8e709`, `df71b72`; la conciliación es del Orchestrator).
+- README cita 24 preguntas de evaluación (`entries` = 24 en `evaluation-set.json` tras `3c8e709`).
+- Deuda (prosa): `software/docs/asistente.md:62` aún dice 23 preguntas; el conjunto tiene 24 (archivo del
+  backend-implementer, fuera de este alcance).
+- Pendiente: 4.5 (usuario), 5.5 (clon limpio), 6.1.
