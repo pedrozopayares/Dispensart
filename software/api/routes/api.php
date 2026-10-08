@@ -8,6 +8,7 @@ use App\Http\Controllers\Catalog\ProductController;
 use App\Http\Controllers\Catalog\WarehouseController;
 use App\Http\Controllers\Dispensation\DispensationController;
 use App\Http\Controllers\Dispensation\DispensationPreviewController;
+use App\Http\Controllers\Inventory\AlertController;
 use App\Http\Controllers\Inventory\KardexController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockController;
@@ -53,6 +54,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/stock', StockController::class)->name('stock.index');
     Route::get('/kardex', KardexController::class)->name('kardex.index');
     Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
+    // Alertas de inventario (S5, RN-11): solo lectura, misma Policy que las existencias.
+    Route::get('/alerts', AlertController::class)->name('alerts.index');
 
     // Pacientes, prescripciones y dispensación (S3). La ficha no usa enlace implícito: la Policy corre antes
     // de buscar el paciente (403 antes que 404, design D4). Id de 1 a 18 dígitos: cabe en bigint, nunca un 500.
