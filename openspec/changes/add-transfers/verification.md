@@ -224,3 +224,9 @@ elegido por el script: vigente con existencia en dos bodegas (semilla L-ACE-2402
 | Barrido | Resultado | Control positivo |
 |---|---|---|
 | `/usr/bin/grep -nE "(sk-\|ghp_\|AKIA\|password\s*=\s*['\"][^'\"$]{6,})"` sobre el script | 0 hits | archivo en scratchpad con `sk-abcdef123456` → 1 hit |
+
+| `stock-smoke.sh` con objetivo por clave semilla (FC + L-IBU-2402 vía `warehouse_id`/`lot_id`) | Resultado | Código de salida |
+|---|---|---|
+| `auth`, `stock`, `dispensation`, `transfer` humo, una corrida | 38, 15, 23 y 28 comprobaciones, 0 fallas | 0, 0, 0 y 0 |
+| control: copia en scratchpad con `SEED_LOT='L-NOPE-0000'` | 2 fallas (stock 422, sin existencia semilla) | 1 |
+| `stock-smoke.sh` tras endurecer `jq` ante cuerpos de error (`.data[]?`) | 15 comprobaciones, 0 fallas | 0 |

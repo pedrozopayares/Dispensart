@@ -175,3 +175,10 @@ D-auv-3, anclas, barridos, reparto de líneas y corridas: `verification.md` §§
 Deuda (prosa): `stock-smoke.sh` depende del orden de `GET /api/stock` (ajusta la primera fila y exige que su kardex
 tenga una `entrada` semilla); cualquier flujo que cree una fila de existencia nueva que ordene primero lo rompe.
 Debería elegir una fila con `entrada` semilla en lugar de la primera.
+
+## 2026-10-08 — devops-implementer: deuda de `stock-smoke.sh` saldada (pedido del Orchestrator)
+
+- `stock-smoke.sh` ya no toma la primera fila: resuelve FC por código en `/api/warehouses` y L-IBU-2402 por
+  `lot_code` en `/api/stock?warehouse_id=`, y opera sobre `/api/stock?warehouse_id=&lot_id=`. Requiere `jq`.
+- Cuatro humos, una corrida: 0 fallas. Control con lote inexistente: 2 fallas, salida 1. `verification.md` § 6.
+  Sin deuda pendiente de 6.1.

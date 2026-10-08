@@ -7,13 +7,16 @@
 # Uso (stack en marcha):  software/docker/smoke/stock-smoke.sh
 # Variables: WEB_PORT (8090), SMOKE_BASE_URL (http://localhost:$WEB_PORT),
 #            SEED_USER_PASSWORD (vacía = valor por defecto SOLO de desarrollo, el mismo de la API).
-# Requiere: bash, curl, grep. Sale con 0 solo si todas las comprobaciones pasan. Nunca imprime la contraseña.
+# Requiere: bash, curl, grep, jq. Sale con 0 solo si todas las comprobaciones pasan. Nunca imprime la contraseña.
 # Deja un movimiento `ajuste` de -1 en la base de desarrollo (el kardex es de solo inserción).
 set -euo pipefail
 
 BASE_URL="${SMOKE_BASE_URL:-http://localhost:${WEB_PORT:-8090}}"
 # Valor por defecto SOLO DE DESARROLLO LOCAL (config/dispensart.php); usuarios sintéticos.
 PASSWORD="${SEED_USER_PASSWORD:-dispensart-dev-only}"
+# Existencia semilla que ningún otro humo toca (LotSeeder/StockSeeder): Farmacia Central, ibuprofeno L-IBU-2402.
+SEED_WAREHOUSE='FC'
+SEED_LOT='L-IBU-2402'
 
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -53,9 +56,6 @@ expect() {
     pass "$label: HTTP $got"
 }
 
-# Número de la primera aparición de <prefijo>N en el cuerpo JSON (primer elemento de la lista).
-first_number() { grep -oE -- "$1[0-9]+" "$BODY" | head -n 1 | grep -oE '[0-9]+$' || true; }
-
 # login <usuario> <tarro>: cookie CSRF + login de la SPA.
 login() {
     local user="$1" jar="$2"
@@ -80,15 +80,20 @@ printf 'Humo de existencias y kardex contra %s\n' "$BASE_URL"
 jar="$WORK_DIR/regente.jar"
 login regente "$jar"
 
-expect "[regente] GET /api/stock" 200 "$(request "$jar" GET /api/stock)" '"quantity":'
-# Primera existencia de la lista: orden fijo de claves del recurso (id, quantity, warehouse, product, lot).
-quantity="$(first_number '"quantity":')"
-warehouse_id="$(first_number '"warehouse":\{"id":')"
-lot_id="$(first_number '"lot":\{"id":')"
+# Existencia objetivo por clave estable de la semilla (bodega + lote), no por posición en la lista: otros humos
+# (traslados, dispensación) crean o vacían filas y cambian el orden de GET /api/stock.
+expect "[regente] GET /api/warehouses" 200 "$(request "$jar" GET /api/warehouses)"
+warehouse_id="$(jq -r --arg c "$SEED_WAREHOUSE" '.data[]? | select(.code == $c) | .id' "$BODY")"
+expect "[regente] GET /api/stock?warehouse_id=$warehouse_id" 200 \
+    "$(request "$jar" GET "/api/stock?warehouse_id=${warehouse_id:-0}")" '"quantity":'
+lot_id="$(jq -r --arg l "$SEED_LOT" '.data[]? | select(.lot.lot_code == $l) | .lot.id' "$BODY")"
+expect "[regente] GET /api/stock por bodega y lote" 200 \
+    "$(request "$jar" GET "/api/stock?warehouse_id=${warehouse_id:-0}&lot_id=${lot_id:-0}")" '"quantity":'
+quantity="$(jq -r '[.data[]?.quantity] | add // empty' "$BODY")"
 if [ -n "$warehouse_id" ] && [ -n "$lot_id" ] && [ -n "${quantity:-}" ] && [ "$quantity" -gt 0 ]; then
-    pass "existencia semilla: bodega $warehouse_id, lote $lot_id, cantidad $quantity"
+    pass "existencia semilla $SEED_WAREHOUSE/$SEED_LOT: bodega $warehouse_id, lote $lot_id, cantidad $quantity"
 else
-    fail "sin existencia semilla legible en GET /api/stock"
+    fail "sin existencia semilla $SEED_WAREHOUSE/$SEED_LOT en GET /api/stock"
     printf 'Comprobaciones: %d, fallas: %d\n' "$checks" "$failures"
     exit 1
 fi
