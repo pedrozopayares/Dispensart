@@ -89,3 +89,39 @@ alertas solo desde la API; rutas en inglés; humo manual en lugar de E2E en nave
   accesos los fija `operator-workspace`.
 - `proposal.md` Modified Capabilities y tarea 6.1 actualizadas; 0.1 marcada `[x]`.
 - `openspec validate add-operator-screens --strict`: válido. Ancla de transporte: sin coincidencias.
+
+## 2026-10-08 — frontend-implementer: apply parcial (1.1, 1.2, 1.4–1.7, 4.1, 5.1, 5.2)
+
+**Cerradas**: 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 4.1, 5.1, 5.2. **Parciales, sin marcar**: 0.2 (solo S1/S2), 1.3
+(stock, kardex, catálogo), 6.1 (rutas `/inventory`, `/kardex` en la tabla y el menú). Matriz en `verification.md`.
+
+**0.2 — contraste del contrato (S1/S2)**
+- Las rutas de `openapi.json` no llevan `/api` (servidor `/api`): el patrón `"/api/(…)"` de 0.2 devuelve 0. Con
+  `"/(…)"` aparecen `auth/me`, `stock`, `stock-adjustments`, `kardex`, `products`, `lots`, `warehouses`. Faltan
+  `patients`, `prescriptions`, `dispensations` (S3), `transfers` (S4), `alerts` (S5); `Idempotency-Key` e
+  `Idempotent-Replayed` aún sin publicar. La tarea 0.2 debe corregir su patrón al cerrarse; ningún escenario cambia.
+- Tipado a mano en `src/lib/api-types.ts`: `Shortage` (Scramble no publica `shortages`). `ApiErrorCode` admite
+  `string & {}`: el enum del documento no trae los códigos de S3–S5 y el servidor puede enviar uno desconocido.
+- `AuthenticatedUserResource.abilities` es `unknown[]` en el documento: la unión `Ability` vive en `src/lib/abilities.ts`.
+
+**Decisiones**
+- 1.1: se reutiliza `api:types` / `api:types:check` de S1 (archivo `src/lib/api-schema.ts`, paso propio en CI) en
+  lugar de `gen:api` / `check:api` en `typecheck`: mismo control, sin duplicarlo. Se añaden ayudantes por ruta
+  `ResponseOf`, `QueryOf`, `BodyOf`.
+- D2: MSW funciona con Vitest 5 + jsdom 30; plan B no usado. Petición sin manejador → registrada y la prueba falla.
+  Las pruebas de S1 con `fetch` falso siguen igual; su ayudante compara rutas sin origen (URL absolutas en `api.ts`).
+- D5: catálogo único `describeError`; `errorMessage` de S1 retirado y sus tres usos apuntan al catálogo.
+- D6: la tabla de pantallas vive en `src/app/screens.tsx` (no en `routes.tsx`) para evitar el ciclo
+  routes → layout → encabezado → routes; `routes.tsx` y el menú la leen.
+- Filtros con `select` nativo (shadcn `native-select`): teclado y pruebas sin trabajo extra.
+- Kardex: el lote solo aplica con producto elegido; fecha formateada en `America/Bogota` explícita.
+- Pruebas de pantalla sin reintento automático de consultas (`retry: false` en `src/test/render.tsx`).
+
+**Ejecuciones**: cierre completo lint/typecheck/test/build: 102/103; la falla era la prueba (aserción sobre el
+texto de progreso de una respuesta inmediata), corregida con `waitFor` y re-ejecutada solo ese archivo: 4/4.
+Mutaciones de comprobación a y b en `verification.md` § 2.
+
+**Humo**: stack en `:8090` con `web` reconstruido; capturas en `captures/s6-*.png`, tabla en `verification.md` § 4.
+
+**Deuda (prosa)**: la tarea 0.2 queda abierta hasta S3–S5 con su patrón de búsqueda a corregir. Una página del
+kardex más allá de la última (p. ej. `?page=9`) muestra vacío sin paginador para volver.
