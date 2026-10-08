@@ -290,3 +290,17 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 - Desvío del comando de 4.5: `approvals` devuelve solo la aprobación del intento vigente; el rechazo se prueba con el
   job del intento 1. `verification.md` filas DP-13/14/15 y § de 4.5 completadas.
 - Tareas: todas en `[x]`. Fase: verificación de cierre y auditoría final.
+
+## 2026-10-08 — devops-implementer: arreglos de la auditoría final (OBSERVATIONS)
+
+| Observación | Arreglo | Commit | Evidencia |
+|---|---|---|---|
+| `build` no idempotente por SHA | paso `existing`: si `ghcr.io/<owner>/dispensart-{api,web}:<sha>` existe, su digest es la salida del trabajo y se omiten build y push; si no existe, se construye como antes; otro error de registro falla cerrado | `87ec590` | run 37790178800 intento 1 (job 113356824214): `CONSTRUYE` ×2; intento 2 (job 113357726001): `REUTILIZA` ×2, 0 `build-push-action`; digests api `sha256:bfb5a545…20e4c57b`, web `sha256:75eb36fa…919fc2c2` idénticos en ambos y en staging |
+| 13 `uses:` por etiqueta | fijados al SHA de commit de su etiqueta, versión en comentario; sin cambio de versión | `9420fed` | `/usr/bin/grep` 13 fijados por SHA, 0 por etiqueta |
+| `verification.md` desfasado | encabezado y § 1 al estado final (22/0); DP-05 cita el run 37784881174 de `main`, obsoleto tras el avance a `bd9fd8a`; § 6 con los arreglos | este commit | — |
+| actionlint | — | — | sale 0 |
+
+- Producción `skipped` en ambos intentos (push a `dev`), esperado.
+- Deuda (prosa): el paso `existing` trata «acceso denegado» como imagen ausente para no romper la primera
+  publicación en un fork; si el token pudiera escribir pero no leer, re-publicaría. No ocurre con `GITHUB_TOKEN` y
+  `packages: write`.

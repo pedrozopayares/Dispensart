@@ -4,8 +4,9 @@ Fuente: secciones de `journal.md` (devops-implementer y backend-implementer). Á
 Prefijos: `DP` = `delivery-pipeline`, `PD` = `project-documentation`, `CI` = `ci-pipeline` (MODIFIED). `REPO` =
 `pedrozopayares/Dispensart`. Workflow único: `.github/workflows/ci.yml` (design D1); humo: `software/docker/smoke.sh`.
 Runs de `dev` con entrega completa: `37739984220` (SHA `2ef8dac`), `37782508066` (SHA `59db1e7`), `37783646165`
-(SHA `26bc3df`). Negativos de 4.4 en ramas `feat/add-delivery-pipeline-neg-{a,b,c,d}` (borradas). Filas de 4.5
-(run de `main` del usuario) pendientes: las completa el Orchestrator tras la fusión.
+(SHA `26bc3df`). Negativos de 4.4 en ramas `feat/add-delivery-pipeline-neg-{a,b,c,d}` (borradas). 4.5 completa:
+run de `main` 37785649410 sobre `bd9fd8a` (rechazo en el intento 1, aprobación en el 2). Arreglos de la auditoría
+final (`9420fed`, `87ec590`) en § 6; las anclas `ci.yml:N` de §§ 1-4 se refieren al árbol `0876014`.
 
 ## 0. Reparto de líneas
 
@@ -26,9 +27,9 @@ Commits: `6d973aa 1b9ffbe 7650154 aee73fc 6eb376b 2ef8dac b74fc5d b730b19 313019
 
 ## 1. Matriz escenario → evidencia
 
-| Capacidad | Escenarios en la spec (`/usr/bin/grep -c '^#### Scenario:'`) | Con evidencia | Pendientes (4.5) |
+| Capacidad | Escenarios en la spec (`/usr/bin/grep -c '^#### Scenario:'`) | Con evidencia | Pendientes |
 |---|---|---|---|
-| delivery-pipeline | 22 | 19 | 3 |
+| delivery-pipeline | 22 | 22 | 0 |
 | project-documentation | 13 | 13 | 0 |
 | ci-pipeline | 3 | 3 | 0 |
 
@@ -40,7 +41,7 @@ Commits: `6d973aa 1b9ffbe 7650154 aee73fc 6eb376b 2ef8dac b74fc5d b730b19 313019
 | DP-02 | Compuerta de calidad fallida | run 37740345100 (neg. a, Pest roto): backend `failure`; build, staging, producción `skipped`; run `failure` |
 | DP-03 | Pull request | run 37740348254 (PR #1 `feat/add-delivery-pipeline` → `dev`, evento `pull_request`): backend y frontend `success`; build, staging, producción `skipped`; `ci.yml:178` exige `github.event_name == 'push'` |
 | DP-04 | Push a una rama de trabajo | run 37740344904 (push a `feat/add-delivery-pipeline`): backend y frontend `success`; build, staging, producción `skipped`; `ci.yml:178` restringe a `dev`/`main` |
-| DP-05 | Cambio solo de documentación de proceso | filtro `ci.yml:9-14` (`software/**`, `ci.yml`, `package*.json`); `gh run list --commit <sha>`: `5edcd0f` (README, AI_USAGE, openspec) = 0 runs, `916c735` y `b730b19` (solo openspec) = 0 runs; control positivo `59db1e7` (toca `software/`) = 1 run |
+| DP-05 | Cambio solo de documentación de proceso | filtro `ci.yml:9-14` (`software/**`, `ci.yml`, `package*.json`); `gh run list --commit <sha>`: `5edcd0f` (README, AI_USAGE, openspec) = 0 runs en `dev`; su único run, 37784881174 en `main` (`cancelled`), lo disparó el avance `ed4ae1f..5edcd0f`, que sí trae `software/`, y quedó obsoleto por el avance a `bd9fd8a`; `916c735` y `b730b19` (solo openspec) = 0 runs; control positivo `59db1e7` (toca `software/`) = 1 run |
 | DP-06 | Publicación de ambas imágenes | run 37739984220: build `success`, digests api `sha256:02d94905…acf57e6`, web `sha256:3cb7a163…a1c3cb46` como salidas (`ci.yml:185-186`); `docker manifest inspect ghcr.io/pedrozopayares/dispensart-{api,web}:2ef8dac…` sin credenciales: `ok-api`, `ok-web`; etiqueta OCI `source` en `ci.yml:221`, `:237` |
 | DP-07 | Construcción fallida | estructural: staging `needs: [build]` (`ci.yml:254`), producción `needs: [build, staging]` (`ci.yml:312`); run 37740345100 muestra la cadena omitida (build no corre, staging y producción `skipped`) |
 | DP-08 | Sin etiquetas móviles | `ghcr.io/v2/pedrozopayares/dispensart-{api,web}/tags/list` anónimo (2026-10-08): 14 etiquetas por paquete, 14 de 40 hex, 0 otras; `/usr/bin/grep -nE ':latest\|type=ref,event=branch' .github/workflows/*.yml` sin salida (control positivo `github.sha` = 4) |
@@ -117,10 +118,21 @@ Commits: `6d973aa 1b9ffbe 7650154 aee73fc 6eb376b 2ef8dac b74fc5d b730b19 313019
 | 5.5 | limpieza del clon | 0 proyectos y 0 volúmenes `dispensart-clon`; stack de desarrollo intacto |
 | actionlint | `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest` | sale 0 |
 
-## 5. Pendiente del usuario (4.5)
+## 5. Run de `main` del usuario (4.5)
 
 | Paso | Estado |
 |---|---|
 | Fusión `dev` → `main` | avance directo `ed4ae1f..5edcd0f` y luego `5edcd0f..bd9fd8a` (sin forzar), hecho por el Orchestrator a pedido explícito del usuario |
 | Rechazo y aprobación en `production`; `gh api repos/$REPO/actions/runs/<id>/approvals` | `approvals` lista solo el intento vigente: `approved`; el rechazo consta en el intento 1 (job `failure`, anotación de rechazo) |
 | Digests del resumen = digests del log de staging del mismo run | producción: `api@sha256:12f0cfd13ca0…`, `web@sha256:7eb041979e37…`; staging del mismo run: exactamente esos 2 digests |
+
+## 6. Observaciones de la auditoría final (arreglos)
+
+| Observación | Commit | Comando | Resultado |
+|---|---|---|---|
+| `build` re-publicaba `:<sha>` al re-ejecutarse | `87ec590` | paso `existing` (`docker buildx imagetools inspect`): existe → reutiliza el digest y omite build y push; `not found`/denegado → construye; otro error → falla | run 37790178800 (`dev`, `87ec590`) intento 1 (job 113356824214): `CONSTRUYE` = 2, `REUTILIZA` = 0, `build-push-action` = 2; intento 2 (`gh run rerun --job`, job 113357726001): `REUTILIZA` = 2, `CONSTRUYE` = 0, `build-push-action` = 0 |
+| Mismos digests en ambos intentos | `87ec590` | `Digests publicados` de cada intento; staging de cada intento; `imagetools inspect` posterior | api `sha256:bfb5a545…20e4c57b`, web `sha256:75eb36fa…919fc2c2` en los dos intentos (`construida` / `reutilizada`); staging de ambos intentos: 11 referencias a cada digest; GHCR sigue apuntando a esos digests |
+| Error de registro distinto de «no existe» | `87ec590` | paso `existing` en local con registro `no-such-host.invalid` | sale 1, `::error::No se pudo consultar…` (falla cerrada, no publica) |
+| 13 `uses:` fijados por etiqueta | `9420fed` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>` (etiqueta anotada de `setup-php` desreferenciada a su commit); `/usr/bin/grep -c 'uses: .*@[0-9a-f]\{40\} # v'` | 13; `/usr/bin/grep -nE 'uses: [^ ]+@v[0-9]'` sin salida (control positivo antes del commit: 13) |
+| CI de la cabeza | `87ec590` | `gh run watch 37790178800 --exit-status` | sale 0: backend, frontend, build, staging `success`; producción `skipped` (push a `dev`), en ambos intentos |
+| actionlint | `87ec590` | `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -no-color` | sale 0 |
