@@ -97,3 +97,52 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Barrido de secretos (`/usr/bin/grep -nE 'ghp_|gho_|github_pat_|AKIA…|-----BEGIN|base64:…|sk-…'`) sobre los 5 archivos tocados: sin salida (rc 1); control positivo con `ghp_` sintético en scratchpad = 1.
 - Deuda (prosa): `ci.yml` superó el umbral de ~250 líneas de D1; si crece más, valorar dividir la entrega con `workflow_call` sin duplicar compuertas. `*.dump` no está en `.gitignore` (raíz fuera del alcance de este agente).
 - Pendiente: 0.1, 4.5 (fusión del usuario a `main`, aprobar y rechazar), 5.3–5.6, 6.1.
+
+## 2026-10-08 — devops-implementer: humos de dominio en staging sobre base nueva (deuda del humo de alertas)
+
+- Alcance: DP › Humo verde / Humo fallido exigen el humo del stack; los humos de dominio son comprobaciones
+  adicionales del mismo paso, sin requisito nuevo. Sin cambios en `software/api` ni `software/web`.
+- `software/docker/smoke.sh`: con el stack sano encadena `software/docker/smoke/{auth,stock,alerts,dispensation,transfer,assistant}-smoke.sh`
+  (alertas, de solo lectura, antes de los que escriben); un humo de dominio fallido cuenta como `FALLA`, imprime
+  `docker compose logs` y sale 1. `SMOKE_DOMAIN=0` deja solo el humo del stack. Paso de CI renombrado
+  `Humo del stack y de dominio`.
+- Usuarios: staging no define `APP_ENV` ni `SEED_USER_PASSWORD`; compose usa `APP_ENV=local` y la siembra crea los
+  5 usuarios sintéticos con la contraseña SOLO de desarrollo, la misma del stack local. Ningún `secrets.` nuevo.
+- Supuesto de la base de desarrollo corregido: `assistant-smoke.sh` exigía un traslado existente
+  (`GET /api/transfers?per_page=1` con 1 fila); la semilla no trae traslados. Ahora, si no hay ninguno, el
+  regente crea un BORRADOR (sin efecto en existencias) y pregunta por su id. Los otros 5 humos ya se apoyaban
+  solo en la semilla y no se tocaron.
+- Stack desechable: proyecto `dispensart_ci_check`, `WEB_PORT=8190`, `DB_PORT=5534` (libres por `lsof` y
+  `docker ps`), imágenes publicadas de 98214d5 por digest (api `sha256:e0a201a2…`, web `sha256:13c88d39…`;
+  el código de producto es igual al de HEAD), `DB_PASSWORD` aleatoria, `up --no-build --wait`. Tres volúmenes
+  nuevos (`down -v` antes de cada uno); al final `down -v`: 0 proyectos y 0 volúmenes `ci_check`. Ningún
+  contenedor de otros proyectos se detuvo.
+
+| Humo | Base nueva, orden de CI (comprob./fallas) | Base nueva, orden inverso (comprob./fallas) | Base de desarrollo 8090 (comprob./fallas) | CI run 37782508066 (comprob./fallas) |
+|---|---|---|---|---|
+| stack (`smoke.sh`) | 8/0 | — | 8/0 | 8/0 |
+| auth | 38/0 | 38/0 | 38/0 | 38/0 |
+| stock | 15/0 | 15/0 | 15/0 | 15/0 |
+| alerts | 18/0 | 18/0 | 18/0 | 18/0 |
+| dispensation | 23/0 | 23/0 | 23/0 | 23/0 |
+| transfer | 28/0 | 28/0 | 28/0 | 28/0 |
+| assistant | 12/0 | 15/0 (crea el BORRADOR 1) | 12/0 (traslado 28) | 12/0 |
+| salida `smoke.sh` | 0, `Humo VERDE` | 0 por humo (cada uno corrió solo) | 0, `Humo VERDE` | paso `success` |
+
+| Control | Resultado |
+|---|---|
+| Positivo del supuesto: `assistant-smoke.sh` de HEAD~1 sobre una tercera base nueva | sale 1, 12 comprob./2 fallas (`(.data \| length) == 1` con `[]`; `traslado null`) |
+| Negativo del encadenamiento: copia de `smoke.sh` con `transfer` reemplazado por un stub que sale 1 | sale 1, `FALLA humo de dominio transfer`, `== docker compose logs (humo fallido)` |
+| `SMOKE_DOMAIN=0` sobre la misma copia | 0 líneas `stub-`/`humo de dominio` |
+| actionlint (`rhysd/actionlint`) sobre `.github/workflows/` | sale 0 |
+| `secrets.` en workflows | solo `secrets.GITHUB_TOKEN` |
+| Barrido `ghp_\|sk-…\|base64:…\|PASSWORD=[^$"]` sobre los 3 archivos tocados | sin salida (rc 1); control positivo con `ghp_` sintético = 1 |
+
+- CI: run 37782508066, SHA 59db1e73d360641c7d481eb6096cbfbdd5a54fd4, push a `dev`: backend, frontend, build y staging
+  `success`, producción `skipped`. Log de staging: 6 líneas `PASA  humo de dominio <nombre>` y `Humo VERDE`; digests
+  api `sha256:8994cf2f3f28e92faa51e833c57e66fcf02489b45df47069d3feb4248b5b34e4`, web
+  `sha256:85b4f455b91262378c1f4f95040dd748acbf6a9bc0f7f29d7638eef887d730e1`; control de enmascarado `DB_PASSWORD=***`.
+- `verification.md` aún no existe (tarea 6.1): estas filas se trasladan allí en el cierre.
+- Deuda (prosa): el humo de traslados resta 1 unidad por corrida a la existencia de origen de L-ACE-2402 en la base
+  de desarrollo de larga vida; tras ~90 corridas FC/MED-001 bajaría de su mínimo (50) y la aserción de alertas
+  «FC/MED-001 sin alerta» fallaría solo en esa base. En base nueva no aplica.
