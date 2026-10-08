@@ -224,3 +224,19 @@ Debería elegir una fila con `entrada` semilla en lugar de la primera.
 | `'page' => [...'min:1']` sin tope en `app/Http/Requests` | 0 | mismo patrón sobre `HEAD~1` de los dos archivos: 2 |
 | `aginate(` en `app` | 2 (`TransferQuery`, `InventoryQuery`): los mismos dos listados | — |
 | líneas con `{param}` sin `where(` en `routes/api.php`, fuera del grupo de traslados con `Route::where` | 0 | mismo filtro sin excluir el grupo: 7 |
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, re-auditoría delta)
+
+- Correcciones `b54f20e` (tope de `page`, 422) y `d350c4c` (mensaje de `lot_expired`) verificadas por el auditor:
+  código servido sobre base aislada, mutante sin tope falla 4 pruebas, barrido de listados paginados en 0.
+- Observación de entorno (imagen `api` anterior a las correcciones) resuelta por el Orchestrator con
+  `docker compose -f software/compose.yaml up -d --build --wait api`. Sondas en 8090 como `auditor`:
+
+| Ruta | page=1000000 | page=1000001 | page=9223372036854775807 |
+|---|---|---|---|
+| `/api/transfers` | 200 | 422 | 422 |
+| `/api/kardex` | 200 | 422 | 422 |
+
+- CI 37769634376 sobre `d350c4c` en verde. Veredicto final: APPROVED.
+- Deuda: D-auv-3 saldada (`102c1a4`). Sin deuda abierta de esta tajada.
+- Fase: archivo.

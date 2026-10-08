@@ -11,7 +11,6 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-3 | minor | add-dispensation (final-auditor, delta) | `PATCH /api/products/{product}` y `PATCH /api/warehouses/{warehouse}` (`routes/api.php:41,45`, S1) responden 500 con id `9999999999999999999` (desborde de `int`). | add-transfers: tope `[0-9]{1,18}` en esos parámetros + prueba de 404 |
 
 ## Settled
 
@@ -19,3 +18,4 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 |---|---|---|
 | D-auv-1 | add-stock-and-kardex (`1349b07`) | `SpaClient` envía `X-XSRF-TOKEN` solo en escrituras; mutación sobre `GET /api/auth/me` hace fallar `CsrfTest.php:57`; verificado por final-auditor. |
 | D-auv-2 | add-dispensation (`fabb1c9`) | `created_at` del kardex con `clock_timestamp()`; prueba de transacciones solapadas falla con el valor anterior; verificado por final-auditor. |
+| D-auv-3 | add-transfers (`102c1a4`) | Tope `[0-9]{1,18}` en los ids de `routes/api.php`; pruebas de 404 con id de 19 dígitos en productos y bodegas; verificado por final-auditor. |
