@@ -52,9 +52,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
 
     // Pacientes, prescripciones y dispensación (S3). La ficha no usa enlace implícito: la Policy corre antes
-    // de buscar el paciente (403 antes que 404, design D4).
+    // de buscar el paciente (403 antes que 404, design D4). Id de 1 a 18 dígitos: cabe en bigint, nunca un 500.
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
-    Route::get('/patients/{patient}', [PatientController::class, 'show'])->whereNumber('patient')->name('patients.show');
+    Route::get('/patients/{patient}', [PatientController::class, 'show'])->where('patient', '[0-9]{1,18}')->name('patients.show');
     Route::post('/prescriptions', PrescriptionController::class)->name('prescriptions.store');
     Route::post('/dispensations/preview', DispensationPreviewController::class)
         ->can('create', Dispensation::class)

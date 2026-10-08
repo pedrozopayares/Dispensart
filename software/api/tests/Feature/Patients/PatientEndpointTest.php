@@ -114,6 +114,21 @@ describe('búsqueda', function () {
             ]]]);
     });
 
+    it('no devuelve al auditor pacientes por prefijo de documento ni por fragmento de nombre', function (string $term) {
+        $this->actingAs(userWithRole(Role::Auditor))->getJson('/api/patients?q='.$term)
+            ->assertOk()
+            ->assertExactJson(['data' => []]);
+
+        expect(PatientAccessLog::count())->toBe(0);
+        // Control positivo: el mismo término sí encuentra a Ana para un rol con vista en claro.
+        $this->actingAs(userWithRole(Role::AuxiliarFarmacia))->getJson('/api/patients?q='.$term)
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $this->ana->id);
+    })->with([
+        'prefijo de documento' => ['999901'],
+        'fragmento de nombre' => ['Sint'],
+    ]);
+
     it('responde por rol: datos en claro, enmascarados o 403', function (Role $role, int $status, ?bool $masked) {
         $response = $this->actingAs(userWithRole($role))->getJson('/api/patients?q=9999010001');
 
@@ -181,6 +196,20 @@ describe('ficha', function () {
     })->with([
         'regente_farmacia' => [Role::RegenteFarmacia],
         'medico' => [Role::Medico],
+    ]);
+
+    it('responde 404 sin 500 a un identificador fuera de rango o no numérico, sin fila de acceso', function (string $id) {
+        $this->actingAs(userWithRole(Role::RegenteFarmacia))->getJson('/api/patients/'.$id)
+            ->assertNotFound()
+            ->assertExactJson(['code' => 'not_found', 'message' => __('errors.not_found')]);
+
+        expect(PatientAccessLog::count())->toBe(0);
+    })->with([
+        '19 dígitos (spec)' => ['1234567890123456789'],
+        '19 dígitos sobre el máximo de bigint' => ['9999999999999999999'],
+        '25 dígitos' => [str_repeat('9', 25)],
+        'no numérico' => ['abc'],
+        '18 dígitos inexistente' => ['999999999999999999'],
     ]);
 
     it('responde 403 al admin sin datos del paciente ni fila de acceso, también para un id inexistente', function () {
