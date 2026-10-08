@@ -13,7 +13,7 @@ que el architect fija cómo se limpian esas pruebas (mismo problema que S2).
 
 ## 0. Precondiciones
 
-- [ ] 0.1 S1 y S2 archivados; leer la costura del libro de stock de S2 y confirmar (design D2, D3, D6): `StockLedger::apply()` devuelve los movimientos en el orden de los cambios; nombre real de `Stock::scopeInLockOrder`; ubicación del hash ficticio del login de S1 (si está dentro de `LoginAction`, se extrae a `Identity\CredentialVerifier` sin cambiar comportamiento). Verifica: `openspec list --specs` muestra `identity-access`, `catalog`, `inventory` y `kardex`; hallazgos anotados en `journal.md`. Cimiento.
+- [x] 0.1 S1 y S2 archivados; leer la costura del libro de stock de S2 y confirmar (design D2, D3, D6): `StockLedger::apply()` devuelve los movimientos en el orden de los cambios; nombre real de `Stock::scopeInLockOrder`; ubicación del hash ficticio del login de S1 (si está dentro de `LoginAction`, se extrae a `Identity\CredentialVerifier` sin cambiar comportamiento). Verifica: `openspec list --specs` muestra `identity-access`, `catalog`, `inventory` y `kardex`; hallazgos anotados en `journal.md`. Cimiento.
 
 ## 1. Base de datos
 
