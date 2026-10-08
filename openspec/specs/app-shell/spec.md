@@ -69,7 +69,7 @@ página de inicio SHALL saludar al usuario; los accesos que muestra debajo los f
 
 #### Scenario: Página de inicio sin pantallas aún
 - **WHEN** un `admin`, rol sin pantallas de operación, está en `/`
-- **THEN** ve "Bienvenido, {nombre}" y "Tu rol no tiene pantallas de operación en esta versión.", sin el texto "Las pantallas de operación aparecerán aquí."
+- **THEN** ve "Bienvenido, {nombre}" y el acceso "Asistente", sin el texto "Tu rol no tiene pantallas de operación en esta versión." ni "Las pantallas de operación aparecerán aquí."
 
 #### Scenario: Página de inicio con saludo
 - **WHEN** un `auxiliar_farmacia` está en `/`

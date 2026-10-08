@@ -10,24 +10,25 @@ los datos del paciente en el navegador.
 ### Requirement: Navegación por rol
 El shell SHALL mostrar un menú con solo las pantallas que el rol puede abrir, según `abilities` del usuario
 actual: "Dispensación" con `dispensations.create` o `patients.view`; "Traslados" con `transfers.view`;
-"Inventario" y "Kardex" con `inventory.view`. El enlace activo SHALL marcarse como página actual y el menú
-SHALL recorrerse con teclado (RN-10).
+"Inventario" y "Kardex" con `inventory.view`; "Asistente", al final, para toda sesión, porque la ruta del
+asistente no exige capacidad y cada herramienta autoriza en el servidor. El enlace activo SHALL marcarse como
+página actual y el menú SHALL recorrerse con teclado (RN-10).
 
 #### Scenario: Auxiliar ve sus cuatro pantallas
 - **WHEN** inicia sesión un `auxiliar_farmacia`
-- **THEN** el menú muestra "Dispensación", "Traslados", "Inventario" y "Kardex", en ese orden
+- **THEN** el menú muestra las cuatro pantallas de operación "Dispensación", "Traslados", "Inventario" y "Kardex", y al final "Asistente", en ese orden
 
 #### Scenario: Auditor ve las cuatro en lectura
 - **WHEN** inicia sesión un `auditor`
-- **THEN** el menú muestra "Dispensación", "Traslados", "Inventario" y "Kardex"
+- **THEN** el menú muestra "Dispensación", "Traslados", "Inventario" y "Kardex", y al final "Asistente"
 
 #### Scenario: Médico solo ve Dispensación
 - **WHEN** inicia sesión un `medico`
-- **THEN** el menú muestra solo "Dispensación" y no muestra "Traslados", "Inventario" ni "Kardex"
+- **THEN** de las pantallas de operación el menú muestra solo "Dispensación", seguida de "Asistente", y no muestra "Traslados", "Inventario" ni "Kardex"
 
 #### Scenario: Admin sin pantallas de operación
 - **WHEN** inicia sesión un `admin`
-- **THEN** el menú no muestra ninguna de las cuatro pantallas
+- **THEN** el menú no muestra ninguna de las cuatro pantallas de operación y muestra solo "Asistente"
 
 #### Scenario: Navegación con teclado
 - **WHEN** el usuario recorre el encabezado con Tab y pulsa Enter sobre "Kardex"
@@ -51,16 +52,21 @@ esa pantalla. El servidor sigue siendo la autoridad; la guarda solo evita pantal
 - **THEN** la pantalla muestra "No tienes permiso para realizar esta acción." en lugar de los datos, sin mostrar el código
 
 ### Requirement: Inicio con accesos del rol
-La página de inicio SHALL saludar al usuario y mostrar un acceso por cada pantalla de su menú. Un rol sin
-pantallas de operación SHALL ver "Tu rol no tiene pantallas de operación en esta versión.".
+La página de inicio SHALL saludar al usuario y mostrar un acceso por cada pantalla de su menú, en el mismo
+orden. Como "Asistente" está en el menú de toda sesión, todo rol SHALL ver al menos ese acceso y el estado
+vacío "Tu rol no tiene pantallas de operación en esta versión." SHALL NOT mostrarse.
 
 #### Scenario: Accesos del regente
 - **WHEN** un `regente_farmacia` abre `/`
-- **THEN** ve "Bienvenido, {nombre}" y cuatro accesos: Dispensación, Traslados, Inventario y Kardex
+- **THEN** ve "Bienvenido, {nombre}" y cuatro accesos de operación, Dispensación, Traslados, Inventario y Kardex, seguidos del acceso Asistente
 
 #### Scenario: Admin sin accesos
 - **WHEN** un `admin` abre `/`
-- **THEN** ve "Bienvenido, {nombre}" y "Tu rol no tiene pantallas de operación en esta versión.", sin accesos
+- **THEN** ve "Bienvenido, {nombre}", ningún acceso a pantallas de operación y un solo acceso, Asistente, sin el texto "Tu rol no tiene pantallas de operación en esta versión."
+
+#### Scenario: Médico sin accesos de inventario
+- **WHEN** un `medico` abre `/`
+- **THEN** ve los accesos Dispensación y Asistente, y ningún acceso a Traslados, Inventario ni Kardex
 
 ### Requirement: Mensajes de error por código
 Toda pantalla SHALL traducir el `code` de un rechazo a un texto en español del módulo central de textos y

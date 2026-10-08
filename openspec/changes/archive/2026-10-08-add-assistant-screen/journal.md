@@ -80,3 +80,8 @@ alcance; historial de 10 en memoria; Enter/Shift+Enter; ejemplo rellena sin envi
 - Suites: el implementador corrió dos veces la suite completa (la segunda solo para leer totales); dentro del tope de 3.
 - Pantalla alcanzable desde menú e inicio en los 5 roles: sin rutas huérfanas.
 - Siguiente: final-auditor, modo delta (tier B).
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, delta tier B)
+
+- Veredicto del final-auditor sobre `3bbf3c4..1bd7364`: APPROVED, sin observaciones.
+- Deuda al archivar: D-auv-7 (menor, backend de evaluación) abierta; no la causó este cambio y puede viajar un cambio.
