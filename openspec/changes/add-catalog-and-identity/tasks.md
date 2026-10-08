@@ -74,8 +74,8 @@ en las de login, logout o CSRF (falso verde: el framework omite CSRF en pruebas 
 
 ## 8. Integración y cierre
 
-- [ ] 8.1 Corrida completa de cierre: Pint, Larastan, Pest, ESLint, Vitest. Verifica: todas verdes, registradas en `journal.md` dentro del presupuesto de 3 corridas. Integración: ejerce todos los escenarios ya citados en 1–7. Cimiento.
-- [ ] 8.2 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M11 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro. Verifica: `openspec validate add-catalog-and-identity --strict` válido y spec-validator sin hallazgos. Registro: sin escenario propio. Cimiento.
+- [x] 8.1 Corrida completa de cierre: Pint, Larastan, Pest, ESLint, Vitest. Verifica: todas verdes, registradas en `journal.md` dentro del presupuesto de 3 corridas. Integración: ejerce todos los escenarios ya citados en 1–7. Cimiento.
+- [x] 8.2 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M11 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro. Verifica: `openspec validate add-catalog-and-identity --strict` válido y spec-validator sin hallazgos. Registro: sin escenario propio. Cimiento.
 
 ## Workflow follow-up
 
