@@ -75,6 +75,11 @@ jobs:
       - name: Dependencias (desde composer.lock)
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # Sin .env, Pest marca como advertencia la lectura fallida del archivo en cada prueba de Feature.
+      # La plantilla no trae secretos y el entorno del trabajo (DB_*) prevalece sobre ella.
+      - name: Entorno desde la plantilla
+        run: cp .env.example .env
+
       - name: Formato (Pint, solo verificación)
         run: vendor/bin/pint --test
 
