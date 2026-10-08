@@ -90,6 +90,110 @@
                 ]
             }
         },
+        "/assistant/ask": {
+            "post": {
+                "operationId": "assistant.ask",
+                "summary": "Pregunta de inventario en espa\u00f1ol. `outcome` y `answer` los decide el servidor desde herramientas de solo\nlectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no est\u00e1 disponible)",
+                "tags": [
+                    "Assistant"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AskAssistantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`AssistantAnswerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AssistantAnswerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "M\u00e1s de 20 preguntas por minuto del mismo usuario (code: too_many_requests); ver Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Segundos hasta poder reintentar.",
+                                "required": true,
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "El proveedor del asistente no respondi\u00f3, respondi\u00f3 con error, super\u00f3 el plazo o no est\u00e1 configurado. code: assistant_unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
         "/dispensations": {
             "post": {
                 "operationId": "dispensations.store",
@@ -2965,7 +3069,9 @@
                             "idempotency_key_reused",
                             "invalid_transfer_transition",
                             "segregation_of_duties",
-                            "discrepancy_already_resolved"
+                            "discrepancy_already_resolved",
+                            "too_many_requests",
+                            "assistant_unavailable"
                         ]
                     },
                     "message": {
@@ -3015,6 +3121,71 @@
                     "message"
                 ],
                 "title": "ApiError"
+            },
+            "AskAssistantRequest": {
+                "type": "object",
+                "description": "Pregunta al asistente (inventory-assistant \u00abPregunta en lenguaje natural\u00bb): texto de 3 a 500 caracteres. Toda\nsesi\u00f3n puede preguntar (auth:sanctum en la ruta): sin authorize() propio, porque cada herramienta autoriza con la\nPolicy de su fuente y responde not_permitted, nunca 403 (proposal, supuesto 2).",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "question"
+                ],
+                "title": "AskAssistantRequest"
+            },
+            "AssistantAnswerResource": {
+                "type": "object",
+                "properties": {
+                    "outcome": {
+                        "$ref": "#/components/schemas/Outcome"
+                    },
+                    "answer": {
+                        "type": "string"
+                    },
+                    "tool_calls": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AssistantToolCallResource"
+                        }
+                    }
+                },
+                "required": [
+                    "outcome",
+                    "answer",
+                    "tool_calls"
+                ],
+                "title": "AssistantAnswerResource"
+            },
+            "AssistantToolCallResource": {
+                "type": "object",
+                "properties": {
+                    "tool": {
+                        "type": "string"
+                    },
+                    "arguments": {
+                        "type": "object",
+                        "description": "Argumentos validados contra el esquema de la herramienta. Siempre objeto JSON, tambi\u00e9n vac\u00edo: `{}`.",
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "integer"
+                            ]
+                        }
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ToolCallStatus"
+                    }
+                },
+                "required": [
+                    "tool",
+                    "arguments",
+                    "status"
+                ],
+                "title": "AssistantToolCallResource"
             },
             "AuthenticatedUserResource": {
                 "type": "object",
@@ -3436,6 +3607,18 @@
                     "ajuste"
                 ],
                 "title": "MovementType"
+            },
+            "Outcome": {
+                "type": "string",
+                "description": "Resultado de una pregunta, decidido por el servidor a partir de las llamadas, nunca por el texto del modelo.\n",
+                "enum": [
+                    "answered",
+                    "no_results",
+                    "out_of_scope",
+                    "not_permitted",
+                    "unknown"
+                ],
+                "title": "Outcome"
             },
             "PatientResource": {
                 "type": "object",
@@ -4120,6 +4303,18 @@
                     "name"
                 ],
                 "title": "StoreWarehouseRequest"
+            },
+            "ToolCallStatus": {
+                "type": "string",
+                "description": "Estado de cada llamada a herramienta en `tool_calls` (inventory-assistant).\n",
+                "enum": [
+                    "ok",
+                    "denied",
+                    "rejected",
+                    "invalid_arguments",
+                    "failed"
+                ],
+                "title": "ToolCallStatus"
             },
             "TransferDiscrepancyResource": {
                 "type": "object",

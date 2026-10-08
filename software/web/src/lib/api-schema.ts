@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pregunta de inventario en español. `outcome` y `answer` los decide el servidor desde herramientas de solo
+         *     lectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no está disponible)
+         */
+        post: operations["assistant.ask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dispensations": {
         parameters: {
             query?: never;
@@ -472,7 +492,7 @@ export interface components {
              * @description Código estable del rechazo (contrato con la SPA).
              * @enum {string}
              */
-            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error" | "prescription_expired" | "prescription_exhausted" | "exceeds_prescription" | "authorization_required" | "authorizer_must_differ" | "invalid_authorizer" | "invalid_idempotency_key" | "idempotency_key_reused" | "invalid_transfer_transition" | "segregation_of_duties" | "discrepancy_already_resolved";
+            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error" | "prescription_expired" | "prescription_exhausted" | "exceeds_prescription" | "authorization_required" | "authorizer_must_differ" | "invalid_authorizer" | "invalid_idempotency_key" | "idempotency_key_reused" | "invalid_transfer_transition" | "segregation_of_duties" | "discrepancy_already_resolved" | "too_many_requests" | "assistant_unavailable";
             /** @description Mensaje en español para el usuario. */
             message: string;
             /** @description Mensajes en español por campo inválido. */
@@ -486,6 +506,30 @@ export interface components {
                 requested: number;
                 available: number;
             }[];
+        };
+        /**
+         * AskAssistantRequest
+         * @description Pregunta al asistente (inventory-assistant «Pregunta en lenguaje natural»): texto de 3 a 500 caracteres. Toda
+         *     sesión puede preguntar (auth:sanctum en la ruta): sin authorize() propio, porque cada herramienta autoriza con la
+         *     Policy de su fuente y responde not_permitted, nunca 403 (proposal, supuesto 2).
+         */
+        AskAssistantRequest: {
+            question: string;
+        };
+        /** AssistantAnswerResource */
+        AssistantAnswerResource: {
+            outcome: components["schemas"]["Outcome"];
+            answer: string;
+            tool_calls: components["schemas"]["AssistantToolCallResource"][];
+        };
+        /** AssistantToolCallResource */
+        AssistantToolCallResource: {
+            tool: string;
+            /** @description Argumentos validados contra el esquema de la herramienta. Siempre objeto JSON, también vacío: `{}`. */
+            arguments: {
+                [key: string]: string | number;
+            };
+            status: components["schemas"]["ToolCallStatus"];
         };
         /** AuthenticatedUserResource */
         AuthenticatedUserResource: {
@@ -611,6 +655,12 @@ export interface components {
          * @enum {string}
          */
         MovementType: "entrada" | "salida_dispensacion" | "salida_traslado" | "entrada_traslado" | "ajuste";
+        /**
+         * Outcome
+         * @description Resultado de una pregunta, decidido por el servidor a partir de las llamadas, nunca por el texto del modelo.
+         * @enum {string}
+         */
+        Outcome: "answered" | "no_results" | "out_of_scope" | "not_permitted" | "unknown";
         /** PatientResource */
         PatientResource: {
             id: number;
@@ -816,6 +866,12 @@ export interface components {
             code: string;
             name: string;
         };
+        /**
+         * ToolCallStatus
+         * @description Estado de cada llamada a herramienta en `tool_calls` (inventory-assistant).
+         * @enum {string}
+         */
+        ToolCallStatus: "ok" | "denied" | "rejected" | "invalid_arguments" | "failed";
         /** TransferDiscrepancyResource */
         TransferDiscrepancyResource: {
             id: number;
@@ -1007,6 +1063,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "assistant.ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskAssistantRequest"];
+            };
+        };
+        responses: {
+            /** @description `AssistantAnswerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AssistantAnswerResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Más de 20 preguntas por minuto del mismo usuario (code: too_many_requests); ver Retry-After. */
+            429: {
+                headers: {
+                    /** @description Segundos hasta poder reintentar. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description El proveedor del asistente no respondió, respondió con error, superó el plazo o no está configurado. code: assistant_unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

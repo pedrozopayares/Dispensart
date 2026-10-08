@@ -26,6 +26,7 @@ use Dedoc\Scramble\Support\Generator\Types\StringType;
  * - 419 en toda escritura (CSRF), 403/422/429 propios del login;
  * - rechazos de dominio de inventario (S2), de pacientes, prescripciones y dispensación (S3), con la cabecera
  *   Idempotency-Key de la dispensación y la cabecera Idempotent-Replayed de su repetición, y de traslados (S4);
+ * - 429 del limitador y 503 del proveedor del asistente (S7);
  * - seguridad por cookie de sesión + cabecera X-XSRF-TOKEN, sin bearer; login público.
  */
 final class ApiErrorDocumentTransformer implements DocumentTransformer
@@ -38,6 +39,7 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         409 => ['codes' => ['insufficient_stock', 'invalid_transfer_transition', 'discrepancy_already_resolved'], 'description' => 'La operación dejaría la existencia negativa o la existencia no existe (en la dispensación, con `shortages` por ítem); la acción no está permitida desde el estado del traslado; o la discrepancia ya fue resuelta.'],
         419 => ['codes' => ['csrf_token_mismatch'], 'description' => 'Falta X-XSRF-TOKEN o no corresponde a la sesión.'],
         429 => ['codes' => ['too_many_attempts'], 'description' => 'Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After.'],
+        503 => ['codes' => ['assistant_unavailable'], 'description' => 'El proveedor del asistente no respondió, respondió con error, superó el plazo o no está configurado.'],
     ];
 
     /**
@@ -58,6 +60,7 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
         'post transfers/{transfer}/receive' => [403, 404, 409],
         'post transfers/{transfer}/void' => [403, 404, 409],
         'post transfers/{transfer}/discrepancies/{discrepancy}/resolve' => [403, 404, 409, 422],
+        'post assistant/ask' => [429, 503],
     ];
 
     /**
@@ -87,6 +90,15 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
     private const DOMAIN_403 = [
         'post transfers/{transfer}/approve' => 'Sin permiso para el rol (code: forbidden), o quien creó y solicitó el traslado '
             .'intenta aprobarlo (code: segregation_of_duties, RN-08).',
+    ];
+
+    /**
+     * Operaciones cuyo 429 no es el de intentos fallidos sino el de un limitador de ruta.
+     *
+     * @var array<string, string>
+     */
+    private const DOMAIN_429 = [
+        'post assistant/ask' => 'Más de 20 preguntas por minuto del mismo usuario (code: too_many_requests); ver Retry-After.',
     ];
 
     private const IDEMPOTENT_OPERATION = 'post dispensations';
@@ -166,6 +178,8 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
                 $status === 403 && isset(self::DOMAIN_403[$key]) => Response::make(403)
                     ->setDescription(self::DOMAIN_403[$key])
                     ->setContent('application/json', $apiError),
+                $status === 429 && isset(self::DOMAIN_429[$key]) => $this->errorResponse(429, $apiError)
+                    ->setDescription(self::DOMAIN_429[$key]),
                 $status === 422 => $this->validationResponse($validationError, $apiError, $isLogin),
                 default => $this->errorResponse($status, $apiError),
             };
@@ -242,7 +256,7 @@ final class ApiErrorDocumentTransformer implements DocumentTransformer
                 'http_error', 'server_error', 'prescription_expired', 'prescription_exhausted', 'exceeds_prescription',
                 'authorization_required', 'authorizer_must_differ', 'invalid_authorizer', 'invalid_idempotency_key',
                 'idempotency_key_reused', 'invalid_transfer_transition', 'segregation_of_duties',
-                'discrepancy_already_resolved',
+                'discrepancy_already_resolved', 'too_many_requests', 'assistant_unavailable',
             ]))
             ->addProperty('message', (new StringType)->setDescription('Mensaje en español para el usuario.'))
             ->addProperty('errors', $this->fieldErrorsType())
