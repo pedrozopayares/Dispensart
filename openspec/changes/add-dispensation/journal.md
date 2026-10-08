@@ -118,3 +118,69 @@ dispensador + correo (no global); `ILIKE` depende de la configuración regional 
 - `openspec validate add-dispensation --strict`: válido. GATE 1 registrado.
 - S2 tiene backend y devops cerrados; espera auditoría. S3 usa `StockLedger` de S2 ya construido. Se adelanta
   el backend de S3 (paralelismo autorizado por el usuario). El backend de S3 no modifica archivos de S2.
+
+## 2026-10-08 — backend-implementer: grupos 1–5, 6.2, 6.3 y deuda D-auv-2 (`software/api`)
+
+Tareas `[x]`: 1.1–1.6, 2.1–2.4, 3.1–3.8, 4.1–4.5, 5.1–5.15, 6.2, 6.3. Pendientes: **0.1** (la costura se leyó y se
+confirmó, ver abajo; su verificación exige `inventory` y `kardex` vivos y S2 sigue sin archivar) y **6.1** (script de
+humo sobre el stack: devops). Commits en `dev`: `0dfb7fc`, `3c89072`, `fabb1c9`, `f8008c0`, `43598bc`, `1f53aa7`,
+`183d9ee`, `28e8432`, `cbbc9fe`, `85fc059`, `237126f`. Sin dependencias nuevas. Trazabilidad, `[MUT]`, anclas de
+transporte, barridos y reparto de líneas: `verification.md` §§ 0–5.
+
+### 0.1 — hallazgos de la costura
+
+| Pregunta | Hallazgo | Archivo:línea |
+|---|---|---|
+| Orden de retorno de `StockLedger::apply()` | movimientos en el orden de los cambios (bucle sobre `$changes`); D2 sin respaldo por `lot_id` | app/Services/Inventory/StockLedger.php:39 |
+| Nombre del scope de bloqueo | `Stock::scopeInLockOrder` (alias de join `lock_lots`) | app/Models/Stock.php:68 |
+| Hash ficticio del login | vivía en `LoginAction`; extraído a `Services\Identity\CredentialVerifier`, `LoginAction` lo usa sin cambiar comportamiento (pruebas de login de S1 verdes) | app/Services/Identity/CredentialVerifier.php |
+
+### Decisiones de implementación (sin cambio de spec)
+
+- Limitador del autorizador con `hash('sha256', correo)`, no `sha1` (D6): el preset `security` de Pest prohíbe `sha1`.
+  Mismo comportamiento: el correo nunca queda en claro en la caché.
+- `FefoAllocator` ordena él mismo por (`expires_on`, `lot.id`) además de recibir la consulta ordenada: M1 se observa
+  en el asignador sin mutar el scope de S2.
+- `DispensationPlanner` expone `check()` (pasos 8–9) y `allocate()` (paso 11): la acción relee `is_controlled` (paso
+  10) entre ambos, como fija D4; la vista previa usa `plan()` = ambos.
+- `RedactExceptionProcessor`: `code` es el SQLSTATE de `errorInfo` o del prefijo `SQLSTATE[…]` (un fallo de
+  conexión trae código PDO numérico); nunca el resto del mensaje.
+- Sin fábrica de `DispensationLine`: una línea exige un movimiento real del kardex; fabricarla fuera del libro rompería
+  la cadena de saldos. Las líneas solo nacen por la acción (pruebas HTTP) o por inserción directa en las pruebas de base.
+- `PatientResource`/`PrescriptionResource`/`DispensationPreviewResource` con colecciones tipadas: Scramble infiere
+  esquemas completos; `POST /dispensations` documenta 201 + `Idempotent-Replayed` vía `@response` y el transformador.
+- Archivos de S0/S1/S2 tocados por diseño: `AssignCorrelationId` y `JsonLineTap` (D9); `LoginAction` (D6);
+  `InsufficientStock` con `shortages` (contrato); `RaceRunner`/`race-worker` generalizados a cualquier ruta, cabeceras y
+  barrera propia (D10; `postAdjustments` intacto). Pruebas de S0 ajustadas al comportamiento nuevo de D9:
+  `CorrelationIdTest` y `ReadyDatabaseDownTest` (mensaje = clase, contexto con SQLSTATE), `RequestLogTest` (`POST
+  /health` ya no resuelve ruta → `unmatched`; la prueba usa `GET` con cuerpo para conservar su control `/health`).
+  Prueba de S2 `KardexIntegrityTest` "vaciar la tabla": `TRUNCATE … CASCADE` (la FK de `dispensation_lines` hace que
+  un `TRUNCATE` simple choque antes con la FK, 0A000); en cascada solo el trigger lo detiene.
+
+### D-auv-2 (deuda del coordinador)
+
+| Ítem | Evidencia |
+|---|---|
+| Migración reversible `created_at DEFAULT clock_timestamp()` en `kardex_movements` | database/migrations/2026_10_08_000004_set_kardex_created_at_to_clock_timestamp.php |
+| Prueba: dos transacciones solapadas que escriben en orden inverso a su inicio; el listado sigue `balance_after` | Kardex/KardexTimestampOrderTest.php:35 |
+| Con el default viejo → FALLA 1/1; con la migración → PASA 1/1 | `verification.md` § 3 fila D-auv-2 |
+| Hallazgo: `created_at` es `timestamptz(0)`; dentro de un mismo segundo el desempate por `id` ocultaba el defecto, la prueba separa inicio y escrituras > 1 s | commit `fabb1c9` |
+
+### Corridas
+
+| # | Comando | Resultado |
+|---|---|---|
+| deltas | archivos de S3 por grupo; `--filter` por `[MUT]` | ver `verification.md` § 3 |
+| cierre | `pint --test && phpstan analyse --memory-limit=1G && php artisan test` (`85fc059`) | Pint pasa; Larastan 0 errores; Pest 488 pasan / 1972 aserciones |
+| delta posterior | `PatientEndpointTest.php` (`237126f`, fila `medico` del 404) | 28 pasan / 167 aserciones |
+| OpenAPI | `composer openapi` ×2 + `cmp`; `npm run openapi:lint` | idéntico; Redocly válido |
+
+### Deuda y pendientes (en prosa; el Orchestrator asigna ids)
+
+- `openapi.json` cambió: los tipos de la SPA (`software/web`, `api-schema.ts`) deben regenerarse o el control de deriva
+  de CI fallará. Es tarea del frontend-implementer.
+- 6.1 (script de humo de dispensación sobre el stack, ruta bajo `software/docker/smoke`) queda para devops-implementer.
+- 0.1 se cierra cuando S2 se archive (`inventory` y `kardex` vivos); los hallazgos ya están arriba.
+- La línea de cierre del log registra ahora el patrón de ruta o `unmatched` (D9): `service-health` de S0 no cambia de
+  escenario para `/ready`, pero un `POST` a una ruta solo `GET` ya no registra su ruta literal. Si el auditor lo exige
+  al archivar S0, es un delta de una fila (ya señalado por el spec-engineer).
