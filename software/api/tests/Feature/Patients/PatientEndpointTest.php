@@ -172,13 +172,16 @@ describe('ficha', function () {
             ->assertJsonPath('data.prescriptions', []);
     });
 
-    it('responde 404 a un paciente inexistente sin fila de acceso', function () {
-        $this->actingAs(userWithRole(Role::RegenteFarmacia))->getJson('/api/patients/999999')
+    it('responde 404 a un paciente inexistente sin fila de acceso', function (Role $role) {
+        $this->actingAs(userWithRole($role))->getJson('/api/patients/999999')
             ->assertNotFound()
             ->assertExactJson(['code' => 'not_found', 'message' => __('errors.not_found')]);
 
         expect(PatientAccessLog::count())->toBe(0);
-    });
+    })->with([
+        'regente_farmacia' => [Role::RegenteFarmacia],
+        'medico' => [Role::Medico],
+    ]);
 
     it('responde 403 al admin sin datos del paciente ni fila de acceso, también para un id inexistente', function () {
         foreach ([$this->ana->id, 999999] as $id) {
