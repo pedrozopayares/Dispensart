@@ -1,0 +1,14 @@
+# Contexto software/ para la imagen de la API: nunca secretos, dependencias ni la SPA.
+**/.env
+**/.env.*
+!**/.env.example
+.git
+web
+api/vendor
+api/node_modules
+api/storage/logs
+api/storage/framework/cache/data
+api/storage/framework/sessions
+api/storage/framework/views
+api/bootstrap/cache/*.php
+api/.phpunit.cache

@@ -1,0 +1,51 @@
+# Stack local de Dispensart. Arranque: docker compose -f software/compose.yaml up --build
+# Al host solo se publican WEB_PORT (8090) y DB_PORT (5434, solo loopback).
+name: dispensart
+
+services:
+  db:
+    image: postgres:16.15-alpine3.24
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-dispensart}
+      POSTGRES_USER: ${DB_USERNAME:-dispensart}
+      # Contraseña SOLO para desarrollo local, no es un secreto. Reemplazar con DB_PASSWORD en cualquier otro entorno.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dispensart_local_dev_only}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5434}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Crea la base de pruebas dispensart_test al inicializar un volumen vacío (design D3).
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # Herramientas PHP (Composer, Artisan, Pint, Larastan, Pest) bajo demanda (design D4):
+  #   docker compose -f software/compose.yaml run --rm api-tools <comando>
+  api-tools:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: dev
+    working_dir: /app
+    volumes:
+      - ./api:/app
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      # Puerto interno de la red de compose, no el publicado al host.
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-dispensart}
+      DB_USERNAME: ${DB_USERNAME:-dispensart}
+      DB_PASSWORD: ${DB_PASSWORD:-dispensart_local_dev_only}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

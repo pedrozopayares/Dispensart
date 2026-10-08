@@ -90,3 +90,39 @@ Punto de reanudación: S0 en fase /apply, GATE 1 registrado, ninguna tarea `[x]`
   backend-implementer (2.1, 2.3–2.9); luego devops-implementer (grupos 4 y 5).
 - Commits con títulos legibles para el jurado (Git law, `CLAUDE.md`).
 - S1 y S2: propuestas en curso en sus carpetas; ver sus `journal.md`.
+
+## 2026-10-07 — Orchestrator: reanudación tras reinicio
+
+- Sesión reiniciada; los tipos `*-implementer` ya se registran. S0 vuelve a `en curso`.
+- Preflight: Docker 28.5.1, puertos 8090 y 5434 libres, `dev` en `86a0f0f`.
+- Delegación: devops-implementer (1.1, 2.2) ∥ frontend-implementer (grupo 3).
+
+## 2026-10-07 — devops-implementer: tareas 1.1 y 2.2
+
+Archivos: `software/compose.yaml`, `software/docker/db/init/01-create-test-db.sql`,
+`software/docker/api/Dockerfile`, `software/docker/api/Dockerfile.dockerignore`.
+
+| Comprobación | Comando | Resultado |
+|---|---|---|
+| Config compose | `docker compose -f software/compose.yaml config -q` | sale 0 |
+| `db` en frío | `down -v` → `up -d db --wait` | `healthy`, `127.0.0.1:5434->5432/tcp` |
+| Bases creadas | `psql -Atc "select datname ... like 'dispensart%'"` | `dispensart`, `dispensart_test` |
+| Versión base | `select version()` | PostgreSQL 16.15 |
+| PHP en `api-tools` | `--profile tools run --rm api-tools php -v` | PHP 8.5.11 (NTS), OPcache |
+| Extensiones | `php -m` | `pdo_pgsql`, `intl`, `bcmath`, `pcov` |
+| Composer | `composer --version` | 2.10.3 |
+| Usuario | `id -u` en `api-tools` | 1000 (no root) |
+| Enlace a la base de pruebas | `new PDO("pgsql:host=db;...dbname=dispensart_test")` | conecta |
+| Etapa `base` sola | `docker build --target base` | construye |
+| Puertos | `config --format json` | `api-tools` sin puertos; `db` solo `127.0.0.1` |
+| Barrido de secretos | `/usr/bin/grep -rnEi '(api_key\|secret\|token\|password)\s*[:=]'` | 2 aciertos, ambos la contraseña local marcada `dispensart_local_dev_only`; control positivo (`API_KEY=sk-test123` en scratchpad) detectado |
+
+Decisiones:
+- Imágenes fijadas: `postgres:16.15-alpine3.24`, `php:8.5.11-fpm-alpine3.24`, `composer:2.10.3`.
+- Contexto de construcción de la API = `software/` (la etapa `prod` de 4.1 copiará `api/` y `docker/api/`);
+  `Dockerfile.dockerignore` excluye `.env`, `web/`, `vendor/`, `.git`. 4.1 lo afina.
+- `api-tools` recibe `DB_PORT: 5432` literal (puerto interno), no el `DB_PORT` del host.
+- `pcov` en `dev` para cobertura/mutación de Pest; no entra en `prod`.
+- El bind mount crea `software/api/` vacío al correr `api-tools`; se borró (2.1 lo crea el backend-implementer).
+- Pendiente de 2.1: la verificación `php artisan about` (`pgsql`, `es`) de 2.2 la cierra el backend-implementer
+  tras el scaffolding. Sin `actionlint` en el host (no hubo workflows en esta entrega).
