@@ -346,3 +346,19 @@ Las negativas se hicieron en local con los mismos comandos del workflow, no con 
 - Imagen `api` 306 MB (supervisord/Python, design D1).
 - Sin seeders al arrancar en S0 (el `DatabaseSeeder` por defecto usa Faker, dependencia de desarrollo); S1
   debe añadir semillas idempotentes sin Faker y `db:seed --force` al entrypoint.
+
+## 2026-10-07 — Orchestrator: verificación de cierre
+
+- Tareas: todas `[x]`. `verification.md` presente (`e3f874e`), en tablas, § 0 con reparto.
+- Pantallas: solo shell en S0; ruta raíz y enlace profundo servidos por Nginx (sin rutas huérfanas).
+- Corridas de suite completas: backend 2 (la primera falló por la base de pruebas sobrescrita), frontend 1,
+  CI 2. Dentro del presupuesto por suite; la confirmación del auditor sería la tercera de backend.
+- Fase: final-auditor (tier B, delta sobre el diff).
+
+## 2026-10-07 — Orchestrator: GATE 2
+
+- final-auditor: `APPROVED` (tier B, delta sobre el diff).
+- GATE 2: APPROVED
+- Deuda reconciliada sin filas nuevas: ruta literal en logs pasa a S3 (requisito "Rutas de pacientes
+  registradas por patrón"); `APP_KEY` vacía en pruebas pasa como insumo al apply de S1 (cookies de sesión);
+  exclusión de `tests/` en Larastan es decisión, no deuda.
