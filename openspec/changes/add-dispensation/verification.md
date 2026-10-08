@@ -16,6 +16,7 @@ Líneas añadidas por S3 + D-auv-2. Comando: `git diff --numstat 0dfb7fc^ 237126
 | Prueba — API | `software/api/tests`, `phpunit.xml` | 2445 |
 | Generado | `software/api/openapi.json` | 1051 |
 | Registro | `openspec/changes/add-dispensation/**/*.md` antes de este archivo (`wc -l`) | 1137 |
+| Humo — stack (6.1, devops) | `software/docker/smoke/dispensation-smoke.sh` (`wc -l`) | 190 |
 
 ## 1. Matriz escenario → prueba → archivo:línea
 
@@ -221,3 +222,32 @@ Declarados: 14 (M1–M14); entregados: 15 filas (M2 partido en a/b según su tar
 | cierre | `pint --test && phpstan analyse --memory-limit=1G && php artisan test` | `85fc059` | Pint pasa; Larastan 0 errores; Pest **488 pasan / 1972 aserciones** |
 | delta | `php artisan test tests/Feature/Patients/PatientEndpointTest.php` (+ Pint del archivo) | `237126f` | 28 pasan / 167 aserciones (fila `medico` añadida al 404) |
 | OpenAPI | `composer openapi` ×2 + `cmp`; `npm run openapi:lint` | `85fc059` | idéntico entre corridas; Redocly válido |
+
+## 6. Humo sobre el stack (6.1, devops-implementer)
+
+Stack: `docker compose up -d --build --wait api` (migraciones y siembra aplicadas en el arranque; sin `down -v`).
+Script: `software/docker/smoke/dispensation-smoke.sh`; crea una prescripción del médico semilla por corrida (repetible).
+
+| Escenario | Comprobación sobre el stack | Archivo:línea |
+|---|---|---|
+| PAT-01 Búsqueda por prefijo de documento | `GET /api/patients?q=99990100` contiene `9999010001` | software/docker/smoke/dispensation-smoke.sh:97 |
+| PRE-18 Prescripciones sembradas | ficha del paciente semilla con prescripción del Médico Demo que incluye MED-001 | software/docker/smoke/dispensation-smoke.sh:102 |
+| DSP-01 Vista previa en orden FEFO | preview 200 `fulfillable`; `expires_on` ascendente; lote vencido L-LOS-2401 excluido | software/docker/smoke/dispensation-smoke.sh:130 |
+| DSP-32 Reintento devuelve la respuesta original | 201 con clave → total kardex +1; misma clave → 201, cuerpo `cmp` idéntico, `Idempotent-Replayed: true`, total y movimiento más reciente sin cambio | software/docker/smoke/dispensation-smoke.sh:140 |
+| DSP-39 Auxiliar dispensa con autorización del regente | MED-006 sin autorizador → 422 `authorization_required`; con regente → 201, `authorized_by` ≠ `dispensed_by` | software/docker/smoke/dispensation-smoke.sh:179 |
+
+| Corrida | Resultado | Código de salida |
+|---|---|---|
+| humo, corrida 1 | 23 comprobaciones, 0 fallas | 0 |
+| humo, corridas 2 y 3 (repetibilidad) | 23 comprobaciones, 0 fallas | 0 |
+| control: `SEED_USER_PASSWORD=wrong-password` | login 422 → aborta; 2 comprobaciones, 1 falla | 1 |
+| control: copia en scratchpad con la repetición bajo otra clave (`${key}-otra`) | 3 fallas (HTTP 422, cuerpo distinto, sin `Idempotent-Replayed`) | 1 |
+| `stock-smoke.sh` y `auth-smoke.sh` tras el rebuild | sin regresión | 0 y 0 |
+| `/health`, `/ready` vía `localhost:8090` | 200 y 200 | — |
+| `docker compose exec api id -u` | 1000 | — |
+
+| Barrido | Resultado | Control positivo |
+|---|---|---|
+| `/usr/bin/grep -nE "(password\|secret\|token\|key)[\"']?\s*[:=]\s*[\"'][^\"'$]{6,}"` sobre el script | 1 hit: `key="smoke-s3-plain-$RUN_ID"` (clave de idempotencia, no secreto) | `printf 'password="hunter2abc"'` → 1 |
+| contraseña | solo `${SEED_USER_PASSWORD:-dispensart-dev-only}` (valor de desarrollo ya documentado, mismo patrón que `stock-smoke.sh`) | — |
+

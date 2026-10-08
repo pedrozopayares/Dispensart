@@ -184,3 +184,12 @@ transporte, barridos y reparto de líneas: `verification.md` §§ 0–5.
 - La línea de cierre del log registra ahora el patrón de ruta o `unmatched` (D9): `service-health` de S0 no cambia de
   escenario para `/ready`, pero un `POST` a una ruta solo `GET` ya no registra su ruta literal. Si el auditor lo exige
   al archivar S0, es un delta de una fila (ya señalado por el spec-engineer).
+
+## 2026-10-08 — devops-implementer: 6.1 humo de dispensación sobre el stack
+
+- Tarea `[x]`: 6.1. Script `software/docker/smoke/dispensation-smoke.sh` (bash, curl, jq; patrón de `stock-smoke.sh`).
+- Stack: `docker compose up -d --build --wait api`; sin `down -v` (web y db intactos). Migraciones de S3 aplicadas.
+- Decisión: el médico semilla crea una prescripción nueva por corrida (MED-004 ×2, MED-006 ×1); las semillas no se
+  agotan y el humo es repetible. La prescripción sembrada se comprueba en la ficha, no se consume.
+- Evidencia y controles negativos (contraseña errónea, clave distinta en la repetición): `verification.md` § 6.
+- Deuda: ninguna nueva. Sin cambios en `app`, `src`, compose ni workflows; el humo no corre en CI (igual que S1/S2).
