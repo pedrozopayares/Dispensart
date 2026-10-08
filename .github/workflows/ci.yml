@@ -1,0 +1,116 @@
+# CI de Dispensart (S0): calidad de backend y frontend. Sin secretos, sin imágenes, sin despliegue (S8).
+name: CI
+
+on:
+  push:
+    paths:
+      - "software/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "software/**"
+      - ".github/workflows/ci.yml"
+
+# Solo lectura: ningún trabajo amplía permisos.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Pint, Larastan, Pest sobre PostgreSQL 16)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: software/api
+    services:
+      # Misma imagen que compose. Base dispensart_test, como la que fuerza phpunit.xml (design D3).
+      postgres:
+        image: postgres:16.15-alpine3.24
+        env:
+          POSTGRES_DB: dispensart_test
+          POSTGRES_USER: dispensart
+          # Credencial efímera del contenedor de CI, no es un secreto.
+          POSTGRES_PASSWORD: dispensart_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dispensart -d dispensart_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: dispensart_test
+      DB_USERNAME: dispensart
+      DB_PASSWORD: dispensart_ci_only
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: pdo_pgsql, intl, bcmath
+          coverage: none
+          tools: composer:v2
+
+      - name: Ruta de la caché de Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('software/api/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Dependencias (desde composer.lock)
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Formato (Pint, solo verificación)
+        run: vendor/bin/pint --test
+
+      - name: Análisis estático (Larastan)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Pruebas (Pest contra PostgreSQL)
+        run: vendor/bin/pest
+
+  frontend:
+    name: Frontend (ESLint, tipos, Vitest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: software/web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: software/web/.nvmrc
+          cache: npm
+          cache-dependency-path: software/web/package-lock.json
+
+      # npm ci falla si package.json y el lockfile no coinciden.
+      - name: Dependencias (desde package-lock.json)
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Tipos (tsc)
+        run: npm run typecheck
+
+      - name: Pruebas (Vitest)
+        run: npm test -- --run
