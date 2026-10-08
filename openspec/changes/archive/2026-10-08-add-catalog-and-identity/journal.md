@@ -535,3 +535,20 @@ Cookies: `XSRF-TOKEN` (no HttpOnly), `dispensart-session` (HttpOnly); `localStor
   regenerar los tipos falle (es archivo de CI, fuera del alcance de este agente).
 - `npm audit` reporta 7 altas preexistentes vía `shadcn` → `fast-glob` → `micromatch` → `braces` (solo desarrollo, no
   llega al bundle); ninguna introducida por este bloque.
+
+## 2026-10-08 — Orchestrator: verificación de cierre
+
+- Tareas: todas `[x]`. `verification.md` presente, en tablas.
+- Pantallas: `/login`, shell y página de inicio alcanzables; rutas protegidas redirigen a `/login`.
+- Corridas: línea base (1), cierre backend (2), cierre frontend; CI 37731311110 verde como evidencia de 8.1.
+  La confirmación del auditor sería la tercera de backend.
+- Commits de S2 (backend en paralelo) se intercalan en `dev`; la auditoría se restringe a los archivos de S1.
+- Fase: final-auditor (tier A, completa).
+
+## 2026-10-08 — Orchestrator: GATE 2
+
+- final-auditor: `APPROVED` (tier A completa). Confirmación: Pest 167 de S1 verdes en copia aislada, Vitest
+  39/39, rollback y re-migrate limpios, 4 mutaciones re-aplicadas, humo 38/38.
+- GATE 2: APPROVED
+- Deuda filada: D-auv-1 (minor) — `SpaClient` envía `X-XSRF-TOKEN` en todo GET, así "Lectura sin token CSRF"
+  no puede fallar. Se salda en S2 (backend en curso), antes de archivar S2.

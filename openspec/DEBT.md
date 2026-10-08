@@ -11,6 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
+| D-auv-1 | minor | add-catalog-and-identity (final-auditor) | `software/api/tests/Support/SpaClient.php:126` envía `X-XSRF-TOKEN` en todo GET; la prueba "Lectura sin token CSRF" (`CsrfTest.php:57`) no puede fallar. | add-stock-and-kardex: cabecera solo en escrituras + mutación que demuestre el pin |
 
 ## Settled
 
