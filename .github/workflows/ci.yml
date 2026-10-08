@@ -292,3 +292,56 @@ jobs:
       - name: Bajar el stack
         if: always()
         run: docker compose -f software/compose.yaml down -v
+
+  # Producción simulada: solo main, tras staging, en el entorno production con revisor requerido.
+  # La guarda falla cerrada si el entorno no exige revisor o no se puede leer (404/403) (D6).
+  production:
+    name: Producción (aprobación del entorno production)
+    needs: [build, staging]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      actions: read
+    steps:
+      - name: Guarda de revisor requerido
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DEPLOY_ENV: production
+        run: |
+          if ! count="$(gh api "repos/$REPO/environments/$DEPLOY_ENV" \
+              --jq '[.protection_rules[]? | select(.type=="required_reviewers")] | length')"; then
+            echo "::error::No se pudo leer el entorno $DEPLOY_ENV (404/403): no se despliega sin verificar."
+            exit 1
+          fi
+          echo "Reglas de revisor requerido en $DEPLOY_ENV: $count"
+          if [ "$count" -lt 1 ]; then
+            echo "::error::El entorno $DEPLOY_ENV no exige revisor: despliegue bloqueado."
+            exit 1
+          fi
+
+      # Simulado: publica en el resumen los digests que pasaron staging y el comando que se ejecutaría.
+      - name: Despliegue simulado
+        env:
+          API_REF: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-api@${{ needs.build.outputs.api_digest }}
+          WEB_REF: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-web@${{ needs.build.outputs.web_digest }}
+        run: |
+          {
+            echo "## Despliegue a producción (simulado)"
+            echo ""
+            echo "| Imagen | Referencia |"
+            echo "|---|---|"
+            echo "| api | \`$API_REF\` |"
+            echo "| web | \`$WEB_REF\` |"
+            echo ""
+            echo "Comando en el servidor:"
+            echo ""
+            echo "\`\`\`"
+            echo "API_IMAGE=$API_REF WEB_IMAGE=$WEB_REF docker compose -f software/compose.yaml pull api web"
+            echo "API_IMAGE=$API_REF WEB_IMAGE=$WEB_REF docker compose -f software/compose.yaml up -d --no-build --wait"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "api: $API_REF"
+          echo "web: $WEB_REF"
