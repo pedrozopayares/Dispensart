@@ -3,6 +3,7 @@
 use App\Enums\Role;
 use App\Models\Transfer;
 use App\Models\User;
+use App\Services\Assistant\Evaluation\EvaluationSet;
 use App\Services\Assistant\Llm\ChatResponse;
 use App\Services\Assistant\Llm\LlmProvider;
 use App\Services\Assistant\Llm\ToolCall;
@@ -97,4 +98,17 @@ function assistantDbState(): array
 function worldWarehouse(string $code): int
 {
     return (int) DB::table('warehouses')->where('code', $code)->value('id');
+}
+
+/**
+ * Copia temporal del conjunto versionado con una alteración en la entrada dada.
+ */
+function evaluationSetWith(Closure $alter): string
+{
+    $set = json_decode((string) file_get_contents(EvaluationSet::defaultPath()), true);
+    $set = $alter($set);
+    $path = tempnam(sys_get_temp_dir(), 'eval-set-');
+    file_put_contents($path, json_encode($set, JSON_UNESCAPED_UNICODE));
+
+    return $path;
 }
