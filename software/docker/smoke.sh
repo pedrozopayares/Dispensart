@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Humo del stack completo (staging del CI y local): db, api y web en healthy; GET /health y GET /ready
 # por el proxy de web con HTTP 200; GET / con el documento de la SPA; api y web sin usuario root.
+# Luego, con el stack sano, los humos de dominio de software/docker/smoke/ (autenticación, existencias, alertas,
+# dispensación, traslados, asistente) con los usuarios sintéticos de la semilla. Cada uno pasa sobre una base
+# recién sembrada (staging del CI) y sobre la base de desarrollo de larga vida.
 # Ante cualquier fallo imprime `docker compose logs` y sale con código distinto de 0.
 #
 # Uso (stack en marcha):  bash software/docker/smoke.sh
-# Variables: SMOKE_BASE_URL (http://localhost:$WEB_PORT, WEB_PORT=8090), SMOKE_TIMEOUT (segundos, 180).
-# Respeta COMPOSE_PROJECT_NAME, API_IMAGE y WEB_IMAGE del entorno. Requiere: bash, curl, docker.
+# Variables: SMOKE_BASE_URL (http://localhost:$WEB_PORT, WEB_PORT=8090), SMOKE_TIMEOUT (segundos, 180),
+#            SMOKE_DOMAIN (1; 0 = solo el humo del stack), SEED_USER_PASSWORD (vacía = valor SOLO de desarrollo).
+# Respeta COMPOSE_PROJECT_NAME, API_IMAGE y WEB_IMAGE del entorno. Requiere: bash, curl, docker, jq.
 set -euo pipefail
 
 BASE_URL="${SMOKE_BASE_URL:-http://localhost:${WEB_PORT:-8090}}"
@@ -76,6 +80,17 @@ for svc in api web; do
     uid="$(compose exec -T "$svc" id -u 2>/dev/null || echo error)"
     if [ "$uid" != error ] && [ "$uid" != 0 ]; then pass "$svc corre como uid $uid"; else fail "$svc: id -u = $uid"; fi
 done
+
+# 4. Humos de dominio, solo con el stack sano (sin él fallarían todos por la misma causa). Orden: los de solo
+#    lectura sobre el estado sembrado (alertas) antes que los que escriben (dispensación, traslados).
+SMOKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/smoke"
+if [ "$failures" -eq 0 ] && [ "${SMOKE_DOMAIN:-1}" != 0 ]; then
+    export SMOKE_BASE_URL="$BASE_URL"
+    for name in auth stock alerts dispensation transfer assistant; do
+        printf '\n== Humo de dominio: %s ==\n' "$name"
+        if bash "$SMOKE_DIR/$name-smoke.sh"; then pass "humo de dominio $name"; else fail "humo de dominio $name"; fi
+    done
+fi
 
 if [ "$failures" -ne 0 ]; then
     printf '\nHumo FALLIDO: %d comprobaciones fallaron\n' "$failures"

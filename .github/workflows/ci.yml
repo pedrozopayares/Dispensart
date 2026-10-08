@@ -292,7 +292,9 @@ jobs:
       - name: Arranque del stack (sin construir)
         run: docker compose -f software/compose.yaml up --no-build --wait --wait-timeout 180 db api web
 
-      - name: Humo
+      # Stack sano y luego los humos de dominio sobre la base recién sembrada. Usuarios sintéticos con la
+      # contraseña SOLO de desarrollo (APP_ENV=local por defecto en compose, sin SEED_USER_PASSWORD): no es secreto.
+      - name: Humo del stack y de dominio
         run: bash software/docker/smoke.sh
 
       - name: Logs del stack

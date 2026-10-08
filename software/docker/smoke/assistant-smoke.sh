@@ -10,7 +10,7 @@
 #            SEED_USER_PASSWORD (vacía = valor por defecto SOLO de desarrollo, el mismo de la API).
 # Requiere: bash, curl, jq. Sale con 0 solo si todas las comprobaciones pasan. Nunca imprime la contraseña.
 # Repetible: el asistente solo lee (transacción de solo lectura revertida). 5 preguntas por corrida, bajo el
-# límite de 20 por minuto.
+# límite de 20 por minuto. Sobre una base sin traslados crea uno en BORRADOR (única escritura del humo).
 set -euo pipefail
 
 BASE_URL="${SMOKE_BASE_URL:-http://localhost:${WEB_PORT:-8090}}"
@@ -115,8 +115,24 @@ ask regente "$reg" "¿Cuántos traslados hay en tránsito?" \
     '(.outcome == "answered" or .outcome == "no_results")
      and .tool_calls[0].tool == "get_transfer_status" and .tool_calls[0].status == "ok"
      and .tool_calls[0].arguments.status == "EN_TRANSITO"'
-expect "[regente] GET /api/transfers" 200 "$(request "$reg" GET "/api/transfers?per_page=1")" '(.data | length) == 1'
-transfer="$(jq -r '.data[0].id' "$BODY")"
+expect "[regente] GET /api/transfers" 200 "$(request "$reg" GET "/api/transfers?per_page=1")" '(.data | type) == "array"'
+transfer="$(jq -r '.data[0].id // empty' "$BODY")"
+# Base recién sembrada (staging del CI): la semilla no trae traslados. El regente crea un BORRADOR (sin efecto
+# en existencias) con un lote vigente de una bodega hacia otra, así la pregunta por id siempre tiene sujeto.
+if [ -z "$transfer" ]; then
+    expect "[regente] GET /api/stock" 200 "$(request "$reg" GET /api/stock)"
+    read -r origin lot <<< "$(jq -r '[.data[] | select(.lot.is_expired == false and .quantity > 0)][0]
+        | "\(.warehouse.id // "") \(.lot.id // "")"' "$BODY")"
+    expect "[regente] GET /api/warehouses" 200 "$(request "$reg" GET /api/warehouses)"
+    destination="$(jq -r --argjson o "${origin:-0}" '[.data[] | select(.id != $o)][0].id // empty' "$BODY")"
+    [ -n "${lot:-}" ] && [ -n "$destination" ] || abort "sin lote vigente ni bodega destino para crear un traslado"
+    expect "[regente] POST /api/transfers (BORRADOR para la pregunta por id)" 201 "$(post "$reg" /api/transfers \
+        "$(jq -nc --argjson o "$origin" --argjson d "$destination" --argjson l "$lot" \
+            '{origin_warehouse_id: $o, destination_warehouse_id: $d, notes: "Humo S7: traslado de referencia",
+              lines: [{lot_id: $l, quantity: 1}]}')")" '.data.status == "BORRADOR"'
+    transfer="$(jq -r '.data.id // empty' "$BODY")"
+fi
+[ -n "$transfer" ] || abort "sin traslado para la pregunta por id"
 ask regente "$reg" "¿En qué estado está el traslado $transfer?" \
     ".outcome == \"answered\" and .tool_calls[0].tool == \"get_transfer_status\" and .tool_calls[0].status == \"ok\"
      and .tool_calls[0].arguments.transfer_id == $transfer"
