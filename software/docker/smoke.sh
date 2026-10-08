@@ -82,3 +82,4 @@ if [ "$failures" -ne 0 ]; then
     exit 1
 fi
 printf '\nHumo VERDE\n'
+# Evidencia S8 4.3: rama de trabajo sin entrega.
