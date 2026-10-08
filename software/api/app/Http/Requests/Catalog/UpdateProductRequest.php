@@ -13,7 +13,7 @@ final class UpdateProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->can('update', $this->product());
+        return (bool) $this->user()?->can('update', Product::class);
     }
 
     /**
@@ -22,16 +22,10 @@ final class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:30', Rule::unique('products', 'code')->ignore($this->product())],
+            'code' => ['sometimes', 'required', 'string', 'max:30', Rule::unique('products', 'code')->ignore($this->route('product'))],
             'name' => ['sometimes', 'required', 'string', 'max:150'],
             'presentation' => ['sometimes', 'nullable', 'string', 'max:150'],
             'is_controlled' => ['sometimes', 'boolean'],
         ];
-    }
-
-    public function product(): Product
-    {
-        /** @var Product */
-        return $this->route('product');
     }
 }

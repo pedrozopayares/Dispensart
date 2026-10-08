@@ -8,6 +8,7 @@ use App\Http\Requests\Catalog\UpdateWarehouseRequest;
 use App\Http\Resources\WarehouseResource;
 use App\Models\Warehouse;
 use App\Queries\CatalogQuery;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final class WarehouseController
@@ -23,12 +24,12 @@ final class WarehouseController
     /**
      * Crea una bodega (solo admin).
      */
-    public function store(StoreWarehouseRequest $request, SaveWarehouse $save): WarehouseResource
+    public function store(StoreWarehouseRequest $request, SaveWarehouse $save): JsonResponse
     {
         /** @var array{code: string, name: string} $data */
         $data = $request->validated();
 
-        return new WarehouseResource($save->handle(new Warehouse, $data));
+        return (new WarehouseResource($save->handle(new Warehouse, $data)))->response()->setStatusCode(201);
     }
 
     /**

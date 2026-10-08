@@ -69,6 +69,15 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "openapi": [
+            "@putenv DB_DATABASE=dispensart_test",
+            "@php artisan migrate --force --no-interaction --quiet",
+            "@php artisan scramble:export --path=openapi.json"
+        ],
+        "openapi:check": [
+            "@openapi",
+            "git diff --exit-code -- openapi.json"
         ]
     },
     "extra": {
@@ -86,5 +95,9 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "openapi": "Exporta el contrato OpenAPI a openapi.json (Scramble, contra la base de pruebas migrada).",
+        "openapi:check": "Falla si openapi.json versionado difiere del contrato inferido del código (deriva)."
+    }
 }

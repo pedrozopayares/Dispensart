@@ -14,7 +14,7 @@ final class UpdateWarehouseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->can('update', $this->warehouse());
+        return (bool) $this->user()?->can('update', Warehouse::class);
     }
 
     /**
@@ -23,14 +23,8 @@ final class UpdateWarehouseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('warehouses', 'code')->ignore($this->warehouse())],
-            'name' => ['sometimes', 'required', 'string', 'max:120', Rule::unique('warehouses', 'name')->ignore($this->warehouse())],
+            'code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('warehouses', 'code')->ignore($this->route('warehouse'))],
+            'name' => ['sometimes', 'required', 'string', 'max:120', Rule::unique('warehouses', 'name')->ignore($this->route('warehouse'))],
         ];
-    }
-
-    public function warehouse(): Warehouse
-    {
-        /** @var Warehouse */
-        return $this->route('warehouse');
     }
 }

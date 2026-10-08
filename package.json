@@ -6,7 +6,11 @@
   "engines": {
     "node": ">=20.19.0"
   },
+  "scripts": {
+    "openapi:lint": "redocly lint software/api/openapi.json"
+  },
   "devDependencies": {
-    "@fission-ai/openspec": "1.14.1"
+    "@fission-ai/openspec": "1.14.1",
+    "@redocly/cli": "2.60.0"
   }
 }

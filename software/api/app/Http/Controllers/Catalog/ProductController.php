@@ -8,6 +8,7 @@ use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Queries\CatalogQuery;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final class ProductController
@@ -23,12 +24,12 @@ final class ProductController
     /**
      * Crea un producto (solo admin).
      */
-    public function store(StoreProductRequest $request, SaveProduct $save): ProductResource
+    public function store(StoreProductRequest $request, SaveProduct $save): JsonResponse
     {
         /** @var array{code: string, name: string, presentation?: string|null, is_controlled?: bool} $data */
         $data = $request->validated();
 
-        return new ProductResource($save->handle(new Product, $data));
+        return (new ProductResource($save->handle(new Product, $data)))->response()->setStatusCode(201);
     }
 
     /**
