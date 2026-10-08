@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/dispensations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispensa por FEFO con Idempotency-Key: 201 con la dispensación, o la respuesta original con
+         *     Idempotent-Replayed: true al repetir clave y cuerpo
+         * @description El cuerpo es el texto guardado por el almacén de idempotencia; su forma, la de DispensationResource.
+         */
+        post: operations["dispensations.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispensations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lotes que FEFO tomaría hoy por ítem, sin bloquear ni escribir; el faltante es dato (fulfillable) */
+        post: operations["dispensations.preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kardex": {
         parameters: {
             query?: never;
@@ -83,6 +121,57 @@ export interface paths {
         get: operations["auth.me"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Busca pacientes por prefijo de documento o parte del nombre (hasta 20). Enmascarados para el auditor */
+        get: operations["patients.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patients/{patient}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha del paciente con sus prescripciones y saldos. Enmascarada para el auditor */
+        get: operations["patients.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prescriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crea una prescripción a nombre del médico autenticado (solo prescriptions.create) */
+        post: operations["prescriptions.store"];
         delete?: never;
         options?: never;
         head?: never;
@@ -221,13 +310,20 @@ export interface components {
              * @description Código estable del rechazo (contrato con la SPA).
              * @enum {string}
              */
-            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error";
+            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error" | "prescription_expired" | "prescription_exhausted" | "exceeds_prescription" | "authorization_required" | "authorizer_must_differ" | "invalid_authorizer" | "invalid_idempotency_key" | "idempotency_key_reused";
             /** @description Mensaje en español para el usuario. */
             message: string;
             /** @description Mensajes en español por campo inválido. */
             errors?: {
                 [key: string]: string[];
             };
+            /** @description Solo en insufficient_stock de la dispensación: ítems que no alcanzan. */
+            shortages?: {
+                prescription_item_id: number;
+                product_id: number;
+                requested: number;
+                available: number;
+            }[];
         };
         /** AuthenticatedUserResource */
         AuthenticatedUserResource: {
@@ -236,6 +332,48 @@ export interface components {
             email: string;
             role: string;
             abilities: unknown[];
+        };
+        /** DispensationPreviewResource */
+        DispensationPreviewResource: {
+            prescription_id: number;
+            warehouse_id: number;
+            requires_authorization: boolean;
+            fulfillable: boolean;
+            items: {
+                prescription_item_id: number;
+                product_id: number;
+                requested: number;
+                available: number;
+                shortage: number;
+                expired_excluded_quantity: number;
+                requires_authorization: boolean;
+                allocations: {
+                    lot_id: number;
+                    lot_code: string;
+                    expires_on: string;
+                    quantity: number;
+                }[];
+            }[];
+        };
+        /** DispensationResource */
+        DispensationResource: {
+            id: number;
+            prescription_id: number;
+            patient_id: number;
+            warehouse_id: number;
+            dispensed_by: number;
+            authorized_by: number | null;
+            created_at: string;
+            lines: {
+                id: number;
+                prescription_item_id: number;
+                product_id: number;
+                lot_id: number;
+                lot_code: string;
+                expires_on: string;
+                quantity: number;
+                kardex_movement_id: number;
+            }[];
         };
         /** KardexMovementResource */
         KardexMovementResource: {
@@ -284,6 +422,76 @@ export interface components {
          * @enum {string}
          */
         MovementType: "entrada" | "salida_dispensacion" | "salida_traslado" | "entrada_traslado" | "ajuste";
+        /** PatientResource */
+        PatientResource: {
+            id: number;
+            document_type: string;
+            document_number: string;
+            full_name: string;
+            birth_date: string | null;
+            phone: string | null;
+            masked: boolean;
+            prescriptions?: {
+                id: number;
+                patient_id: number;
+                status: string;
+                valid_until: string;
+                created_at: string;
+                prescriber: {
+                    id: number;
+                    name: string;
+                };
+                items: {
+                    id: number;
+                    product: {
+                        id: number;
+                        code: string;
+                        name: string;
+                        is_controlled: boolean;
+                    };
+                    prescribed_quantity: number;
+                    dispensed_quantity: number;
+                    pending_quantity: number;
+                }[];
+            }[];
+        };
+        /** PrescriptionResource */
+        PrescriptionResource: {
+            id: number;
+            patient_id: number;
+            status: string;
+            valid_until: string;
+            created_at: string;
+            prescriber: {
+                id: number;
+                name: string;
+            };
+            items: {
+                id: number;
+                product: {
+                    id: number;
+                    code: string;
+                    name: string;
+                    is_controlled: boolean;
+                };
+                prescribed_quantity: number;
+                dispensed_quantity: number;
+                pending_quantity: number;
+            }[];
+        };
+        /**
+         * PreviewDispensationRequest
+         * @description Vista previa FEFO. El permiso (dispensations.create) lo exige la ruta (`can`), antes de validar. Cada ítem
+         *     pertenece a la prescripción indicada y no se repite.
+         */
+        PreviewDispensationRequest: {
+            prescription_id: number;
+            warehouse_id: number;
+            items: {
+                prescription_item_id: number;
+                quantity: number;
+            }[];
+        };
         /** ProductResource */
         ProductResource: {
             id: number;
@@ -306,6 +514,37 @@ export interface components {
             warehouse: components["schemas"]["WarehouseResource"];
             product: components["schemas"]["ProductSummaryResource"];
             lot: components["schemas"]["LotSummaryResource"];
+        };
+        /**
+         * StoreDispensationRequest
+         * @description Dispensación: las reglas de la vista previa más las credenciales opcionales del autorizador (RN-05). El
+         *     dispensador nunca se lee del cuerpo. La huella de idempotencia usa solo `dispensation()`: credenciales y
+         *     campos ajenos no la alteran (design D5).
+         */
+        StoreDispensationRequest: {
+            prescription_id: number;
+            warehouse_id: number;
+            items: {
+                prescription_item_id: number;
+                quantity: number;
+            }[];
+            authorizer_email?: string | null;
+            authorizer_password?: string | null;
+        };
+        /**
+         * StorePrescriptionRequest
+         * @description Alta de prescripción (prescriptions "Creación de prescripciones por el médico"): solo prescriptions.create.
+         *     `valid_until` ≥ hoy en Bogotá; 1 a 20 ítems sin producto repetido. El médico nunca se lee del cuerpo: solo
+         *     `prescription()` llega a la acción.
+         */
+        StorePrescriptionRequest: {
+            patient_id: number;
+            /** Format: date */
+            valid_until: string;
+            items: {
+                product_id: number;
+                quantity: number;
+            }[];
         };
         /**
          * StoreProductRequest
@@ -402,6 +641,155 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "dispensations.store": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Clave por usuario: repetir clave y cuerpo devuelve la respuesta original sin efectos nuevos. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreDispensationRequest"];
+            };
+        };
+        responses: {
+            /** @description Dispensación creada, o su repetición idéntica. */
+            201: {
+                headers: {
+                    /** @description Presente con valor true cuando la respuesta es la repetición de la original. */
+                    "Idempotent-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DispensationResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe; en la dispensación, con `shortages` por ítem. code: insufficient_stock */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description En este orden: clave de idempotencia ausente o mal formada (invalid_idempotency_key); datos inválidos (validation_failed, con errors); misma clave con otro cuerpo (idempotency_key_reused); coautorización de control especial (authorization_required, authorizer_must_differ, invalid_authorizer); prescripción (prescription_exhausted, prescription_expired, exceeds_prescription). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After. code: too_many_attempts */
+            429: {
+                headers: {
+                    /** @description Segundos hasta poder reintentar. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "dispensations.preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewDispensationRequest"];
+            };
+        };
+        responses: {
+            /** @description `DispensationPreviewResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DispensationPreviewResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos (code: validation_failed, con errors), o prescripción no dispensable (code: prescription_expired, prescription_exhausted, exceeds_prescription). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "kardex.index": {
         parameters: {
             query?: {
@@ -533,7 +921,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Demasiados intentos fallidos de login; ver Retry-After. code: too_many_attempts */
+            /** @description Demasiados intentos fallidos (login o autorizador de control especial); ver Retry-After. code: too_many_attempts */
             429: {
                 headers: {
                     /** @description Segundos hasta poder reintentar. */
@@ -660,6 +1048,170 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "patients.index": {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of `PatientResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PatientResource"][];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "patients.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PatientResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PatientResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Recurso inexistente. code: not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "prescriptions.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorePrescriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description `PrescriptionResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PrescriptionResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
                 };
             };
         };
@@ -935,7 +1487,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description La operación dejaría la existencia negativa o la existencia no existe. code: insufficient_stock */
+            /** @description La operación dejaría la existencia negativa o la existencia no existe; en la dispensación, con `shortages` por ítem. code: insufficient_stock */
             409: {
                 headers: {
                     [name: string]: unknown;
