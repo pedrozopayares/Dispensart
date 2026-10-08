@@ -146,3 +146,44 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Deuda (prosa): el humo de traslados resta 1 unidad por corrida a la existencia de origen de L-ACE-2402 en la base
   de desarrollo de larga vida; tras ~90 corridas FC/MED-001 bajaría de su mínimo (50) y la aserción de alertas
   «FC/MED-001 sin alerta» fallaría solo en esa base. En base nueva no aplica.
+
+## 2026-10-08 — backend-implementer: saneamiento de dos hallazgos menores de la auditoría S7 (asistente)
+
+Portador de deuda: este cambio (S8). DEBT.md no se toca: lo reconcilia el Orchestrator.
+
+**Filtro previo (pregunta sobre lo dispensado a una persona).** Decisión: patrón estrecho para `dispens`, amplio
+para `fórmula`. Motivo: el catálogo no tiene herramienta de dispensaciones, pero «¿cuánto acetaminofén hay
+disponible para dispensar en la farmacia central?» es inventario legítimo que hoy llega a `get_stock`; bloquear
+toda raíz `dispens` lo rompería. Se bloquea la dispensación dirigida a alguien: clítico `le`/`les` antes del verbo
+o destinatario `a`/`al`/`para` después. `formul` se bloquea entero salvo `formulario`; de paso `prescrip`→`prescri`
+(«prescribieron») y `receta`→`recet` («recetaron»). Ninguna pregunta de inventario del conjunto de evaluación ni de
+las pruebas usa esas raíces (barrido abajo). Fuga residual conocida: «¿qué dispensaciones tiene Ana Pérez?» (sin
+clítico ni destinatario) sigue llegando al proveedor; separar nombre propio de producto exige léxico, fuera de
+alcance. La defensa principal sigue siendo que ninguna herramienta devuelve datos de pacientes.
+
+**Nombre de herramienta inventado.** `ToolCallRecord::safeName` deja solo `[A-Za-z0-9_-]` y 64 caracteres; el
+sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no cambia (mismo contrato).
+
+| Escenario | Prueba | Archivo:línea |
+|---|---|---|
+| Lo dispensado a una persona sin «paciente»: out_of_scope, 0 llamadas al proveedor (HTTP) | `Lo dispensado a una persona sin decir "paciente"…` | `software/api/tests/Feature/Assistant/AssistantDefenseEndpointTest.php:92` |
+| Ídem a nivel de servicio, 5 filas nuevas (dispensado a/al, fórmula con y sin tilde, prescribieron) | dataset de `Pregunta sobre un paciente` | `software/api/tests/Feature/Assistant/AssistantOrchestratorTest.php:254` |
+| Inventario que nombra la dispensación llega a `get_stock` | `Pregunta de inventario que nombra la dispensación…` | `software/api/tests/Feature/Assistant/AssistantOrchestratorTest.php:261` |
+| Nombre inventado con saltos de línea y comillas saneado en `tool_calls` | `nombre de herramienta inventado: sin saltos…` | `software/api/tests/Feature/Assistant/AssistantOrchestratorTest.php:155` |
+| Ídem en la línea `assistant.query` y en la respuesta HTTP | `nombre de herramienta inventado por el modelo…` | `software/api/tests/Feature/Assistant/AssistantQueryLogTest.php:83` |
+| Entrada de evaluación nueva | `person-dispensed-without-keyword` | `software/api/resources/assistant/evaluation-set.json:179` |
+| Proveedor no disponible: filas sin proveedor = entradas `patient_question` (3) | `Proveedor no disponible` | `software/api/tests/Feature/Assistant/AssistantEvalCommandTest.php:124` |
+
+| Corrida delta | Resultado |
+|---|---|
+| Sin el cambio de producción (stash de los 3 archivos de `app/`), 3 archivos de prueba | 8 fallas / 34 pasan: 5 filas nuevas del dataset, 2 de nombre saneado, 1 HTTP; las 2 de inventario pasan (no regresión, esperado) |
+| Con el cambio: `tests/Feature/Assistant` + `tests/Arch` | 205 pasan / 0 fallas (876 aserciones) |
+| Pint `--test` | sale 0 (396 archivos) |
+| Larastan `--memory-limit=1G` | sale 0, sin errores |
+| `assistant:eval` con `mock` | 24/24 aciertos, sale 0 |
+
+| Barrido (`/usr/bin/grep`) | Resultado | Control positivo |
+|---|---|---|
+| `dispensaron\|dispensad\|para dispensar\|f[oó]rmula\|formul` en `app tests resources database` y `software/web/src`, `software/docker`, `.github` | solo preguntas de paciente ya bloqueadas y comentarios de dominio; ninguna pregunta de inventario | `AssistantOrchestratorTest.php` cuenta 1 `dispensaron` |
+| `$call->name` en `app/` (sumideros del nombre crudo) | solo búsqueda en el registro, construcción de `ToolCallRecord` y eco al proveedor en `OllamaLlmProvider:63` (no log ni respuesta) | 6 `new ToolCallRecord` en `app/` |
+| `Log::` en rutas del asistente | solo `AssistantQueryLogger` (lee `ToolCallRecord::$tool`) y `assistant.eval.drop_failed` sin contexto | — |
