@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { KardexQuery, LotQuery, StockQuery } from '@/lib/api-types'
+import type { KardexQuery, LotQuery, StockQuery, TransferQuery } from '@/lib/api-types'
 
 // Claves de consulta de TanStack Query (ADR-0003, design D7). Cada raíz agrupa un recurso para
 // invalidarlo completo tras una escritura.
@@ -13,6 +13,9 @@ export const queryKeys = {
   warehouses: () => ['catalog', 'warehouses'] as const,
   products: () => ['catalog', 'products'] as const,
   lots: (filters: LotQuery) => ['catalog', 'lots', filters] as const,
+  // Raíz `transfers`: listado y detalle se invalidan juntos tras cada acción de traslado.
+  transfers: (filters: TransferQuery) => ['transfers', 'list', filters] as const,
+  transfer: (transferId: number) => ['transfers', 'detail', transferId] as const,
 }
 
 // Raíces que cambian con toda escritura de stock (dispensación, ajuste, despacho, recepción).

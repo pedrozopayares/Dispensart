@@ -31,6 +31,9 @@ const messagesByCode: Record<string, string> = {
 export type DescribeOptions = {
   // Nombre del producto para `insufficient_stock` (la API devuelve solo `product_id`).
   productName?: (productId: number) => string | undefined
+  // Texto propio de una operación para un código (p. ej. `insufficient_stock` al despachar un
+  // traslado); siempre del módulo de textos.
+  overrides?: Partial<Record<string, string>>
 }
 
 // `true` si el error es un rechazo de la API con ese `code`.
@@ -39,10 +42,13 @@ export function hasCode(error: unknown, code: string): boolean {
 }
 
 // Texto en español para cualquier error; varias líneas separadas por salto de línea.
-export function describeError(error: unknown, { productName }: DescribeOptions = {}): string {
+export function describeError(error: unknown, { productName, overrides }: DescribeOptions = {}): string {
   // Un TypeError de `fetch` u otra excepción fuera del cliente: nunca su mensaje técnico.
   if (error instanceof TypeError) return strings.errors.network
   if (!(error instanceof ApiError)) return strings.errors.unexpected
+
+  const override = overrides?.[error.code]
+  if (override !== undefined) return override
 
   if (error.code === 'insufficient_stock') {
     if (error.shortages.length === 0) return strings.errors.insufficientStockGeneric

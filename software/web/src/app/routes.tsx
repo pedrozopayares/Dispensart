@@ -13,14 +13,16 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       // Cada pantalla de operación con su guarda, desde la tabla única (design D6).
-      ...screens.map(({ path, Component, abilities }) => ({
-        path,
-        element: (
-          <RequireAbility anyOf={abilities}>
-            <Component />
-          </RequireAbility>
-        ),
-      })),
+      ...screens.flatMap(({ path, Component, abilities, children = [] }) =>
+        [{ path, Component }, ...children].map((route) => ({
+          path: route.path,
+          element: (
+            <RequireAbility anyOf={abilities}>
+              <route.Component />
+            </RequireAbility>
+          ),
+        })),
+      ),
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

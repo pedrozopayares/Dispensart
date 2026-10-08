@@ -6,7 +6,8 @@ import { catalogRoutes, kardexPage, lots, stockRow, warehouses } from '@/test/fi
 import { renderAs } from '@/test/render'
 
 // Tarea 1.7 — operator-workspace › "Guarda de ruta por capacidad" (design D6).
-// Tarea 6.1 (parcial: Dispensación, Inventario y Kardex) — «Navegación por rol».
+// Tarea 6.1 — operator-workspace › «Navegación por rol» e «Inicio con accesos del rol»; app-shell ›
+// «Página de inicio sin pantallas aún» y «Página de inicio con saludo».
 
 const stockRoutes = {
   ...catalogRoutes(),
@@ -56,7 +57,9 @@ describe('guarda de ruta por capacidad', () => {
   })
 })
 
-describe('menú por rol (Dispensación, Inventario y Kardex)', () => {
+const ALL_FOUR = [strings.nav.dispensations, strings.nav.transfers, strings.nav.inventory, strings.nav.kardex]
+
+describe('menú por rol', () => {
   const menuOf = async () => {
     const header = await screen.findByRole('banner')
     await within(header).findByRole('button', { name: strings.shell.logout })
@@ -64,14 +67,19 @@ describe('menú por rol (Dispensación, Inventario y Kardex)', () => {
     return nav === null ? [] : within(nav).getAllByRole('link').map((link) => link.textContent)
   }
 
-  it('el auxiliar ve Dispensación, Inventario y Kardex, en ese orden', async () => {
+  it('Auxiliar ve sus cuatro pantallas, en ese orden', async () => {
     renderAs('auxiliar_farmacia', '/')
-    expect(await menuOf()).toEqual([strings.nav.dispensations, strings.nav.inventory, strings.nav.kardex])
+    expect(await menuOf()).toEqual(ALL_FOUR)
   })
 
-  it('el auditor ve Dispensación, Inventario y Kardex', async () => {
+  it('Auditor ve las cuatro en lectura', async () => {
     renderAs('auditor', '/')
-    expect(await menuOf()).toEqual([strings.nav.dispensations, strings.nav.inventory, strings.nav.kardex])
+    expect(await menuOf()).toEqual(ALL_FOUR)
+  })
+
+  it('el regente ve las cuatro pantallas', async () => {
+    renderAs('regente_farmacia', '/')
+    expect(await menuOf()).toEqual(ALL_FOUR)
   })
 
   it('Médico solo ve Dispensación', async () => {
@@ -99,5 +107,57 @@ describe('menú por rol (Dispensación, Inventario y Kardex)', () => {
     expect(router.state.location.pathname).toBe('/kardex')
     expect(screen.getByRole('link', { name: strings.nav.kardex })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: strings.nav.inventory })).not.toHaveAttribute('aria-current')
+  })
+})
+
+describe('inicio con accesos del rol', () => {
+  const shortcuts = async () => {
+    await screen.findByRole('heading', { name: /^Bienvenido, / })
+    const nav = screen.queryByRole('navigation', { name: strings.home.shortcuts })
+    return nav === null ? [] : within(nav).getAllByRole('link')
+  }
+
+  it('Accesos del regente: saludo y cuatro accesos que abren su pantalla', async () => {
+    const { router } = renderAs('regente_farmacia', '/', {
+      'GET /api/transfers': () => json(200, { data: [], links: {}, meta: { current_page: 1, last_page: 1 } }),
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Bienvenido, Regente Demo' })).toBeInTheDocument()
+    const links = await shortcuts()
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/dispensations',
+      '/transfers',
+      '/inventory',
+      '/kardex',
+    ])
+    expect(links[1]).toHaveTextContent(strings.nav.transfers)
+    expect(screen.queryByText(strings.home.emptyMessage)).not.toBeInTheDocument()
+
+    fireEvent.click(links[1])
+    expect(await screen.findByRole('heading', { name: strings.transfers.title })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/transfers')
+  })
+
+  it('Admin sin accesos: saludo y "Tu rol no tiene pantallas de operación en esta versión."', async () => {
+    renderAs('admin', '/')
+
+    expect(await screen.findByRole('heading', { name: 'Bienvenido, Administrador Demo' })).toBeInTheDocument()
+    expect(screen.getByText(strings.home.emptyMessage)).toBeInTheDocument()
+    expect(await shortcuts()).toEqual([])
+    expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
+  })
+
+  it('Página de inicio con saludo: el auxiliar no ve el estado vacío', async () => {
+    renderAs('auxiliar_farmacia', '/')
+
+    expect(await screen.findByRole('heading', { name: 'Bienvenido, Auxiliar Demo' })).toBeInTheDocument()
+    expect(await shortcuts()).toHaveLength(4)
+    expect(screen.queryByText(strings.home.emptyMessage)).not.toBeInTheDocument()
+  })
+
+  it('el médico ve solo el acceso a Dispensación', async () => {
+    renderAs('medico', '/')
+
+    expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/dispensations'])
   })
 })

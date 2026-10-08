@@ -58,3 +58,15 @@ export type Dispensation = ResponseOf<'/dispensations', 'post'>['data']
 // Tipado a mano: el documento publica `status` como `string`; los literales son los del enum
 // `PrescriptionStatus` de la API. Un valor fuera de la lista se muestra con la etiqueta genérica.
 export type PrescriptionStatus = 'vigente' | 'vencida' | 'agotada'
+
+// Traslados entre bodegas (S4).
+export type TransferPage = ResponseOf<'/transfers', 'get'>
+export type TransferSummary = TransferPage['data'][number]
+export type TransferQuery = QueryOf<'/transfers', 'get'>
+export type TransferStatus = TransferSummary['status']
+export type Transfer = ResponseOf<'/transfers/{transfer}', 'get'>['data']
+export type TransferLine = Transfer['lines'][number]
+export type TransferDiscrepancy = Transfer['discrepancies'][number]
+export type NewTransfer = BodyOf<'/transfers', 'post'>
+export type TransferReceipt = BodyOf<'/transfers/{transfer}/receive', 'post'>
+export type TransferVoid = BodyOf<'/transfers/{transfer}/void', 'post'>

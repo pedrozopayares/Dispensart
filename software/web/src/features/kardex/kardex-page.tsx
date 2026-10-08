@@ -3,8 +3,8 @@ import { EmptyState } from '@/components/empty-state'
 import { ErrorMessage } from '@/components/error-message'
 import { LoadingState } from '@/components/loading-state'
 import { PageHeader } from '@/components/page-header'
+import { Pagination } from '@/components/pagination'
 import { SelectFilter } from '@/components/select-filter'
-import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -23,9 +23,9 @@ import {
   type KardexFilters,
 } from '@/features/kardex/kardex-filters'
 import { useKardex } from '@/features/kardex/queries'
-import type { KardexMovement, KardexPage as KardexResult } from '@/lib/api-types'
+import type { KardexMovement } from '@/lib/api-types'
 import { formatDateTimeBogota, formatSignedQuantity } from '@/lib/format'
-import { format, strings } from '@/lib/strings'
+import { strings } from '@/lib/strings'
 
 // Pantalla Kardex (/kardex): historial inmutable de movimientos (RN-06). Filtros y página viven en la
 // URL para volver o compartir la vista; ninguna fila ofrece editar ni borrar.
@@ -86,7 +86,9 @@ export function KardexPage() {
         <>
           <MovementsTable movements={kardex.data.data} />
           <Pagination
-            meta={kardex.data.meta}
+            page={kardex.data.meta.current_page}
+            lastPage={kardex.data.meta.last_page}
+            label={strings.kardex.pagination}
             onPage={(page) => setParams(writeKardexFilters({ ...filters, page }))}
           />
         </>
@@ -138,33 +140,5 @@ function MovementsTable({ movements }: { movements: readonly KardexMovement[] })
         ))}
       </TableBody>
     </Table>
-  )
-}
-
-function Pagination({
-  meta,
-  onPage,
-}: {
-  meta: KardexResult['meta']
-  onPage: (page: number) => void
-}) {
-  const page = meta.current_page
-  return (
-    <nav className="flex items-center justify-end gap-3" aria-label={strings.kardex.pagination}>
-      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        {strings.common.previous}
-      </Button>
-      <span className="text-sm text-muted-foreground tabular-nums">
-        {format(strings.common.page, { page: String(page), total: String(meta.last_page) })}
-      </span>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page >= meta.last_page}
-        onClick={() => onPage(page + 1)}
-      >
-        {strings.common.next}
-      </Button>
-    </nav>
   )
 }
