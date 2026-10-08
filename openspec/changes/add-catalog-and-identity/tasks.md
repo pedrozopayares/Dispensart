@@ -9,7 +9,7 @@ en las de login, logout o CSRF (falso verde: el framework omite CSRF en pruebas 
 
 ## 0. Precondiciones (antes del apply)
 
-- [ ] 0.1 spec-engineer: delta `MODIFIED` de `runtime-environment` "Secretos fuera del repositorio" con la lista cerrada de valores por defecto de credencial de desarrollo (`DB_PASSWORD`, `SEED_USER_PASSWORD`) e inertes en producción (design D10); requiere S0 archivado. Cubre runtime-environment "Credencial reemplazable" (modificado) y seed-data "Producción sin contraseña explícita". Verifica: `openspec validate add-catalog-and-identity --strict` válido.
+- [x] 0.1 spec-engineer: delta `MODIFIED` de `runtime-environment` "Secretos fuera del repositorio" con la lista cerrada de valores por defecto de credencial de desarrollo (`DB_PASSWORD`, `SEED_USER_PASSWORD`) e inertes en producción (design D10); requiere S0 archivado. Cubre runtime-environment "Credencial reemplazable" (modificado) y seed-data "Producción sin contraseña explícita". Verifica: `openspec validate add-catalog-and-identity --strict` válido.
 
 ## 1. Base de datos
 

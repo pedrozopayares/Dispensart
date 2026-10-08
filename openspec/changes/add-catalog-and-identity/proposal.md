@@ -26,7 +26,7 @@ con datos sintéticos; S2–S7 dependen de los tres.
 - `app-shell`: login en la SPA, rutas protegidas, encabezado con sesión, expiración.
 
 ### Modified Capabilities
-- Ninguna hoy; tarea 0.1 añade `runtime-environment` cuando S0 se archive.
+- `runtime-environment`: "Secretos fuera del repositorio" admite la lista cerrada de valores por defecto de desarrollo `DB_PASSWORD` y `SEED_USER_PASSWORD` (design D10).
 
 ## Impact
 

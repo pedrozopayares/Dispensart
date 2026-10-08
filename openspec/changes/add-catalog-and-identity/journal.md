@@ -85,3 +85,18 @@ limitador por IP tras dos proxies (`TrustProxies` en rangos privados, revisar en
 - GATE 1: preaprobado (ROADMAP 2026-10-07), condiciones 1-4 OK, tier A
 - Candidato de deuda (cambio de rol con auditoría) queda fuera de alcance; se filará si una tajada lo
   descubre como necesario. Apply espera el archivo de S0.
+
+## 2026-10-07 — spec-engineer: tarea 0.1
+
+- Delta `MODIFIED` `specs/runtime-environment/spec.md`, "Secretos fuera del repositorio" (encabezado idéntico al
+  de la spec viva): lista cerrada `DB_PASSWORD` + `SEED_USER_PASSWORD`, inerte en producción (design D10). Bloque
+  completo copiado; "Credencial reemplazable" ampliado; dos escenarios nuevos. 0.1 `[x]`. Validación estricta: válida.
+
+## 2026-10-07 — Orchestrator: /apply
+
+- S0 archivado; specs vivas `runtime-environment`, `service-health`, `ci-pipeline`.
+- Preflight: stack compose sano (db, api, web `healthy`). Línea base de suites (corrida 1 de 3):
+  backend Pest 26 pasan / 143 aserciones; frontend Vitest 8 pasan.
+- Insumo heredado de S0: las pruebas fuerzan `APP_KEY` vacía; Sanctum con sesión por cookie necesita una
+  clave de prueba generada en tiempo de ejecución.
+- Tarea 0.1 (delta MODIFIED sobre `runtime-environment`) delegada al spec-engineer.
