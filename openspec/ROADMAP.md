@@ -8,7 +8,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 
 | # | Change id | Alcance | Partes / reglas | Tier | Estado |
 |---|---|---|---|---|---|
-| S0 | `add-project-skeleton` | Esqueletos de Laravel 13 y SPA React bajo `software/`, compose, `/health` y `/ready`, esqueleto de CI con lint y tests | D, E | B | propuesto |
+| S0 | `add-project-skeleton` | Esqueletos de Laravel 13 y SPA React bajo `software/`, compose, `/health` y `/ready`, esqueleto de CI con lint y tests | D, E | B | bloqueado: tipos *-implementer no registrados en la sesión; reiniciar Claude Code |
 | S1 | `add-catalog-and-identity` | Usuarios con 5 roles, autenticación Sanctum SPA, Policies, bodegas, productos, lotes, datos semilla | A, § 6 | A | pendiente |
 | S2 | `add-stock-and-kardex` | Existencias por bodega+producto+lote, kardex solo inserción, restricciones en DB, ajustes | A, RN-01, RN-06 | A | pendiente |
 | S3 | `add-dispensation` | Pacientes, prescripciones, asignación FEFO, bloqueo, idempotencia, coautorización de control especial, bitácora de acceso, enmascarado | A, RN-02..05, RN-09, RN-10 | A | pendiente |
