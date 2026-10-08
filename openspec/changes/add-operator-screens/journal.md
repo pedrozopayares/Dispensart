@@ -245,3 +245,54 @@ typecheck 0.
 **Deuda (prosa)**: `main.tsx` lanza un `Error` en español si falta `#root`; no es texto visible de la interfaz
 pero queda fuera del módulo de textos. Las alertas no siguen el filtro de producto de la tabla: el panel "Productos
 bajo mínimo" lista todos los productos de la bodega aunque la tabla muestre uno solo.
+
+## 2026-10-08 — Orchestrator: recorrido 7.1 sobre el stack (navegador, usuarios semilla)
+
+Stack: `api`, `db`, `web` sanos; imagen `web` reconstruida desde `6d16d4b`. Recorrido en Chrome sobre `http://localhost:8090`.
+
+| Rol | Menú visible | Pantalla fuera de su menú |
+|---|---|---|
+| auxiliar | Dispensación, Traslados, Inventario, Kardex | — |
+| regente | Dispensación, Traslados, Inventario, Kardex | — |
+| auditor | Dispensación, Traslados, Inventario, Kardex; detalle de traslado sin botones de acción | — |
+| médico | solo Dispensación | `/inventory`: «No tienes permiso para ver esta pantalla.» |
+| admin | «Sin pantallas de operación» | `/kardex`: «No tienes permiso para ver esta pantalla.» |
+
+| Flujo | Resultado |
+|---|---|
+| Dispensación de control especial (auxiliar; paciente sintético CC 9999010002, prescripción #2, Morfina 1 u. en Farmacia Urgencias) | vista previa FEFO L-MOR-2402; campos del regente autorizador visibles; con el regente semilla: «Dispensación registrada» |
+| Traslado #26 FC → Urgencias, L-IBU-2402 × 3 | auxiliar crea (Borrador) y solicita; el auxiliar no ve «Aprobar»; regente aprueba, despacha (diálogo de confirmación) y recibe 2 de 3: «Recibido parcial», discrepancia de 1 «Pendiente»; el lote vencido L-ACE-2401 no aparece entre los elegibles |
+| Inventario con alertas | 8 lotes por vencer o vencidos resaltados; panel «Productos bajo mínimo» con 3 filas |
+| Kardex | primera fila «Salida por dispensación», Urgencias, Morfina, L-MOR-2402, −1; tipos en español; hora local |
+
+Hallazgos (a corregir por el frontend-implementer antes del cierre):
+
+1. El correo del regente autorizador recibió el autocompletado del navegador (el correo del auxiliar en sesión) y el
+   primer intento devolvió 422. Faltan atributos `autocomplete` que eviten el autorrelleno en los campos del autorizador.
+2. Los enlaces-tarjeta de la página de inicio no tienen nombre accesible (el lector de pantalla los anuncia vacíos).
+3. Tras «Agregar lote», el mensaje «Agrega al menos un lote» sigue visible hasta el siguiente envío.
+
+## 2026-10-08 — frontend-implementer: hallazgos de 7.1, cierre de S6
+
+**Cerradas**: 7.1 (evidencia: tablas del recorrido del Orchestrator, arriba; mapeo en `verification.md` § 5.1). Todas las tareas `[x]`.
+
+| Hallazgo | Arreglo | Prueba nueva (falla sin el arreglo) |
+|---|---|---|
+| 1. correo del autorizador autorrellenado | contraseña del autorizador `autoComplete="new-password"`; correo ya en `"off"` | `dispensation-confirm.test.tsx:195` (mutación k) |
+| 2. enlaces-tarjeta del inicio sin nombre | `aria-label` = título de la pantalla, `aria-describedby` = descripción | `require-ability.test.tsx:147` (mutación l) |
+| 3. «Agrega al menos un lote.» persistente | «Agregar lote» retira solo el error de líneas | `transfers-page.test.tsx:164` (mutación m) |
+
+Deuda previa saldada: el `Error` de `main.tsx` sin `#root` lee `strings.app.missingRoot`.
+Ajuste de prueba existente: «abrir Kardex desde el menú» toma el enlace dentro del menú (el acceso del inicio ya se llama igual).
+
+**Ejecuciones**: delta de 3 archivos 56/57 → 57/57; mutaciones k+l+m a la vez 3/57 fallan, restauradas 57/57.
+**Corrida completa de cierre S6 (única)**: lint 0, typecheck 0, 219/219 (26 archivos), build OK. Backend: S6 no nombra corrida
+completa del backend; no se ejecuta.
+**Navegador**: imagen `web` reconstruida; Chromium sin interfaz confirma los tres arreglos (capturas `s6-fix-*.png`). El médico semilla
+creó las prescripciones sintéticas #13 y #14 (Morfina × 1, CC 9999010002) para que aparecieran los campos del autorizador; solo vista
+previa, nada dispensado.
+**Barridos 6.2 y 6.3** repetidos al cierre: 0 y 0, controles 1 y 2 (`verification.md` § 3).
+
+**Deuda (prosa)**: el navegador sin interfaz no guarda credenciales, así que el autorrelleno real de un perfil con contraseñas guardadas
+no se reprodujo: queda para el siguiente recorrido manual. Las alertas siguen sin el filtro de producto de la tabla (anotado en S5). El
+bloque de la SPA supera 500 kB sin división por ruta (no-objetivo del diseño).

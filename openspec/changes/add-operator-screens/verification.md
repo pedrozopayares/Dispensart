@@ -1,27 +1,21 @@
-# Verification — add-operator-screens (S6, tier B) — PARCIAL
+# Verification — add-operator-screens (S6, tier B)
 
-Aplicación temprana: S1–S5 contrastados; 4.2, 6.2 y 6.3 cerradas sobre el contrato de S5. 7.1 (humo) y el cierre completo quedan pendientes.
-Prefijos: `OW` operator-workspace, `DS` dispensation-screen (nivel de hook), `INV` inventory-screen, `TS` transfers-screen,
-`KDX` kardex-screen, `CIM` cimiento sin escenario. Rutas de prueba relativas a `software/web/src/`.
+Cierre de S6: 0–7 cerradas; 7.1 con el recorrido del Orchestrator (journal, 2026-10-08) y los 3 hallazgos corregidos (§ 5).
+Prefijos: `OW` operator-workspace, `DS` dispensation-screen, `INV` inventory-screen, `TS` transfers-screen,
+`KDX` kardex-screen, `AS` app-shell, `CIM` cimiento sin escenario, `RC` recorrido 7.1. Rutas de prueba relativas a `software/web/src/`.
 
 ## 0. Reparto de líneas
 
-Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo antes de los commits de S6, separado con `awk` por ruta.
+Comandos: `git diff --numstat ea2c38b 6d16d4b -- software/web` (S6 confirmado: de S1 al registro de S5) y `git diff --numstat HEAD -- software/web`
+(esta corrección, antes de su commit), clasificados con `awk` por ruta. Registro: `wc -l` de `*.md` del cambio (incluidas las deltas de `specs/`)
+tras escribir este archivo.
 
-| Categoría | Alcance | Líneas añadidas |
-|---|---|---|
-| Producto — SPA | `src/**` sin pruebas ni `components/ui` | 1163 |
-| Prueba — SPA | `src/**/*.test.*`, `src/test/**` | 1174 |
-| Generado | `src/components/ui/{table,native-select,alert-dialog}.tsx` (shadcn CLI) | 370 |
-| Producto — SPA, Dispensación (S3) | `features/dispensations/*.ts(x)` sin pruebas + cambios en `lib/`, `app/` | 1045 nuevas + 146 modificadas |
-| Prueba — SPA, Dispensación (S3) | `features/dispensations/*.test.*`, `test/dispensation-fixtures.ts`, ajustes de menú y `shortages` | 1007 nuevas + 20 modificadas |
-| Generado — tipos | `src/lib/api-schema.ts` (`npm run api:types`, commit propio) | 554 |
-| Producto — SPA, Traslados (S4) | `features/transfers/*.ts(x)` sin pruebas + `components/pagination.tsx` (nuevas); `lib/`, `app/`, `home`, `kardex` (modificadas) | 1172 nuevas + 233 / −58 modificadas |
-| Prueba — SPA, Traslados (S4) | `features/transfers/*.test.*`, `test/transfer-fixtures.ts` (nuevas); `app/require-ability.test.tsx` (modificada) | 740 nuevas + 66 / −6 modificadas |
-| Generado — Traslados | `src/lib/api-schema.ts` (`npm run api:types`, commit propio) · `components/ui/textarea.tsx` (shadcn CLI) | 946 · 17 |
-| Producto — SPA, Alertas y privacidad (S5) | `features/inventory/{alert-index.ts,inventory-alerts.tsx}` (nuevas); `inventory-page.tsx`, `api.ts`, `queries.ts`, `lib/{api-types,query-keys,strings}.ts`, `components/error-message.tsx`, `eslint.config.js` (modificadas) | 115 nuevas + 103 / −39 modificadas |
-| Prueba — SPA, Alertas y privacidad (S5) | `features/inventory/inventory-alerts.test.tsx`, `test/console-spy.ts` (nuevas); `test/fixtures.ts`, `inventory/{api,inventory-page}.test.*`, `app/require-ability.test.tsx`, `dispensations/dispensation-page.test.tsx` (modificadas) | 213 nuevas + 75 / −10 modificadas |
-| Registro — Alertas y privacidad (S5) | `tasks.md`, `journal.md`, `verification.md` de este cambio | ver `git show --numstat` del commit de registro |
+| Categoría | Alcance | S6 confirmado (+/−) | Corrección 7.1 (+/−) | Total añadidas |
+|---|---|---|---|---|
+| Producto | `src/**` sin pruebas, `components/ui` ni `api-schema.ts`; `eslint.config.js`, `package.json` | +3887 / −65 | +33 / −17 | 3920 |
+| Prueba | `src/**/*.test.*`, `src/test/**` | +3264 / −4 | +48 / −1 | 3312 |
+| Generado | `components/ui/**` (shadcn CLI), `lib/api-schema.ts` (`api:types`), `package-lock.json` | +2907 / −56 | 0 | 2907 |
+| Registro | `proposal.md`, `design.md`, `tasks.md`, `journal.md`, `verification.md`, `specs/*/spec.md` del cambio | — | — | 1482 líneas |
 
 ## 1. Matriz escenario → prueba → archivo:línea
 
@@ -72,7 +66,7 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | DS-12 | Datos enmascarados: Auditor sin forma de desenmascarar | Auditor sin forma de desenmascarar | features/dispensations/dispensation-page.test.tsx:125 |
 | DS-13 | Datos enmascarados: Auxiliar ve datos en claro | Auxiliar ve datos en claro | features/dispensations/dispensation-page.test.tsx:135 |
 | DS-14 | Prescripciones: Prescripción vigente elegible | Prescripción vigente elegible | features/dispensations/dispensation-page.test.tsx:146 |
-| DS-15 | Prescripciones: Vencida y agotada no elegibles | Vencida y agotada | features/dispensations/dispensation-page.test.tsx:166 |
+| DS-15 | Prescripciones: Prescripciones vencida y agotada no elegibles | Vencida y agotada | features/dispensations/dispensation-page.test.tsx:166 |
 | DS-16 | Prescripciones: Paciente sin prescripciones | Paciente sin prescripciones | features/dispensations/dispensation-page.test.tsx:185 |
 | DS-17 | Prescripciones: Fallo al cargar la ficha | Fallo al cargar la ficha | features/dispensations/dispensation-page.test.tsx:192 |
 | DS-18 | Modo consulta: Auditor en modo consulta · Médico en modo consulta | `it.each` auditor, medico (+ control positivo :229) | features/dispensations/dispensation-page.test.tsx:215 |
@@ -84,22 +78,22 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | DS-24 | Vista previa FEFO: Vista previa desactualizada | Vista previa desactualizada | features/dispensations/dispensation-confirm.test.tsx:137 |
 | DS-25 | Vista previa FEFO: Prescripción que cambió de estado | `it.each` 3 códigos | features/dispensations/dispensation-confirm.test.tsx:154 |
 | DS-26 | Coautorización: Campos de autorizador visibles | Campos visibles | features/dispensations/dispensation-confirm.test.tsx:185 |
-| DS-27 | Coautorización: Sin control especial no se piden | Sin control especial | features/dispensations/dispensation-confirm.test.tsx:193 |
-| DS-28 | Coautorización: Campos del autorizador vacíos | Campos vacíos | features/dispensations/dispensation-confirm.test.tsx:209 |
-| DS-29 | Coautorización: Autorizador inválido | Autorizador inválido | features/dispensations/dispensation-confirm.test.tsx:221 |
-| DS-30 | Coautorización: Autorizador igual al dispensador | Igual al dispensador | features/dispensations/dispensation-confirm.test.tsx:237 |
-| DS-31 | Coautorización: Autorización requerida por el servidor | Requerida por el servidor | features/dispensations/dispensation-confirm.test.tsx:247 |
-| DS-32 | Coautorización: Demasiados intentos del autorizador | Demasiados intentos | features/dispensations/dispensation-confirm.test.tsx:263 |
-| DS-33 | Confirmación idempotente: Dispensación exitosa (+ OW «Almacenamiento del navegador vacío de pacientes») | Dispensación exitosa | features/dispensations/dispensation-confirm.test.tsx:277 |
-| DS-34 | Confirmación idempotente: Doble clic en Confirmar | Doble clic | features/dispensations/dispensation-confirm.test.tsx:305 |
-| DS-35 | Confirmación idempotente: Reintento tras fallo de red reutiliza la clave | Reintento tras fallo de red | features/dispensations/dispensation-confirm.test.tsx:325 |
-| DS-36 | Confirmación idempotente: Respuesta repetida tratada como éxito | Respuesta repetida | features/dispensations/dispensation-confirm.test.tsx:344 |
-| DS-37 | Confirmación idempotente: Reintento tras autorizador corregido reutiliza la clave | Autorizador corregido | features/dispensations/dispensation-confirm.test.tsx:357 |
-| DS-38 | Confirmación idempotente: Cambio de cantidad genera clave nueva | Cambio de cantidad | features/dispensations/dispensation-confirm.test.tsx:379 |
-| DS-39 | Confirmación idempotente: Nueva dispensación genera clave nueva | Nueva dispensación | features/dispensations/dispensation-confirm.test.tsx:404 |
-| DS-40 | Confirmación idempotente: Stock agotado entre la vista previa y la confirmación | Stock agotado | features/dispensations/dispensation-confirm.test.tsx:425 |
-| DS-41 | Confirmación idempotente: Clave reutilizada con otros datos | Clave reutilizada | features/dispensations/dispensation-confirm.test.tsx:446 |
-| DS-42 | Confirmación idempotente: Sesión del dispensador sin permiso | Sin permiso | features/dispensations/dispensation-confirm.test.tsx:467 |
+| DS-27 | Coautorización: Sin control especial no se piden | Sin control especial | features/dispensations/dispensation-confirm.test.tsx:204 |
+| DS-28 | Coautorización: Campos del autorizador vacíos | Campos vacíos | features/dispensations/dispensation-confirm.test.tsx:220 |
+| DS-29 | Coautorización: Autorizador inválido | Autorizador inválido | features/dispensations/dispensation-confirm.test.tsx:232 |
+| DS-30 | Coautorización: Autorizador igual al dispensador | Igual al dispensador | features/dispensations/dispensation-confirm.test.tsx:248 |
+| DS-31 | Coautorización: Autorización requerida por el servidor | Requerida por el servidor | features/dispensations/dispensation-confirm.test.tsx:258 |
+| DS-32 | Coautorización: Demasiados intentos del autorizador | Demasiados intentos | features/dispensations/dispensation-confirm.test.tsx:274 |
+| DS-33 | Confirmación idempotente: Dispensación exitosa (+ OW «Almacenamiento del navegador vacío de pacientes») | Dispensación exitosa | features/dispensations/dispensation-confirm.test.tsx:288 |
+| DS-34 | Confirmación idempotente: Doble clic en Confirmar | Doble clic | features/dispensations/dispensation-confirm.test.tsx:316 |
+| DS-35 | Confirmación idempotente: Reintento tras fallo de red reutiliza la clave | Reintento tras fallo de red | features/dispensations/dispensation-confirm.test.tsx:336 |
+| DS-36 | Confirmación idempotente: Respuesta repetida tratada como éxito | Respuesta repetida | features/dispensations/dispensation-confirm.test.tsx:355 |
+| DS-37 | Confirmación idempotente: Reintento tras autorizador corregido reutiliza la clave | Autorizador corregido | features/dispensations/dispensation-confirm.test.tsx:368 |
+| DS-38 | Confirmación idempotente: Cambio de cantidad genera clave nueva | Cambio de cantidad | features/dispensations/dispensation-confirm.test.tsx:390 |
+| DS-39 | Confirmación idempotente: Nueva dispensación genera clave nueva | Nueva dispensación | features/dispensations/dispensation-confirm.test.tsx:415 |
+| DS-40 | Confirmación idempotente: Stock agotado entre la vista previa y la confirmación | Stock agotado | features/dispensations/dispensation-confirm.test.tsx:436 |
+| DS-41 | Confirmación idempotente: Clave reutilizada con otros datos | Clave reutilizada | features/dispensations/dispensation-confirm.test.tsx:457 |
+| DS-42 | Confirmación idempotente: Sesión del dispensador sin permiso | Sin permiso | features/dispensations/dispensation-confirm.test.tsx:478 |
 | OW-15 | Datos del paciente fuera del navegador: URL sin datos personales | Selección con teclado (URL) | features/dispensations/dispensation-page.test.tsx:95 |
 | OW-16 | Datos del paciente fuera del navegador: Error durante una consulta de paciente (6.2) | Fallo de la búsqueda (espía de consola `test/console-spy.ts`) | features/dispensations/dispensation-page.test.tsx:72 |
 | OW-17 | Navegación por rol: Auxiliar ve sus cuatro pantallas | Auxiliar ve sus cuatro pantallas, en ese orden | app/require-ability.test.tsx:72 |
@@ -107,9 +101,9 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | OW-19 | Navegación por rol: Médico solo ve Dispensación | Médico solo ve Dispensación | app/require-ability.test.tsx:87 |
 | OW-20 | Navegación por rol: Admin sin pantallas de operación | Admin sin pantallas | app/require-ability.test.tsx:92 |
 | OW-21 | Navegación por rol: Navegación con teclado | abrir Kardex desde el menú lo marca como página actual | app/require-ability.test.tsx:97 |
-| OW-22 | Inicio con accesos del rol: Accesos del regente | Accesos del regente (+ menú del regente :82) | app/require-ability.test.tsx:122 |
-| OW-23 | Inicio con accesos del rol: Admin sin accesos (+ app-shell «Página de inicio sin pantallas aún», también app/shell-header.test.tsx:39) | Admin sin accesos | app/require-ability.test.tsx:143 |
-| OW-24 | app-shell «Página de inicio con saludo» | Página de inicio con saludo (+ médico solo Dispensación :160) | app/require-ability.test.tsx:152 |
+| OW-22 | Inicio con accesos del rol: Accesos del regente | Accesos del regente (+ menú del regente :82) | app/require-ability.test.tsx:124 |
+| OW-23 | Inicio con accesos del rol: Admin sin accesos (+ app-shell «Página de inicio sin pantallas aún», también app/shell-header.test.tsx:39) | Admin sin accesos | app/require-ability.test.tsx:162 |
+| OW-24 | app-shell «Página de inicio con saludo» | Página de inicio con saludo (+ médico solo Dispensación :179) | app/require-ability.test.tsx:171 |
 | TS-01 | Listado: Listado con estados en español | Listado con estados en español | features/transfers/transfers-page.test.tsx:56 |
 | TS-02 | Listado: Filtro por estado | Filtro por estado (consulta enviada y vuelta a página 1) | features/transfers/transfers-page.test.tsx:72 |
 | TS-03 | Listado: Sin traslados | Sin traslados | features/transfers/transfers-page.test.tsx:89 |
@@ -120,10 +114,10 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | TS-08 | Creación: Borrador creado | Borrador creado | features/transfers/transfers-page.test.tsx:109 |
 | TS-09 | Creación: Lotes vencidos fuera de la lista | Lotes vencidos fuera | features/transfers/transfers-page.test.tsx:129 |
 | TS-10 | Creación: Destino igual al origen | Destino igual al origen | features/transfers/transfers-page.test.tsx:141 |
-| TS-11 | Creación: Sin líneas o cantidad inválida | Sin líneas · `it.each` '', '0', '1.5' | features/transfers/transfers-page.test.tsx:152, :163 |
-| TS-12 | Creación: Doble clic en Crear traslado | Doble clic en Crear traslado | features/transfers/transfers-page.test.tsx:174 |
-| TS-13 | Creación: Lote vencido al crear | Lote vencido al crear | features/transfers/transfers-page.test.tsx:190 |
-| TS-14 | Creación: Sin capacidad de crear | Sin capacidad de crear (control positivo: el auxiliar abre el formulario en :109) | features/transfers/transfers-page.test.tsx:203 |
+| TS-11 | Creación: Sin líneas o cantidad inválida | Sin líneas · `it.each` '', '0', '1.5' | features/transfers/transfers-page.test.tsx:152, :180 |
+| TS-12 | Creación: Doble clic en Crear traslado | Doble clic en Crear traslado | features/transfers/transfers-page.test.tsx:191 |
+| TS-13 | Creación: Lote vencido al crear | Lote vencido al crear | features/transfers/transfers-page.test.tsx:207 |
+| TS-14 | Creación: Sin capacidad de crear | Sin capacidad de crear (control positivo: el auxiliar abre el formulario en :109) | features/transfers/transfers-page.test.tsx:220 |
 | TS-15 | Acciones: Solicitante no ve Aprobar | Solicitante no ve Aprobar | features/transfers/transfer-detail.test.tsx:96 |
 | TS-16 | Acciones: Otro regente aprueba | Otro regente aprueba | features/transfers/transfer-detail.test.tsx:103 |
 | TS-17 | Acciones: Auxiliar no ve Aprobar | Auxiliar no ve Aprobar | features/transfers/transfer-detail.test.tsx:117 |
@@ -149,6 +143,14 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | INV-10 | Alertas: Producto bajo mínimo sin existencias | disponible 0 | features/inventory/inventory-alerts.test.tsx:155 |
 | INV-11 | Alertas: Sin alertas | Sin alertas | features/inventory/inventory-alerts.test.tsx:167 |
 | INV-12 | Alertas: Alertas fallan y existencias no | tabla completa + "Reintentar" con la misma consulta | features/inventory/inventory-alerts.test.tsx:180 |
+| AS-01 | app-shell «Encabezado con sesión y cierre»: Etiqueta de rol en español (sin cambio, S1) | Etiqueta de rol en español | app/shell-header.test.tsx:30 |
+| AS-02 | app-shell: Cierre exitoso (sin cambio, S1) | Cierre exitoso | app/shell-header.test.tsx:46 |
+| AS-03 | app-shell: Doble clic en cerrar sesión (sin cambio, S1) | Doble clic en cerrar sesión | app/shell-header.test.tsx:59 |
+| AS-04 | app-shell: Cierre fallido (sin cambio, S1) | `it.each` cierre fallido | app/shell-header.test.tsx:76 |
+| AS-05 | app-shell: Otro usuario no ve datos del anterior (sin cambio, S1) | Otro usuario no ve datos del anterior | app/shell-header.test.tsx:103 |
+| OW-26 | Inicio con accesos del rol (hallazgo 2 de 7.1): cada acceso con nombre accesible | cada acceso del inicio se nombra con el título de su pantalla (nombre exacto + descripción aparte) | app/require-ability.test.tsx:147 |
+| DS-43 | Coautorización: Campos de autorizador visibles (hallazgo 1 de 7.1: sin autorrelleno) | Campos del autorizador sin autorrelleno del navegador | features/dispensations/dispensation-confirm.test.tsx:195 |
+| TS-32 | Creación: Sin líneas o cantidad inválida (hallazgo 3 de 7.1: el mensaje se retira al agregar línea) | "Agrega al menos un lote." desaparece al agregar una línea | features/transfers/transfers-page.test.tsx:164 |
 
 | Cimiento | Prueba | Archivo:línea |
 |---|---|---|
@@ -173,6 +175,9 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | h | `inventory-page.tsx`: fallo de alertas oculta la tabla de existencias | 1/18: Alertas fallan y existencias no | 18/18 |
 | i | `alert-index.ts`: marca "Bajo mínimo" siempre falsa | 1/18: Producto bajo mínimo | 18/18 |
 | j | `dispensations/queries.ts`: `console.error` con el término al fallar la búsqueda | 1/1 (`-t "Fallo de la búsqueda"`): la consola recibió una llamada; `eslint` 1 error `no-console` | 15/15 (archivo completo) |
+| k | `dispensation-form.tsx`: contraseña del autorizador con `autoComplete="off"` (antes del arreglo) | corrida única con k, l y m aplicadas a la vez (delta de 3 archivos): 3/57 fallan, cada mutación tumba solo su prueba — aquí: Campos del autorizador sin autorrelleno | 57/57 |
+| l | `home-page.tsx`: enlaces-tarjeta sin `aria-label` ni `aria-describedby` | misma corrida que k: cada acceso del inicio se nombra con el título | 57/57 |
+| m | `transfer-form.tsx`: "Agregar lote" sin retirar el error de líneas | misma corrida que k: "Agrega al menos un lote." desaparece | 57/57 |
 
 ### 2.1 `[MUT]` declarados (archivo `features/dispensations/dispensation-confirm.test.tsx`, 26 pruebas)
 
@@ -218,6 +223,13 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | Privacidad 6.2 | `/usr/bin/grep -rnE 'console\.\|localStorage\|sessionStorage' web/src`, sin `.test.` ni `src/test/` | 0 | mismo barrido sobre `src/test/` → 1 (`test/console-spy.ts:12`, el espía) |
 | Textos literales 6.3 (cierre) | `/usr/bin/grep -rnE --include='*.tsx' --exclude='*.test.tsx' '<patrón 6.3>' web/src` | 0 coincidencias (exit 1) | `printf '<p>Texto literal</p>\n<input placeholder="Buscar" />\n' \| grep -cE '<patrón 6.3>'` → 2 |
 | Textos literales, barrido complementario | `/usr/bin/grep -rnE` de cadenas entre comillas que empiezan con mayúscula y palabra, en `.ts`/`.tsx` sin pruebas, `strings.ts` ni `api-schema.ts` | 1 fuera de `src/test/`: `main.tsx:10` (`Error` de arranque sin `#root`, nunca visible en la interfaz) | 17 en `src/test/` (datos sintéticos de fixtures) |
+| Delta de los hallazgos 7.1 (desarrollo) | `npx vitest --run src/features/transfers/transfers-page.test.tsx src/app/require-ability.test.tsx src/features/dispensations/dispensation-confirm.test.tsx` | 56/57 → 57/57: "abrir Kardex desde el menú" encontraba dos enlaces "Kardex" (menú + acceso ya nombrado); la prueba toma el del menú | mutaciones k–m § 2 |
+| Privacidad 6.2 (cierre S6) | `/usr/bin/grep -rnE 'console\.\|localStorage\|sessionStorage' web/src \| /usr/bin/grep -vE '\.test\.\|web/src/test/'` | 0 (exit 1) | mismo barrido sobre `web/src/test/` → 1 (`test/console-spy.ts:12`) |
+| Textos literales 6.3 (cierre S6) | `/usr/bin/grep -rnE --include='*.tsx' --exclude='*.test.tsx' '<patrón 6.3>' web/src` | 0 (exit 1) | `printf '<p>Texto literal</p>\n<input placeholder="Buscar" />\n' \| /usr/bin/grep -cE '<patrón 6.3>'` → 2 |
+| Texto de arranque fuera del módulo | `/usr/bin/grep -nE "'[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+ " web/src/main.tsx` | 0 (exit 1): el `Error` sin `#root` lee `strings.app.missingRoot` | mismo patrón sobre `web/src/lib/strings.ts` → 165 |
+| `fetch` fuera del cliente (cierre S6) | `/usr/bin/grep -rnE '(^\|[^a-zA-Z])fetch\(' web/src/features web/src/components` | 0 (exit 1) | `web/src/lib/api.ts` → 1 |
+| **Cierre S6 (corrida completa única)** | `npm run lint && npm run typecheck && npm test -- --run && npm run build` | exit 0: lint 0, tsc 0, **219/219 (26 archivos)**, build OK (aviso conocido de bloque > 500 kB) | — |
+| Corrida completa del backend | ninguna tarea de S6 la nombra (solo `software/web`, sin endpoints nuevos ni cambiados) | no se ejecuta | — |
 
 ## 4. Humo renderizado (http://localhost:8090, contenedor `web` reconstruido)
 
@@ -242,3 +254,50 @@ Comando: `git diff --numstat -- src package.json` sobre el árbol de trabajo ant
 | auxiliar_farmacia | — | /transfers/23 → Despachar | diálogo "El stock saldrá de Farmacia Central y quedará en tránsito."; 200; "En tránsito" | captures/s6-traslado-despacho-dialogo.png |
 | auxiliar_farmacia | — | /transfers/23 → Recibir 2 de 3 | aviso de discrepancia antes de confirmar; 200; "Recibido parcial"; discrepancia faltante 1 "Pendiente"; 0 claves en almacenamiento | captures/s6-traslado-recepcion-parcial-aviso.png, captures/s6-traslado-recibido-parcial-discrepancia.png |
 | los 3 anteriores | — | URL tras abrir ficha | `/dispensations` sin consulta; foco inicial en la búsqueda; 0 claves en `localStorage`/`sessionStorage` | — |
+
+## 5. Recorrido 7.1 y corrección de sus hallazgos
+
+### 5.1 Escenarios de 7.1 → fila del recorrido (tablas del Orchestrator en `journal.md`, sección «recorrido 7.1», 2026-10-08)
+
+| Id | Escenario extremo a extremo | Fila del recorrido | Resultado |
+|---|---|---|---|
+| RC-01 | operator-workspace «Navegación por rol: Auxiliar ve sus cuatro pantallas» | rol × menú: auxiliar | Dispensación, Traslados, Inventario, Kardex |
+| RC-02 | «Navegación por rol: Auditor ve las cuatro en lectura» | rol × menú: auditor | cuatro pantallas; detalle de traslado sin botones de acción |
+| RC-03 | «Navegación por rol: Médico solo ve Dispensación» | rol × menú: médico | solo Dispensación; `/inventory` → «No tienes permiso para ver esta pantalla.» |
+| RC-04 | «Navegación por rol: Admin sin pantallas de operación» | rol × menú: admin | «Sin pantallas de operación»; `/kardex` → guarda |
+| RC-05 | dispensation-screen «Coautorización de control especial: Campos de autorizador visibles» | flujo: dispensación de control especial | campos del regente visibles tras la vista previa FEFO L-MOR-2402 (hallazgo 1, § 5.2) |
+| RC-06 | «Confirmación idempotente: Dispensación exitosa» | flujo: dispensación de control especial | «Dispensación registrada» con el regente semilla |
+| RC-07 | transfers-screen «Recepción por línea: Recepción parcial» | flujo: traslado #26 | recibe 2 de 3: «Recibido parcial» |
+| RC-08 | «Detalle con estado y discrepancias: Recibido parcial con discrepancias» | flujo: traslado #26 | discrepancia de 1 «Pendiente»; el auxiliar no ve «Aprobar»; L-ACE-2401 vencido no elegible |
+| RC-09 | inventory-screen «Alertas de vencimiento y stock mínimo: Lote por vencer resaltado» | flujo: inventario con alertas | 8 lotes resaltados; «Productos bajo mínimo» con 3 filas |
+| RC-10 | kardex-screen «Historial de movimientos filtrable: Tipos en español» | flujo: kardex | «Salida por dispensación», Urgencias, Morfina, L-MOR-2402, −1; hora local |
+
+### 5.2 Hallazgos del recorrido → arreglo → prueba → comprobación renderizada
+
+Comprobación renderizada: imagen `web` reconstruida (`docker compose up -d --build --no-deps --wait web`, `/ready` 200), Chromium sin
+interfaz (playwright-core 1.61.0) con contexto nuevo, usuarios semilla. Para que aparezcan los campos del autorizador el médico semilla creó por
+`POST /api/prescriptions` prescripciones sintéticas de Morfina × 1 para CC 9999010002 (#13 y #14, 201): la semilla ya no tenía ítems de control
+especial pendientes. Solo vista previa, sin dispensar.
+
+| n | Hallazgo | Arreglo | Prueba (falla sin el arreglo: mutación § 2) | Navegador | Captura |
+|---|---|---|---|---|---|
+| 1 | correo del autorizador autorrellenado con el del usuario en sesión → 422 | contraseña del autorizador `autoComplete="new-password"` (el correo ya tenía `"off"`, que Chrome ignora en un par correo + contraseña) | DS-43 (k) | `autocomplete` correo `off`, contraseña `new-password`; ambos vacíos | captures/s6-fix-autorizador-sin-autorrelleno.png |
+| 2 | enlaces-tarjeta del inicio sin nombre accesible | `aria-label` = título de la pantalla; `aria-describedby` → descripción de la tarjeta | OW-26 (l) | 4/4 accesos hallados por rol `link` y nombre exacto, con descripción | captures/s6-fix-inicio-accesos-nombrados.png |
+| 3 | «Agrega al menos un lote.» visible tras «Agregar lote» | «Agregar lote» retira solo el error de líneas; los demás esperan al siguiente envío | TS-32 (m) | mensaje 1 → 0 tras «Agregar lote», sin otro envío | captures/s6-fix-traslado-error-lineas-retirado.png |
+
+Límite: el contexto sin interfaz no guarda credenciales, así que el navegador comprueba los atributos y los campos vacíos, no el autorrelleno
+real de un perfil con contraseñas guardadas.
+
+### 5.3 Cobertura de escenarios
+
+| Delta | Escenarios | Con prueba en § 1 | Solo recorrido | Sin cubrir |
+|---|---|---|---|---|
+| app-shell | 7 | 7 | 0 | 0 |
+| dispensation-screen | 38 | 38 | 0 | 0 |
+| inventory-screen | 11 | 11 | 0 | 0 |
+| kardex-screen | 11 | 11 | 0 | 0 |
+| operator-workspace | 24 | 24 | 0 | 0 |
+| transfers-screen | 32 | 32 | 0 | 0 |
+
+Comprobación: script que busca el nombre literal de cada `#### Scenario:` de `specs/*/spec.md` en este archivo → 0 ausentes tras añadir AS-01–05
+y renombrar DS-15 (antes: 6 ausentes; control positivo del script).
