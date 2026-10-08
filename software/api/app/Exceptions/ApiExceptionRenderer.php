@@ -26,6 +26,8 @@ final class ApiExceptionRenderer
             $e instanceof TooManyLoginAttempts => self::error(
                 'too_many_attempts', 429, headers: ['Retry-After' => (string) $e->retryAfterSeconds],
             ),
+            $e instanceof InsufficientStock => self::error('insufficient_stock', 409),
+            $e instanceof LotExpired => self::error('lot_expired', 422),
             $e instanceof HttpExceptionInterface => self::error(
                 self::codeForStatus($e->getStatusCode()), $e->getStatusCode(), headers: $e->getHeaders(),
             ),

@@ -1,7 +1,9 @@
 <?php
 
 use App\Exceptions\ApiExceptionRenderer;
+use App\Exceptions\InsufficientStock;
 use App\Exceptions\InvalidCredentials;
+use App\Exceptions\LotExpired;
 use App\Exceptions\TooManyLoginAttempts;
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\ValidateCsrfToken;
@@ -47,7 +49,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Rechazos de negocio esperados: no son fallos del sistema, no se reportan.
-        $exceptions->dontReport([InvalidCredentials::class, TooManyLoginAttempts::class]);
+        $exceptions->dontReport([
+            InvalidCredentials::class, TooManyLoginAttempts::class, InsufficientStock::class, LotExpired::class,
+        ]);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Catalog\LotController;
 use App\Http\Controllers\Catalog\ProductController;
 use App\Http\Controllers\Catalog\WarehouseController;
+use App\Http\Controllers\Inventory\KardexController;
+use App\Http\Controllers\Inventory\StockAdjustmentController;
+use App\Http\Controllers\Inventory\StockController;
 use App\Http\Controllers\Users\UserController;
 use App\Models\Product;
 use App\Models\User;
@@ -36,4 +39,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::patch('/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');
 
     Route::get('/lots', LotController::class)->name('lots.index');
+
+    // Inventario (S2). El kardex no tiene ruta de edición ni borrado: es de solo inserción (RN-06).
+    Route::get('/stock', StockController::class)->name('stock.index');
+    Route::get('/kardex', KardexController::class)->name('kardex.index');
+    Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
 });
