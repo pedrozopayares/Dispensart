@@ -142,5 +142,9 @@ jobs:
       - name: Tipos (tsc)
         run: npm run typecheck
 
+      # Tipos de la API derivados del contrato: falla si openapi.json cambió sin regenerar api-schema.ts.
+      - name: Tipos de la API sin deriva (openapi-typescript)
+        run: npm run api:types:check
+
       - name: Pruebas (Vitest)
         run: npm test -- --run
