@@ -27,7 +27,7 @@ services:
       # Crea la base de pruebas dispensart_test al inicializar un volumen vacío (design D3).
       - ./docker/db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -61,6 +61,14 @@ services:
       SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:${WEB_PORT:-8090},127.0.0.1:${WEB_PORT:-8090}}
       # Proxies cuyo X-Forwarded-* se acepta: la red interna de compose (web) (design D3).
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      # Asistente (S7): mock por defecto, sin red ni llaves. ollama = modelo local del anfitrión, sin costo.
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-30}
+    # host.docker.internal también en Linux (Docker Desktop ya lo resuelve): Ollama corre en el anfitrión.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - api_state:/var/lib/dispensart
     # Sin ports: solo alcanzable por la red interna, a través de web.
@@ -117,6 +125,13 @@ services:
       # Base de pruebas por defecto: un `artisan migrate:fresh` accidental nunca toca la de desarrollo.
       # Para operar sobre la de desarrollo, explícito: `run --rm -e DB_DATABASE=dispensart api-tools ...`.
       DB_DATABASE: dispensart_test
+      # assistant:eval con mock por defecto; `-e AI_PROVIDER=ollama` mide el modelo local del anfitrión.
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-30}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
