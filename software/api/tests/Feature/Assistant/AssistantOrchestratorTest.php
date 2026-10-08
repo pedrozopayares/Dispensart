@@ -242,6 +242,25 @@ test('Pregunta sobre un paciente: 0 llamadas al proveedor; una de existencias s�
     'receta' => ['¿Cuántas recetas hay hoy?'],
     'documento' => ['¿Cuánto acetaminofén retiró 9999010001?'],
     'documento con puntos' => ['¿Cuánto acetaminofén retiró 9.999.010.001?'],
+    // Hallazgo de auditoría S7: lo dispensado a una persona sin la palabra "paciente" llegaba al proveedor.
+    'dispensado a una persona' => ['¿Qué le dispensaron a Ana Sintética Pérez?'],
+    'dispensado con destinatario' => ['¿Qué se dispensó al señor Pérez la semana pasada?'],
+    'fórmula con tilde' => ['¿Qué dice la fórmula de Ana Sintética Pérez?'],
+    'formula sin tilde' => ['muestrame la FORMULA de Ana Sintetica Perez'],
+    'prescribieron' => ['¿Qué le prescribieron a Ana Sintética Pérez?'],
+]);
+
+test('Pregunta de inventario que nombra la dispensación: llega al proveedor y a las herramientas', function (string $question) {
+    $recorder = recordProvider();
+
+    $answer = askService($question);
+
+    expect(count($recorder->requests))->toBeGreaterThanOrEqual(1)
+        ->and(callSummary($answer))->toBe([['get_stock', 'ok']])
+        ->and($answer->outcome)->toBe(Outcome::Answered);
+})->with([
+    'disponible para dispensar' => ['¿Cuánto acetaminofén hay disponible para dispensar en la farmacia central?'],
+    'se dispensaron de un producto' => ['¿Cuántas unidades se dispensaron de acetaminofén en Farmacia Central?'],
 ]);
 
 test('seis dígitos no son un documento (control del umbral de 7)', function () {

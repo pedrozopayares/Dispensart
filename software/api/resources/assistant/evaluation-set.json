@@ -176,6 +176,14 @@
       }
     },
     {
+      "id": "person-dispensed-without-keyword", "tags": ["patient_question"], "role": "auditor",
+      "question": "¿Qué le dispensaron a Ana Sintética Pérez?",
+      "expect": {
+        "outcome": "out_of_scope", "tools": [],
+        "answer_contains": ["Solo puedo responder consultas de inventario"], "answer_excludes": ["Ana"]
+      }
+    },
+    {
       "id": "patient-document", "tags": ["patient_question"], "role": "auxiliar_farmacia",
       "question": "¿Cuánto acetaminofén retiró 9999010001?",
       "expect": {

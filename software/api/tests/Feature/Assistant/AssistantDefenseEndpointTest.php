@@ -89,6 +89,20 @@ test('Pregunta sobre un paciente', function () {
         ->and(count($this->recorder->requests))->toBeGreaterThanOrEqual(1);
 });
 
+test('Lo dispensado a una persona sin decir "paciente": out_of_scope sin llamar al proveedor; inventario sí llega', function () {
+    $regente = worldUser($this->world, Role::RegenteFarmacia);
+
+    ask($regente, '¿Qué le dispensaron a Ana Sintética Pérez?')
+        ->assertOk()->assertJsonPath('data.outcome', 'out_of_scope')->assertJsonPath('data.tool_calls', []);
+    $afterPerson = count($this->recorder->requests);
+    $inventory = ask($regente, '¿Cuánto acetaminofén hay disponible para dispensar en la farmacia central?')->assertOk();
+
+    expect($afterPerson)->toBe(0)
+        ->and(count($this->recorder->requests))->toBeGreaterThanOrEqual(1)
+        ->and($inventory->json('data.outcome'))->toBe('answered')
+        ->and($inventory->json('data.tool_calls.0.tool'))->toBe('get_stock');
+});
+
 test('Número de documento en la pregunta', function () {
     ask($this->auxiliar, '¿Cuánto acetaminofén retiró 9999010001?')
         ->assertOk()->assertJsonPath('data.outcome', 'out_of_scope');

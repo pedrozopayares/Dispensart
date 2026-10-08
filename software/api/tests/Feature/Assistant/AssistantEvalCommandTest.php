@@ -37,6 +37,16 @@ function entryCount(): int
 }
 
 /**
+ * Entradas etiquetadas como pregunta sobre una persona: el filtro previo las responde sin proveedor.
+ */
+function patientEntryCount(): int
+{
+    $entries = json_decode((string) file_get_contents(EvaluationSet::defaultPath()), true)['entries'];
+
+    return count(array_filter($entries, fn (array $entry): bool => in_array('patient_question', $entry['tags'], true)));
+}
+
+/**
  * Conteos de la base operativa que el comando no debe tocar.
  *
  * @return array<string, int>
@@ -111,7 +121,8 @@ test('Proveedor no disponible', function () {
         // Toda fila que llega al proveedor falla por asistente no disponible; las que el filtro previo responde sin
         // proveedor (preguntas de pacientes) no lo necesitan (journal: desvío de redacción del escenario).
         ->and(array_unique(array_column($failures, 2)))->toBe(['asistente no disponible'])
-        ->and(count($failures))->toBe(entryCount() - 2)
+        ->and(patientEntryCount())->toBe(3)
+        ->and(count($failures))->toBe(entryCount() - patientEntryCount())
         ->and(evalDatabaseExists())->toBeFalse();
 });
 
