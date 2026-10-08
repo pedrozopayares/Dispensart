@@ -134,3 +134,19 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Pedido explícito al auditor: la regla de S0 `expect([...])->toBeFinal()` agrupa namespaces como el patrón que M4
   mostró inerte con `not->toUse()`; verificar si protege.
 - Fase: auditoría final (tier A).
+
+## 2026-10-08 — GATE 2: APPROVED (final-auditor, tier A)
+
+| Punto | Evidencia |
+|---|---|
+| Corrida completa (3 de 3, copia en `0c9559e`, base aislada) | Pint pasa; Larastan 0; Pest 986 pasan, única falla `DatabaseConnectionTest` (base renombrada, esperada) |
+| `assistant:eval` simulado | 23/23, salida 0; con M9 17/23, salida 1 |
+| CI | 37781226508 sobre `98214d5` en verde, `Aciertos: 23/23`; sin cambios de `software/` ni `.github/` hasta `0c9559e` |
+| Mutantes reaplicados por el auditor | M1, M3, M4, M5, M6, M7, M9 fallan y se restauran; mutante propio (notas del traslado en la respuesta) atrapado por prueba y evaluación (22/23) |
+| OpenAPI | sin deriva; `api-schema.ts` regenerado idéntico |
+| Barridos | sin proveedor de pago ni claves; sin secretos en el diff; sin escrituras (solo `SET LOCAL transaction_read_only`); 0 referencias a pacientes en herramientas; log solo con el patrón de ruta |
+| Reglas `arch` | 8 reglas; la única con lista de destinos (`ArchitectureTest.php:16`, `toBeFinal()`) sí protege (quitar `final` en cada uno de sus tres espacios la hace fallar); no queda regla negada con lista |
+
+- Deuda menor nueva: D-auv-5 (filtro previo no cubre «dispens»/«fórmula» con nombre de paciente) y D-auv-6 (nombres de
+  herramienta inventados por el modelo sin sanear en log y `tool_calls`), a saldar en `add-delivery-pipeline`.
+- Fase: archivo.
