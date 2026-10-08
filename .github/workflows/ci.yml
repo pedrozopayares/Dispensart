@@ -61,11 +61,11 @@ jobs:
       DB_USERNAME: dispensart
       DB_PASSWORD: dispensart_ci_only
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: "8.5"
           extensions: pdo_pgsql, intl, bcmath
@@ -76,7 +76,7 @@ jobs:
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-${{ runner.os }}-${{ hashFiles('software/api/composer.lock') }}
@@ -115,7 +115,7 @@ jobs:
         run: composer openapi:check
 
       # Redocly fijado en el package-lock.json de la raíz (herramientas de desarrollo).
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: software/web/.nvmrc
           cache: npm
@@ -139,11 +139,11 @@ jobs:
       run:
         working-directory: software/web
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: software/web/.nvmrc
           cache: npm
@@ -186,7 +186,7 @@ jobs:
       web_digest: ${{ steps.web.outputs.digest }}
       owner_lc: ${{ steps.owner.outputs.owner_lc }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -197,9 +197,9 @@ jobs:
           OWNER: ${{ github.repository_owner }}
         run: echo "owner_lc=${OWNER,,}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -208,7 +208,7 @@ jobs:
       # provenance/sbom apagados: un solo manifiesto por imagen (firma y SBOM fuera de alcance, design).
       - name: Imagen api (etapa prod)
         id: api
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: software
           file: software/docker/api/Dockerfile
@@ -225,7 +225,7 @@ jobs:
 
       - name: Imagen web
         id: web
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: software
           file: software/docker/web/Dockerfile
@@ -261,7 +261,7 @@ jobs:
       API_IMAGE: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-api@${{ needs.build.outputs.api_digest }}
       WEB_IMAGE: ghcr.io/${{ needs.build.outputs.owner_lc }}/dispensart-web@${{ needs.build.outputs.web_digest }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -276,7 +276,7 @@ jobs:
       - name: Control del enmascarado
         run: echo "DB_PASSWORD=$DB_PASSWORD"
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
