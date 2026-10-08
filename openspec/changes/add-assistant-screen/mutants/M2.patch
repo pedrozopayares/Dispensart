@@ -1,0 +1,13 @@
+diff --git a/software/web/src/features/assistant/assistant-labels.ts b/software/web/src/features/assistant/assistant-labels.ts
+index 152240f..13bfe0f 100644
+--- a/software/web/src/features/assistant/assistant-labels.ts
++++ b/software/web/src/features/assistant/assistant-labels.ts
+@@ -16,7 +16,7 @@ export function outcomeLabel(outcome: string): string {
+ 
+ // Una herramienta fuera del catálogo se muestra genérica: el nombre lo pidió el modelo.
+ export function toolLabel(tool: string): string {
+-  return labelOf(labels.tools, tool, labels.unknownTool)
++  return labelOf(labels.tools, tool, tool)
+ }
+ 
+ export function callStatusLabel(status: string): string {

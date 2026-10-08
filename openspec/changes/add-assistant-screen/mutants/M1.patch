@@ -1,0 +1,22 @@
+diff --git a/software/web/src/features/assistant/assistant-page.tsx b/software/web/src/features/assistant/assistant-page.tsx
+index 8c0ed0f..59857d3 100644
+--- a/software/web/src/features/assistant/assistant-page.tsx
++++ b/software/web/src/features/assistant/assistant-page.tsx
+@@ -45,7 +45,7 @@ export function AssistantPage() {
+     const error = questionError(question)
+     setLocalError(error)
+     if (error !== null) return
+-    guard((release) => {
++    ;((release: () => void) => {
+       setSubmitError(null)
+       ask.mutate(question, {
+         onSuccess: (answer) => {
+@@ -58,7 +58,7 @@ export function AssistantPage() {
+         onError: (rejection) => setSubmitError(rejection),
+         onSettled: release,
+       })
+-    })
++    })(() => {})
+   }
+ 
+   // Enter envía; Shift+Enter deja el salto de línea del navegador.
