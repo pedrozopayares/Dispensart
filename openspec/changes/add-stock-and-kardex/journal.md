@@ -285,3 +285,27 @@ empiece por `dispensart_test`.
 | D-auv-1: `SpaClient` enviaba `X-XSRF-TOKEN` también en GET; "Lectura sin token CSRF" no podía fallar | software/api/tests/Support/SpaClient.php:127–128 — el token viaja solo en POST/PUT/PATCH/DELETE | `ValidateCsrfToken::isReading` deja de tratar `GET /api/auth/me` como lectura → CsrfTest.php:57 FALLA 1/1; restaurado → PASA 1/1 | misma mutación con el `SpaClient` anterior → PASA 1/1 (la prueba no la detectaba) |
 
 Delta: Pint del archivo pasa; las 11 suites que usan `SpaClient` (Seed, Identity, Warehouse, StockAdjustmentEndpoint): 119 pasan / 562 aserciones.
+
+## 2026-10-08 — devops-implementer: 6.1, deuda de herramientas, CI y 6.3
+
+Tareas 6.1 y 6.3 `[x]`. Commit `ca7b329` (`software/compose.yaml`, `software/docker/smoke/stock-smoke.sh`), push de `dev`.
+
+| Punto | Evidencia |
+|---|---|
+| `compose config -q` | válido |
+| Arranque en frío (`--profile tools down -v`, `up --build --wait`) | db, api, web `healthy`; `/health` 200, `/ready` 200 por web |
+| Siembra (psql) | stocks 14 = movimientos `entrada` 14, todos sin usuario; negativas 0; último saldo ≠ cantidad 0 |
+| Resiembra (`up --force-recreate api web`) | conteos idénticos (`cmp`) |
+| Humo S1 / S2 | 38 / 13 comprobaciones, 0 fallas; control S2 con contraseña errónea: salida 1 |
+| Ajuste del humo tras resiembra | se conserva (kardex 15, Σ 433) |
+| `api-tools` | `DB_DATABASE=dispensart_test` por defecto; `-e DB_DATABASE=dispensart` + Pest: base de desarrollo intacta (`<server force>` vigente) |
+| Larastan en CI | ya corría `--memory-limit=1G` desde `7851138`; sin cambio |
+| CI run `37732568878` (`ca7b329`) | backend success (Pint 161, Larastan 0, Pest 293/1201); frontend failure |
+| No root | api uid 1000, web uid 101 |
+| Barrido de secretos | 0 hits; control plantado → 1 |
+| actionlint | no instalado; workflow sin cambios |
+
+Bloqueo (fuera del alcance devops): el trabajo frontend de CI falla en `api:types:check` desde `07b4109`
+(run `37732220017` también): `software/web/src/lib/api-schema.ts` no se regeneró tras el OpenAPI de S2
+(`83d0860`). Arreglo: `npm run api:types` en `software/web` y commit (frontend-implementer).
+Texto de `tasks.md` 6.2 sin `--memory-limit=1G`: la corrida real lo usó; corrección de redacción para el dueño de tasks.

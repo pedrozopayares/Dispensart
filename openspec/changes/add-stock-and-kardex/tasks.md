@@ -46,9 +46,9 @@ inserciones directas en el kardex crean antes su existencia (FK compuesta, D4).
 
 ## 6. Integración y cierre
 
-- [ ] 6.1 Stack desde cero: `down -v` + `up --build --wait`; login como regente y `GET /api/stock` con existencias semilla; segundo `up` con conteos de existencias y movimientos iguales. Cubre inventory "Siembra inicial", "Siembra repetida" en el stack. Verifica: comandos y conteos registrados en `journal.md`.
+- [x] 6.1 Stack desde cero: `down -v` + `up --build --wait`; login como regente y `GET /api/stock` con existencias semilla; segundo `up` con conteos de existencias y movimientos iguales. Cubre inventory "Siembra inicial", "Siembra repetida" en el stack. Verifica: comandos y conteos registrados en `journal.md`.
 - [x] 6.2 Corrida completa de cierre: Pint, Larastan, Pest. Cimiento. Verifica: `docker compose -f software/compose.yaml run --rm api-tools sh -c 'vendor/bin/pint --test && vendor/bin/phpstan analyse && vendor/bin/pest'` verde, registradas en `journal.md` dentro del presupuesto de 3 corridas.
-- [ ] 6.3 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M10 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro. Cimiento. Verifica: `openspec validate add-stock-and-kardex --strict` válido y spec-validator sin hallazgos.
+- [x] 6.3 `verification.md` en tablas: escenario → prueba → archivo:línea; `[MUT]` M1–M10 aplicado/restaurado; columna cláusula → ruta archivo:línea por cada hit del ancla de transporte; § 0 con líneas de producto, de prueba y de registro. Cimiento. Verifica: `openspec validate add-stock-and-kardex --strict` válido y spec-validator sin hallazgos.
 
 ## Workflow follow-up
 
