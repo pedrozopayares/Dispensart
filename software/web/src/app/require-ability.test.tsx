@@ -8,6 +8,7 @@ import { renderAs } from '@/test/render'
 // Tarea 1.7 — operator-workspace › "Guarda de ruta por capacidad" (design D6).
 // Tarea 6.1 — operator-workspace › «Navegación por rol» e «Inicio con accesos del rol»; app-shell ›
 // «Página de inicio sin pantallas aún» y «Página de inicio con saludo».
+// add-assistant-screen 3.1 — "Asistente" al final del menú y del inicio para toda sesión.
 
 const stockRoutes = {
   ...catalogRoutes(),
@@ -60,6 +61,9 @@ describe('guarda de ruta por capacidad', () => {
 })
 
 const ALL_FOUR = [strings.nav.dispensations, strings.nav.transfers, strings.nav.inventory, strings.nav.kardex]
+const ASSISTANT = strings.nav.assistant
+// Texto del estado vacío retirado del módulo (ya no se alcanza): solo se afirma su ausencia.
+const NO_SCREENS = 'Tu rol no tiene pantallas de operación en esta versión.'
 
 describe('menú por rol', () => {
   const menuOf = async () => {
@@ -69,29 +73,29 @@ describe('menú por rol', () => {
     return nav === null ? [] : within(nav).getAllByRole('link').map((link) => link.textContent)
   }
 
-  it('Auxiliar ve sus cuatro pantallas, en ese orden', async () => {
+  it('Auxiliar ve sus cuatro pantallas y al final "Asistente", en ese orden', async () => {
     renderAs('auxiliar_farmacia', '/')
-    expect(await menuOf()).toEqual(ALL_FOUR)
+    expect(await menuOf()).toEqual([...ALL_FOUR, ASSISTANT])
   })
 
-  it('Auditor ve las cuatro en lectura', async () => {
+  it('Auditor ve las cuatro en lectura y al final "Asistente"', async () => {
     renderAs('auditor', '/')
-    expect(await menuOf()).toEqual(ALL_FOUR)
+    expect(await menuOf()).toEqual([...ALL_FOUR, ASSISTANT])
   })
 
-  it('el regente ve las cuatro pantallas', async () => {
+  it('el regente ve las cuatro pantallas y "Asistente"', async () => {
     renderAs('regente_farmacia', '/')
-    expect(await menuOf()).toEqual(ALL_FOUR)
+    expect(await menuOf()).toEqual([...ALL_FOUR, ASSISTANT])
   })
 
-  it('Médico solo ve Dispensación', async () => {
+  it('Médico solo ve Dispensación, seguida de "Asistente"', async () => {
     renderAs('medico', '/')
-    expect(await menuOf()).toEqual([strings.nav.dispensations])
+    expect(await menuOf()).toEqual([strings.nav.dispensations, ASSISTANT])
   })
 
-  it('Admin sin pantallas de operación', async () => {
+  it('Admin sin pantallas de operación: solo "Asistente"', async () => {
     renderAs('admin', '/')
-    expect(await menuOf()).toEqual([])
+    expect(await menuOf()).toEqual([ASSISTANT])
   })
 
   it('abrir Kardex desde el menú lo marca como página actual', async () => {
@@ -133,9 +137,10 @@ describe('inicio con accesos del rol', () => {
       '/transfers',
       '/inventory',
       '/kardex',
+      '/assistant',
     ])
     expect(links[1]).toHaveTextContent(strings.nav.transfers)
-    expect(screen.queryByText(strings.home.emptyMessage)).not.toBeInTheDocument()
+    expect(document.body.textContent).not.toContain(NO_SCREENS)
 
     fireEvent.click(links[1])
     expect(await screen.findByRole('heading', { name: strings.transfers.title })).toBeInTheDocument()
@@ -154,17 +159,18 @@ describe('inicio con accesos del rol', () => {
       [strings.nav.transfers, strings.transfers.description],
       [strings.nav.inventory, strings.inventory.description],
       [strings.nav.kardex, strings.kardex.description],
+      [strings.nav.assistant, strings.assistant.description],
     ]) {
       expect(within(nav).getByRole('link', { name })).toHaveAccessibleDescription(description)
     }
   })
 
-  it('Admin sin accesos: saludo y "Tu rol no tiene pantallas de operación en esta versión."', async () => {
+  it('Admin sin accesos de operación: saludo y un solo acceso, Asistente, sin estado vacío', async () => {
     renderAs('admin', '/')
 
     expect(await screen.findByRole('heading', { name: 'Bienvenido, Administrador Demo' })).toBeInTheDocument()
-    expect(screen.getByText(strings.home.emptyMessage)).toBeInTheDocument()
-    expect(await shortcuts()).toEqual([])
+    expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/assistant'])
+    expect(document.body.textContent).not.toContain(NO_SCREENS)
     expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
   })
 
@@ -172,13 +178,14 @@ describe('inicio con accesos del rol', () => {
     renderAs('auxiliar_farmacia', '/')
 
     expect(await screen.findByRole('heading', { name: 'Bienvenido, Auxiliar Demo' })).toBeInTheDocument()
-    expect(await shortcuts()).toHaveLength(4)
-    expect(screen.queryByText(strings.home.emptyMessage)).not.toBeInTheDocument()
+    expect(await shortcuts()).toHaveLength(5)
+    expect(document.body.textContent).not.toContain(NO_SCREENS)
+    expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
   })
 
-  it('el médico ve solo el acceso a Dispensación', async () => {
+  it('Médico sin accesos de inventario: Dispensación y Asistente', async () => {
     renderAs('medico', '/')
 
-    expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/dispensations'])
+    expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/dispensations', '/assistant'])
   })
 })

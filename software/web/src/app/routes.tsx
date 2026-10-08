@@ -16,11 +16,15 @@ export const routes: RouteObject[] = [
       ...screens.flatMap(({ path, Component, abilities, children = [] }) =>
         [{ path, Component }, ...children].map((route) => ({
           path: route.path,
-          element: (
-            <RequireAbility anyOf={abilities}>
+          // Sin capacidad propia basta la sesión, que ya exige la ruta de diseño protegida.
+          element:
+            abilities === 'session' ? (
               <route.Component />
-            </RequireAbility>
-          ),
+            ) : (
+              <RequireAbility anyOf={abilities}>
+                <route.Component />
+              </RequireAbility>
+            ),
         })),
       ),
       { path: '*', element: <Navigate to="/" replace /> },

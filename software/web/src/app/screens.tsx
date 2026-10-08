@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { AssistantPage } from '@/features/assistant/assistant-page'
 import { DispensationPage } from '@/features/dispensations/dispensation-page'
 import { InventoryPage } from '@/features/inventory/inventory-page'
 import { KardexPage } from '@/features/kardex/kardex-page'
@@ -13,8 +14,9 @@ import { strings } from '@/lib/strings'
 export type Screen = {
   path: string
   Component: ComponentType
-  // Basta una de ellas.
-  abilities: readonly Ability[]
+  // Basta una de ellas. `'session'`: toda sesión, sin capacidad propia (la ruta del asistente solo
+  // exige `auth:sanctum`; cada herramienta autoriza en el servidor).
+  abilities: readonly Ability[] | 'session'
   navLabel: string
   // Texto del acceso en el inicio.
   description: string
@@ -53,8 +55,16 @@ export const screens: readonly Screen[] = [
     navLabel: strings.nav.kardex,
     description: strings.kardex.description,
   },
+  // Al final, para toda sesión (operator-workspace «Navegación por rol»).
+  {
+    path: '/assistant',
+    Component: AssistantPage,
+    abilities: 'session',
+    navLabel: strings.nav.assistant,
+    description: strings.assistant.description,
+  },
 ]
 
 export function screensFor(user: AuthenticatedUser): Screen[] {
-  return screens.filter((screen) => canAny(user, screen.abilities))
+  return screens.filter((screen) => screen.abilities === 'session' || canAny(user, screen.abilities))
 }

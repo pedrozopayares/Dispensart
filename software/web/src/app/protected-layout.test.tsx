@@ -15,7 +15,7 @@ describe('ruta de diseño protegida', () => {
     expect(screen.queryByText(strings.shell.logout)).not.toBeInTheDocument()
 
     me.resolve(json(200, { data: user() }))
-    expect(await screen.findByText(strings.home.emptyMessage)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Bienvenido, / })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: strings.shell.logout })).toBeInTheDocument()
   })
 
@@ -28,7 +28,7 @@ describe('ruta de diseño protegida', () => {
       expect(await screen.findByLabelText(strings.login.email)).toBeInTheDocument()
       expect(router.state.location.pathname).toBe('/login')
       expect(screen.queryByText(strings.shell.logout)).not.toBeInTheDocument()
-      expect(screen.queryByText(strings.home.emptyMessage)).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: /^Bienvenido, / })).not.toBeInTheDocument()
     },
   )
 
@@ -45,7 +45,7 @@ describe('ruta de diseño protegida', () => {
     expect(screen.queryByText(strings.shell.logout)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: strings.session.retry }))
 
-    expect(await screen.findByText(strings.home.emptyMessage)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Bienvenido, / })).toBeInTheDocument()
     expect(api.callsTo('GET', '/api/auth/me')).toHaveLength(2)
   })
 
@@ -56,7 +56,7 @@ describe('ruta de diseño protegida', () => {
       'POST /api/auth/logout': () => apiError(401, 'unauthenticated'),
     })
     const { router, client } = renderApp('/')
-    await screen.findByText(strings.home.emptyMessage)
+    await screen.findByRole('heading', { name: /^Bienvenido, / })
     client.setQueryData(['warehouses'], [{ id: 1, name: 'Bodega del admin' }])
 
     fireEvent.click(screen.getByRole('button', { name: strings.shell.logout }))

@@ -72,7 +72,7 @@ describe('textos de la SPA desde el módulo central', () => {
     expect(textsOutsideCatalog(container).outside).toEqual([])
 
     fireEvent.click(screen.getByRole('button', { name: strings.session.retry }))
-    await screen.findByText(strings.home.emptyMessage)
+    await screen.findByRole('heading', { name: /^Bienvenido, / })
     const { visible, outside } = textsOutsideCatalog(container, ['Rita Regente'])
     expect(visible).toContain('Bienvenido, Rita Regente')
     expect(outside).toEqual([])

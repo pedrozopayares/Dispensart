@@ -16,8 +16,6 @@ export const strings = {
   },
   home: {
     greeting: 'Bienvenido, {name}',
-    emptyTitle: 'Sin pantallas de operación',
-    emptyMessage: 'Tu rol no tiene pantallas de operación en esta versión.',
     shortcuts: 'Accesos',
   },
   session: {
