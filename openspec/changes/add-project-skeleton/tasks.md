@@ -24,9 +24,9 @@ indicado. Toda prueba de backend corre contra PostgreSQL 16, nunca SQLite (ADR-0
 
 Paralelizable con el grupo 2: la página shell no consume ningún contrato de la API.
 
-- [ ] 3.1 Generar la SPA React + TypeScript + Vite en `software/web` con ESLint, Vitest y lockfile. Verificar: `npm ci`, `npm run lint`, `npm run build` y `npx vitest run` salen con 0. Cita: CI › Frontend correcto.
-- [ ] 3.2 Integrar Tailwind y la base de shadcn/ui (ADR-0004). Verificar: `npm run build` sale con 0 y un componente de shadcn renderiza en una prueba. Cimiento.
-- [ ] 3.3 Crear el módulo central de textos en español, el proveedor de TanStack Query (ADR-0003) en la raíz y la página shell mínima (nombre del producto y bienvenida, `lang="es"`), con prueba de Vitest. Verificar: prueba en verde. Cita: RE › Textos del shell desde el módulo central, RE › Shell en la raíz.
+- [x] 3.1 Generar la SPA React + TypeScript + Vite en `software/web` con ESLint, Vitest y lockfile. Verificar: `npm ci`, `npm run lint`, `npm run build` y `npx vitest run` salen con 0. Cita: CI › Frontend correcto.
+- [x] 3.2 Integrar Tailwind y la base de shadcn/ui (ADR-0004). Verificar: `npm run build` sale con 0 y un componente de shadcn renderiza en una prueba. Cimiento.
+- [x] 3.3 Crear el módulo central de textos en español, el proveedor de TanStack Query (ADR-0003) en la raíz y la página shell mínima (nombre del producto y bienvenida, `lang="es"`), con prueba de Vitest. Verificar: prueba en verde. Cita: RE › Textos del shell desde el módulo central, RE › Shell en la raíz.
 
 ## 4. Contenedores y compose
 

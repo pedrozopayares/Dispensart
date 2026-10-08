@@ -126,3 +126,45 @@ Decisiones:
 - El bind mount crea `software/api/` vacío al correr `api-tools`; se borró (2.1 lo crea el backend-implementer).
 - Pendiente de 2.1: la verificación `php artisan about` (`pgsql`, `es`) de 2.2 la cierra el backend-implementer
   tras el scaffolding. Sin `actionlint` en el host (no hubo workflows en esta entrega).
+
+## 2026-10-07 — frontend-implementer: grupo 3 (SPA React)
+
+- Andamiaje `create-vite` (react-ts). La plantilla trae oxlint; se reemplaza por ESLint (flat config,
+  typescript-eslint, react-hooks, react-refresh, `--max-warnings 0`): la pila fija ESLint y la spec de CI lo nombra.
+- shadcn/ui iniciado con base Radix, estilo new-york, color neutral; componentes `card` y `button`. El CLI
+  instala el paquete oficial `cn` (shadcn-ui/cn) en lugar de clsx + tailwind-merge.
+- Compatibilidad Node 22: `.nvmrc` = `22` en `software/web` (para `setup-node` de 5.1); `engines.node`
+  `>=22.22.2`, piso exigido por jsdom 30.
+- Decisión: `QueryClient` con `mutations.retry = false`; un reintento automático no debe duplicar escrituras.
+- Corrida de cierre única: `npm run lint && npm run typecheck && npm test -- --run && npm run build`.
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | 0 errores, 0 avisos |
+| `npm run typecheck` | 0 errores |
+| `npm test -- --run` | 3 archivos, 8/8 pruebas en verde |
+| `npm run build` | sale con 0 |
+| `npm ci` | sale con 0 (lockfile sincronizado) |
+
+| Escenario | Prueba | Archivo:línea |
+|---|---|---|
+| RE › Shell en la raíz (componente) | muestra el nombre del producto y el mensaje de bienvenida en español | `software/web/src/App.test.tsx:35` |
+| RE › Textos del shell desde el módulo central (textos) | cada texto visible coincide con un valor del módulo central | `software/web/src/App.test.tsx:52` |
+| RE › Textos del shell desde el módulo central (control positivo) | control positivo: un texto fuera del módulo es detectado | `software/web/src/App.test.tsx:59` |
+| RE › Textos del shell desde el módulo central (`lang="es"`) | declara lang="es" en <html> | `software/web/src/document.test.ts:6` |
+| 3.2 Cimiento shadcn renderiza | monta un componente de shadcn/ui (tarjeta) | `software/web/src/App.test.tsx:42` |
+| 3.3 Proveedor TanStack Query en la raíz | entrega un QueryClient a los descendientes | `software/web/src/app/providers.test.tsx:13` |
+| 3.3 Proveedor (negativo) | sin el proveedor, useQueryClient falla | `software/web/src/app/providers.test.tsx:22` |
+| Decisión reintentos | las mutaciones no se reintentan solas | `software/web/src/app/providers.test.tsx:29` |
+| CI › Frontend correcto (local) | corrida de cierre arriba | `software/web/package.json` scripts |
+
+| Barrido (`/usr/bin/grep`, sobre `find -L src -type f`) | Coincidencias | Control positivo |
+|---|---|---|
+| `console\.` | 0 | `printf 'console.log(1)'` → 1 |
+| `fetch\(\|localStorage\|sessionStorage` | 0 | muestra de 2 líneas → 2 |
+| texto literal en JSX fuera de pruebas | 0 | `printf '<p>Hola</p>'` → 1 |
+| `console` (amplio) | 1 (`providers.test.tsx:24`, spy silenciador) | — |
+| archivos leídos / presentes | 13 / 13 | — |
+
+- Pendiente para 4.5: comprobación renderizada contra el stack compose (no listo en esta tarea).
+- Ancla de transporte de "RE › Shell en la raíz" (Nginx de `web`) queda para 4.3.
