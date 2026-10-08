@@ -15,7 +15,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S4 | `add-transfers` | Máquina de estados de traslados, despacho/recepción, discrepancias, segregación de funciones | A, RN-07, RN-08 | A | propuesto |
 | S5 | `add-alerts` | Vencimiento ≤ 90 días, stock bajo mínimo por bodega | A, RN-11 | B | bloqueado: GATE 1 condición 3 (migración con CHECK = tier A; pregunta al usuario) |
 | S6 | `add-operator-screens` | Pantallas Dispensación, Traslados, Inventario, Kardex | B | B | propuesto |
-| S7 | `add-inventory-assistant` | Interfaz de proveedor LLM, mock/Ollama, herramientas de solo lectura, defensa contra inyección, set de evaluación + script | C | A | pendiente |
+| S7 | `add-inventory-assistant` | Interfaz de proveedor LLM, mock/Ollama, herramientas de solo lectura, defensa contra inyección, set de evaluación + script | C | A | propuesto |
 | S8 | `add-delivery-pipeline` | CI/CD completo (imágenes, staging, producción con compuerta), documento de despliegue, README, AI_USAGE.md | D, E | B | propuesto |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
