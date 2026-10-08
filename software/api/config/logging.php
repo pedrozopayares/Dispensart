@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\JsonLineTap;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -102,6 +103,7 @@ return [
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
+        // Canal del contenedor: una línea JSON por entrada con correlation_id (design D6).
         'stderr' => [
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),
@@ -109,6 +111,7 @@ return [
             'handler_with' => [
                 'stream' => env('LOG_STDERR_STREAM', 'php://stderr'),
             ],
+            'tap' => [JsonLineTap::class],
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
