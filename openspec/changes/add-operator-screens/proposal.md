@@ -33,9 +33,8 @@ alcanza y RN-09 (una clave por intención) solo existe del lado del servidor.
 - `kardex-screen`: historial de movimientos filtrable y paginado.
 
 ### Modified Capabilities
-- Ninguna hoy: `app-shell` (S1) aún no es spec viva. La tarea 0.1 añade el delta `MODIFIED` de `app-shell`
-  "Encabezado con sesión y cierre" después de que S1 se archive (mismo patrón que la tarea 0.1 de S1): el
-  inicio deja el estado vacío "Las pantallas de operación aparecerán aquí." por los accesos de su rol.
+- `app-shell`: "Encabezado con sesión y cierre" — el inicio deja el estado vacío "Las pantallas de operación
+  aparecerán aquí." por los accesos de su rol (tarea 0.1, escrita tras archivarse S1).
 
 ## Impact
 
