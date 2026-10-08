@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { KardexQuery, LotQuery, StockQuery, TransferQuery } from '@/lib/api-types'
+import type { AlertsQuery, KardexQuery, LotQuery, StockQuery, TransferQuery } from '@/lib/api-types'
 
 // Claves de consulta de TanStack Query (ADR-0003, design D7). Cada raíz agrupa un recurso para
 // invalidarlo completo tras una escritura.
 export const queryKeys = {
   stock: (filters: StockQuery) => ['stock', filters] as const,
   kardex: (filters: KardexQuery) => ['kardex', filters] as const,
-  alerts: (filters: { warehouse_id?: number }) => ['alerts', filters] as const,
+  alerts: (filters: AlertsQuery) => ['alerts', filters] as const,
   patient: (patientId: number) => ['patient', patientId] as const,
   // El término vive solo en memoria (nunca en la URL ni en almacenamiento del navegador).
   patientSearch: (term: string) => ['patient-search', term] as const,

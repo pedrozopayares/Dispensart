@@ -70,3 +70,9 @@ export type TransferDiscrepancy = Transfer['discrepancies'][number]
 export type NewTransfer = BodyOf<'/transfers', 'post'>
 export type TransferReceipt = BodyOf<'/transfers/{transfer}/receive', 'post'>
 export type TransferVoid = BodyOf<'/transfers/{transfer}/void', 'post'>
+
+// Alertas de inventario (S5, RN-11): lotes por vencer o vencidos y productos bajo su mínimo.
+export type Alerts = ResponseOf<'/alerts', 'get'>['data']
+export type AlertsQuery = QueryOf<'/alerts', 'get'>
+export type ExpiringLot = Alerts['expiring_lots'][number]
+export type LowStock = Alerts['low_stock'][number]

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { strings } from '@/lib/strings'
 import { json } from '@/test/http'
-import { catalogRoutes, kardexPage, lots, stockRow, warehouses } from '@/test/fixtures'
+import { catalogRoutes, kardexPage, lots, noAlertsRoute, stockRow, warehouses } from '@/test/fixtures'
 import { renderAs } from '@/test/render'
 
 // Tarea 1.7 — operator-workspace › "Guarda de ruta por capacidad" (design D6).
@@ -11,6 +11,7 @@ import { renderAs } from '@/test/render'
 
 const stockRoutes = {
   ...catalogRoutes(),
+  ...noAlertsRoute(),
   'GET /api/stock': () => json(200, { data: [stockRow(1, warehouses[0], lots[0], 8)] }),
 }
 
@@ -48,6 +49,7 @@ describe('guarda de ruta por capacidad', () => {
   it('El servidor niega aunque la guarda permita: mensaje en lugar de los datos, sin el código', async () => {
     renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': () => json(403, { code: 'forbidden', message: 'x' }),
     })
 

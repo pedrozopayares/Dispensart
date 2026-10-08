@@ -10,17 +10,19 @@ type ErrorMessageProps = {
   onRetry?: () => void
   retrying?: boolean
   describe?: DescribeOptions
+  // Texto propio de la zona que falló (del módulo de textos), en lugar del texto por código.
+  message?: string
 }
 
 // Error anunciado como alerta (design D5): siempre el texto del catálogo, nunca `error.message`.
 // `forbidden` no ofrece reintentar: repetir no cambia la respuesta.
-export function ErrorMessage({ error, onRetry, retrying = false, describe }: ErrorMessageProps) {
+export function ErrorMessage({ error, onRetry, retrying = false, describe, message }: ErrorMessageProps) {
   const canRetry = onRetry !== undefined && !hasCode(error, 'forbidden')
   return (
     <Alert variant="destructive">
       <CircleAlertIcon aria-hidden="true" />
       <AlertDescription className="flex flex-col items-start gap-3">
-        <p className="whitespace-pre-line">{describeError(error, describe)}</p>
+        <p className="whitespace-pre-line">{message ?? describeError(error, describe)}</p>
         {canRetry && (
           <Button variant="outline" size="sm" disabled={retrying} onClick={onRetry}>
             {strings.common.retry}

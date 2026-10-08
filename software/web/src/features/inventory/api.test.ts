@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { listStock } from '@/features/inventory/api'
+import { listAlerts, listStock } from '@/features/inventory/api'
 import { json, serveApi } from '@/test/http'
-import { lots, stockRow, warehouses } from '@/test/fixtures'
+import { alertsBody, expiringLot, lots, lowStock, products, stockRow, warehouses } from '@/test/fixtures'
 
 // Tarea 1.3 — existencias contra la red simulada.
 describe('API de existencias', () => {
@@ -17,5 +17,26 @@ describe('API de existencias', () => {
     serveApi({ 'GET /api/stock': () => json(403, { code: 'forbidden', message: 'x' }) })
 
     await expect(listStock({})).rejects.toMatchObject({ name: 'ApiError', code: 'forbidden' })
+  })
+})
+
+// Tarea 1.3 — alertas (S5) contra la red simulada.
+describe('API de alertas', () => {
+  it('envía la bodega y devuelve ambas listas de `data`', async () => {
+    const body = alertsBody({
+      expiring_lots: [expiringLot(warehouses[1], lots[0], 12, 20)],
+      low_stock: [lowStock(warehouses[1], products[0], 10, 4)],
+    })
+    const api = serveApi({ 'GET /api/alerts': () => json(200, body) })
+
+    expect(await listAlerts({ warehouse_id: 2 })).toEqual(body.data)
+    expect(api.requestsTo('GET', '/api/alerts')[0].query).toEqual({ warehouse_id: '2' })
+  })
+
+  it('sin bodega no envía filtro', async () => {
+    const api = serveApi({ 'GET /api/alerts': () => json(200, alertsBody()) })
+
+    expect(await listAlerts({})).toEqual({ expiring_lots: [], low_stock: [] })
+    expect(api.requestsTo('GET', '/api/alerts')[0].query).toEqual({})
   })
 })

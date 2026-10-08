@@ -1,4 +1,13 @@
-import type { KardexMovement, Lot, Product, StockRow, Warehouse } from '@/lib/api-types'
+import type {
+  Alerts,
+  ExpiringLot,
+  KardexMovement,
+  Lot,
+  LowStock,
+  Product,
+  StockRow,
+  Warehouse,
+} from '@/lib/api-types'
 import { json } from '@/test/http'
 
 // Datos sintéticos con la forma del contrato (tipos derivados del OpenAPI): nunca datos reales.
@@ -88,4 +97,28 @@ export function catalogRoutes() {
     'GET /api/lots': ({ query }: { query: Record<string, string> }) =>
       json(200, { data: lots.filter((lot) => String(lot.product_id) === query.product_id) }),
   }
+}
+
+// Alertas de RN-11 con la forma de `GET /api/alerts`; los días los fija la prueba (vienen de la API).
+export function expiringLot(warehouse: Warehouse, lot: Lot, quantity: number, days: number): ExpiringLot {
+  const product = products.find((candidate) => candidate.id === lot.product_id)!
+  return { warehouse, product: productSummary(product), lot: lotSummary(lot), quantity, days_to_expiry: days }
+}
+
+export function lowStock(warehouse: Warehouse, product: Product, minimum: number, available: number): LowStock {
+  return {
+    warehouse,
+    product: productSummary(product),
+    minimum_quantity: minimum,
+    available_quantity: available,
+  }
+}
+
+export function alertsBody(alerts: Partial<Alerts> = {}) {
+  return { data: { expiring_lots: [], low_stock: [], ...alerts } }
+}
+
+// Manejador de alertas sin alertas: lo necesita toda prueba que monta Inventario.
+export function noAlertsRoute() {
+  return { 'GET /api/alerts': () => json(200, alertsBody()) }
 }

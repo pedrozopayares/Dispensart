@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { strings } from '@/lib/strings'
 import { json, networkError, type RecordedRequest } from '@/test/http'
-import { catalogRoutes, lots, stockRow, warehouses } from '@/test/fixtures'
+import { catalogRoutes, lots, noAlertsRoute, stockRow, warehouses } from '@/test/fixtures'
 import { renderAs } from '@/test/render'
 
 // Tarea 4.1 — inventory-screen › "Existencias por bodega y lote" (RN-01).
@@ -30,6 +30,7 @@ describe('pantalla Inventario', () => {
   it('Consulta por bodega: "Cargando inventario…" y luego solo existencias de Farmacia Urgencias', async () => {
     const { api } = renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': stockServer,
     })
     expect(await screen.findAllByRole('cell', { name: 'Farmacia Central' })).toHaveLength(1)
@@ -54,6 +55,7 @@ describe('pantalla Inventario', () => {
   it('Sin existencias para el filtro: mensaje de vacío', async () => {
     renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': () => json(200, { data: [] }),
     })
 
@@ -65,6 +67,7 @@ describe('pantalla Inventario', () => {
     let urgenciasAttempts = 0
     const { api } = renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': (request) =>
         request.query.warehouse_id === '2' && urgenciasAttempts++ === 0
           ? networkError()
@@ -90,6 +93,7 @@ describe('pantalla Inventario', () => {
   it('Lote vencido marcado: "Vencido" con estilo distinto solo en su fila', async () => {
     renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': () =>
         json(200, { data: [stockRow(1, central, lots[1], 2), stockRow(2, central, lots[0], 9)] }),
     })
@@ -106,6 +110,7 @@ describe('pantalla Inventario', () => {
   it('producto de control especial marcado en su fila', async () => {
     renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': () => json(200, { data: [stockRow(1, central, lots[2], 4)] }),
     })
     await screen.findByRole('table')
@@ -116,6 +121,7 @@ describe('pantalla Inventario', () => {
   it('filtro por producto: la consulta lleva el producto', async () => {
     const { api } = renderAs('auxiliar_farmacia', '/inventory', {
       ...catalogRoutes(),
+      ...noAlertsRoute(),
       'GET /api/stock': stockServer,
     })
     await screen.findByRole('table')
@@ -129,7 +135,11 @@ describe('pantalla Inventario', () => {
   })
 
   it('Auditor sin controles de edición: ve existencias y ningún botón', async () => {
-    renderAs('auditor', '/inventory', { ...catalogRoutes(), 'GET /api/stock': stockServer })
+    renderAs('auditor', '/inventory', {
+      ...catalogRoutes(),
+      ...noAlertsRoute(),
+      'GET /api/stock': stockServer,
+    })
     await screen.findByRole('table')
 
     expect(within(screen.getByRole('main')).queryAllByRole('button')).toEqual([])

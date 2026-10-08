@@ -115,6 +115,25 @@ export const strings = {
     },
     controlled: 'Control especial',
     expired: 'Vencido',
+    // Alertas de RN-11: el resaltado sale solo de la API, nunca del reloj del navegador.
+    alerts: {
+      title: 'Alertas',
+      loading: 'Cargando alertas…',
+      failed: 'No pudimos cargar las alertas.',
+      none: 'Sin alertas de vencimiento ni de stock mínimo.',
+      expiringSummary: 'Lotes por vencer o vencidos: {count}. Se resaltan en la tabla.',
+      expiresIn: 'Vence en {days} días',
+      expiresInOne: 'Vence en 1 día',
+      lowStockBadge: 'Bajo mínimo',
+      lowStockTitle: 'Productos bajo mínimo',
+      lowStockCaption: 'Productos por debajo del stock mínimo de su bodega',
+      columns: {
+        warehouse: 'Bodega',
+        product: 'Producto',
+        minimum: 'Mínimo',
+        available: 'Disponible',
+      },
+    },
   },
   kardex: {
     title: 'Kardex',
