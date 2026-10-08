@@ -40,7 +40,8 @@ services:
       context: .
       dockerfile: docker/api/Dockerfile
       target: prod
-    image: dispensart-api:local
+    # Staging (CI) la fija a ghcr.io/<dueño>/dispensart-api@sha256:... y arranca con --no-build.
+    image: ${API_IMAGE:-dispensart-api:local}
     environment:
       <<: *db-env
       APP_NAME: Dispensart
@@ -83,7 +84,7 @@ services:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
-    image: dispensart-web:local
+    image: ${WEB_IMAGE:-dispensart-web:local}
     ports:
       - "${WEB_PORT:-8090}:8080"
     depends_on:
