@@ -227,3 +227,31 @@ sobre (`ToolResultEnvelope::attribute`) reutiliza la misma función. OpenAPI no 
 - Deuda (prosa): `software/docs/asistente.md:62` aún dice 23 preguntas; el conjunto tiene 24 (archivo del
   backend-implementer, fuera de este alcance).
 - Pendiente: 4.5 (usuario), 5.5 (clon limpio), 6.1.
+
+## 2026-10-08 — devops-implementer: guía del asistente, 5.5 (clon limpio)
+
+- Corrección de documentación: `software/docs/asistente.md:62` decía 23 preguntas; el conjunto tiene 24 (`3c8e709`).
+  Barrido `/usr/bin/grep -rnwE '23(/23)?' software/docs README.md AI_USAGE.md docs/`: esa era la única cita del
+  conjunto (control positivo: `README.md:148` ya decía 24). Commit `ecae484`.
+- Desviación declarada de 5.5: el stack de desarrollo ocupa 8090/5434 y no se detuvo. El clon corrió con el comando
+  literal del README precedido de variables: `COMPOSE_PROJECT_NAME=dispensart-clon WEB_PORT=8092 DB_PORT=5436
+  API_IMAGE=dispensart-api:clon WEB_IMAGE=dispensart-web:clon` (puertos libres por `lsof`; las imágenes con
+  etiqueta propia para no pisar `dispensart-api:local`/`dispensart-web:local` del stack de desarrollo).
+- Defecto encontrado: en el clon limpio, el comando de evaluación del README salía 255
+  (`Failed opening required '/app/vendor/autoload.php'`): `api-tools` monta `./api` y un clon no trae `vendor/`.
+  Arreglo en `software/compose.yaml` (`9272a2e`): `api-tools` instala dependencias si falta
+  `vendor/autoload.php` y luego ejecuta el comando; el código de salida se propaga (`sh -c 'exit 3'` → 3). Con
+  `vendor/` presente (árbol de desarrollo) solo cuesta un `test -f`. El README no cambia: sus comandos funcionan
+  tal cual, también los de Pint, Larastan y Pest.
+- Tras el arreglo: `down -v` del proyecto del clon, clon borrado, clon nuevo en `9272a2e` y todo de nuevo.
+
+| Comprobación (clon en `9272a2e`, sin `.env`, sin `vendor/`) | Resultado |
+|---|---|
+| `docker compose -f software/compose.yaml up --build` (con las variables de arriba) | stack arriba; `siembra` en el log |
+| `docker compose -f software/compose.yaml ps` | `api` healthy, `db` healthy, `web` healthy |
+| `curl -fsS http://localhost:8092/ \| /usr/bin/grep -c 'lang="es"'` | 1 (control negativo `lang="en"` = 0) |
+| `GET /`, `GET /health`, `GET /ready` en 8092 | 200, 200, 200 |
+| `id -u` en `api` / `web` | 1000 / 101 |
+| Comando de evaluación del README, literal (`--profile tools run --rm api-tools php artisan assistant:eval`) | sale 0, `Aciertos: 24/24`; instaló dependencias (135 líneas `Installing\|Generating` en stderr) |
+| Control positivo: el mismo comando en el clon previo al arreglo (`ecae484`) | sale 255, `vendor/autoload.php` ausente |
+| Limpieza: `--profile tools down -v` del proyecto `dispensart-clon`, clon y 3 imágenes `:clon` borrados | 0 proyectos, 0 volúmenes `dispensart-clon`; `dispensart-{api,db,web}-1` siguen healthy; 24 contenedores en marcha antes y después |
