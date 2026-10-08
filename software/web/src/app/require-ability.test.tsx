@@ -99,7 +99,9 @@ describe('menú por rol', () => {
       ...catalogRoutes(),
       'GET /api/kardex': () => json(200, kardexPage([])),
     })
-    const link = await screen.findByRole('link', { name: strings.nav.kardex })
+    // En el inicio el acceso-tarjeta también se llama "Kardex": se toma el del menú.
+    const menu = await screen.findByRole('navigation', { name: strings.nav.label })
+    const link = await within(menu).findByRole('link', { name: strings.nav.kardex })
     link.focus()
     expect(link).toHaveFocus()
 
@@ -138,6 +140,23 @@ describe('inicio con accesos del rol', () => {
     fireEvent.click(links[1])
     expect(await screen.findByRole('heading', { name: strings.transfers.title })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/transfers')
+  })
+
+  // Hallazgo del recorrido 7.1: el lector de pantalla anunciaba vacíos los enlaces-tarjeta. Cada uno
+  // se nombra con el título de su pantalla (exacto, sin la descripción) y la describe aparte.
+  it('cada acceso del inicio se nombra con el título de su pantalla', async () => {
+    renderAs('auxiliar_farmacia', '/')
+    await shortcuts()
+    const nav = screen.getByRole('navigation', { name: strings.home.shortcuts })
+
+    for (const [name, description] of [
+      [strings.nav.dispensations, strings.dispensation.description],
+      [strings.nav.transfers, strings.transfers.description],
+      [strings.nav.inventory, strings.inventory.description],
+      [strings.nav.kardex, strings.kardex.description],
+    ]) {
+      expect(within(nav).getByRole('link', { name })).toHaveAccessibleDescription(description)
+    }
   })
 
   it('Admin sin accesos: saludo y "Tu rol no tiene pantallas de operación en esta versión."', async () => {
