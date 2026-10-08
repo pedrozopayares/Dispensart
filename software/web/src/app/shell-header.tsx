@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useNavigate } from 'react-router'
+import { MainNav } from '@/app/main-nav'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,7 @@ export function ShellHeader({ user }: { user: AuthenticatedUser }) {
           </Button>
         </div>
       </div>
+      <MainNav user={user} />
       {logout.isError && (
         <Alert variant="destructive">
           <AlertDescription>
