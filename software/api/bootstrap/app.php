@@ -3,15 +3,18 @@
 use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\AuthorizationRequired;
 use App\Exceptions\AuthorizerMustDiffer;
+use App\Exceptions\DiscrepancyAlreadyResolved;
 use App\Exceptions\ExceedsPrescription;
 use App\Exceptions\IdempotencyKeyReused;
 use App\Exceptions\InsufficientStock;
 use App\Exceptions\InvalidAuthorizer;
 use App\Exceptions\InvalidCredentials;
 use App\Exceptions\InvalidIdempotencyKey;
+use App\Exceptions\InvalidTransferTransition;
 use App\Exceptions\LotExpired;
 use App\Exceptions\PrescriptionExhausted;
 use App\Exceptions\PrescriptionExpired;
+use App\Exceptions\SegregationOfDutiesViolation;
 use App\Exceptions\TooManyAuthorizerAttempts;
 use App\Exceptions\TooManyLoginAttempts;
 use App\Http\Middleware\AssignCorrelationId;
@@ -69,6 +72,7 @@ return Application::configure(basePath: dirname(__DIR__))
             PrescriptionExpired::class, PrescriptionExhausted::class, ExceedsPrescription::class,
             AuthorizationRequired::class, AuthorizerMustDiffer::class, InvalidAuthorizer::class,
             TooManyAuthorizerAttempts::class, InvalidIdempotencyKey::class, IdempotencyKeyReused::class,
+            InvalidTransferTransition::class, SegregationOfDutiesViolation::class, DiscrepancyAlreadyResolved::class,
         ]);
 
         // La contraseña del autorizador de control especial nunca vuelve a la sesión (RN-05, design D6).

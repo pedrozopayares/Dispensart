@@ -41,6 +41,9 @@ final class ApiExceptionRenderer
             ),
             $e instanceof InvalidIdempotencyKey => self::error('invalid_idempotency_key', 422),
             $e instanceof IdempotencyKeyReused => self::error('idempotency_key_reused', 422),
+            $e instanceof InvalidTransferTransition => self::error('invalid_transfer_transition', 409),
+            $e instanceof SegregationOfDutiesViolation => self::error('segregation_of_duties', 403),
+            $e instanceof DiscrepancyAlreadyResolved => self::error('discrepancy_already_resolved', 409),
             $e instanceof HttpExceptionInterface => self::error(
                 self::codeForStatus($e->getStatusCode()), $e->getStatusCode(), headers: $e->getHeaders(),
             ),

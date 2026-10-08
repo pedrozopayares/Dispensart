@@ -13,6 +13,9 @@ use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Prescriptions\PrescriptionController;
+use App\Http\Controllers\Transfers\TransferActionController;
+use App\Http\Controllers\Transfers\TransferController;
+use App\Http\Controllers\Transfers\TransferDiscrepancyController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Middleware\RequireIdempotencyKey;
 use App\Models\Dispensation;
@@ -64,4 +67,25 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->can('create', Dispensation::class)
         ->middleware(RequireIdempotencyKey::class)
         ->name('dispensations.store');
+
+    // Traslados (S4). Precedencia (design D9): 419/401 → enlace (404) → Policy (403) → validación (422) →
+    // segregación (403) → estado (409) → vencimiento (422) → existencias (409). Ids de traslado no sensibles:
+    // 404 antes que 403. Ids de 1 a 18 dígitos: uno mayor no cabe en bigint y responde 404, nunca 500.
+    Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
+    Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
+    Route::where(['transfer' => '[0-9]{1,18}', 'discrepancy' => '[0-9]{1,18}'])->group(function (): void {
+        Route::get('/transfers/{transfer}', [TransferController::class, 'show'])
+            ->can('view', 'transfer')->name('transfers.show');
+        Route::post('/transfers/{transfer}/request', [TransferActionController::class, 'request'])
+            ->can('request', 'transfer')->name('transfers.request');
+        Route::post('/transfers/{transfer}/approve', [TransferActionController::class, 'approve'])
+            ->can('approve', 'transfer')->name('transfers.approve');
+        Route::post('/transfers/{transfer}/dispatch', [TransferActionController::class, 'dispatch'])
+            ->can('dispatch', 'transfer')->name('transfers.dispatch');
+        Route::post('/transfers/{transfer}/receive', [TransferActionController::class, 'receive'])->name('transfers.receive');
+        Route::post('/transfers/{transfer}/void', [TransferActionController::class, 'void'])->name('transfers.void');
+        // Enlace anidado: una discrepancia de otro traslado responde 404.
+        Route::post('/transfers/{transfer}/discrepancies/{discrepancy}/resolve', [TransferDiscrepancyController::class, 'resolve'])
+            ->scopeBindings()->name('transfers.discrepancies.resolve');
+    });
 });

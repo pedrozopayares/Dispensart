@@ -7,6 +7,7 @@ return [
     'between' => [
         'numeric' => 'El campo :attribute debe estar entre :min y :max.',
     ],
+    'different' => 'El campo :attribute debe ser distinto de :other.',
     'date_format' => 'El campo :attribute debe tener el formato :format.',
     'distinct' => 'El campo :attribute tiene un valor repetido.',
     'exists' => 'El valor de :attribute no existe.',
@@ -17,12 +18,16 @@ return [
     'integer' => 'El campo :attribute debe ser un número entero.',
     'max' => [
         'array' => 'El campo :attribute no debe tener más de :max elementos.',
+        'numeric' => 'El campo :attribute no debe ser mayor que :max.',
         'string' => 'El campo :attribute no debe superar :max caracteres.',
     ],
     'min' => [
         'array' => 'El campo :attribute debe tener al menos :min elemento.',
         'numeric' => 'El campo :attribute debe ser al menos :min.',
         'string' => 'El campo :attribute debe tener al menos :min caracteres.',
+    ],
+    'size' => [
+        'array' => 'El campo :attribute debe tener exactamente :size elementos.',
     ],
     'required' => 'Este campo es obligatorio.',
     'string' => 'El campo :attribute debe ser texto.',
@@ -48,5 +53,18 @@ return [
         'warehouse_id' => 'bodega',
         'authorizer_email' => 'correo del autorizador',
         'authorizer_password' => 'contraseña del autorizador',
+        'origin_warehouse_id' => 'bodega de origen',
+        'destination_warehouse_id' => 'bodega de destino',
+        'notes' => 'observaciones',
+        'lines' => 'líneas',
+        'lines.*.lot_id' => 'lote',
+        'lines.*.quantity' => 'cantidad',
+        'lines.*.line_id' => 'línea del traslado',
+        'lines.*.received_quantity' => 'cantidad recibida',
+        'reason' => 'motivo',
+        'resolution' => 'resolución',
+        'status' => 'estado',
+        'per_page' => 'resultados por página',
+        'page' => 'página',
     ],
 ];
