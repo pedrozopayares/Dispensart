@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/kardex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Movimientos del kardex, del más reciente al más antiguo, paginados (inventory.view) */
+        get: operations["kardex.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -107,6 +124,40 @@ export interface paths {
         patch: operations["products.update"];
         trace?: never;
     };
+    "/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Existencias con cantidad mayor que 0, filtrables por bodega, producto y lote (inventory.view) */
+        get: operations["stock.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ajusta una existencia con motivo y devuelve el movimiento `ajuste` creado (solo inventory.adjust) */
+        post: operations["stock-adjustments.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -170,7 +221,7 @@ export interface components {
              * @description Código estable del rechazo (contrato con la SPA).
              * @enum {string}
              */
-            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "method_not_allowed" | "http_error" | "server_error";
+            code: "unauthenticated" | "forbidden" | "not_found" | "csrf_token_mismatch" | "validation_failed" | "invalid_credentials" | "too_many_attempts" | "insufficient_stock" | "lot_expired" | "method_not_allowed" | "http_error" | "server_error";
             /** @description Mensaje en español para el usuario. */
             message: string;
             /** @description Mensajes en español por campo inválido. */
@@ -185,6 +236,22 @@ export interface components {
             email: string;
             role: string;
             abilities: unknown[];
+        };
+        /** KardexMovementResource */
+        KardexMovementResource: {
+            id: number;
+            type: components["schemas"]["MovementType"];
+            quantity: number;
+            balance_after: number;
+            reason: string | null;
+            created_at: string;
+            warehouse: components["schemas"]["WarehouseResource"];
+            product: components["schemas"]["ProductSummaryResource"];
+            lot: components["schemas"]["LotSummaryResource"];
+            user: {
+                id: number;
+                name: string;
+            } | null;
         };
         /**
          * LoginRequest
@@ -204,6 +271,19 @@ export interface components {
             expires_on: string;
             is_expired: boolean;
         };
+        /** LotSummaryResource */
+        LotSummaryResource: {
+            id: number;
+            lot_code: string;
+            expires_on: string;
+            is_expired: boolean;
+        };
+        /**
+         * MovementType
+         * @description Tipos de movimiento del kardex (RN-06). Los literales son los de la regla; S3 y S4 escriben los suyos.
+         * @enum {string}
+         */
+        MovementType: "entrada" | "salida_dispensacion" | "salida_traslado" | "entrada_traslado" | "ajuste";
         /** ProductResource */
         ProductResource: {
             id: number;
@@ -211,6 +291,21 @@ export interface components {
             name: string;
             presentation: string | null;
             is_controlled: boolean;
+        };
+        /** ProductSummaryResource */
+        ProductSummaryResource: {
+            id: number;
+            code: string;
+            name: string;
+            is_controlled: boolean;
+        };
+        /** StockResource */
+        StockResource: {
+            id: number;
+            quantity: number;
+            warehouse: components["schemas"]["WarehouseResource"];
+            product: components["schemas"]["ProductSummaryResource"];
+            lot: components["schemas"]["LotSummaryResource"];
         };
         /**
          * StoreProductRequest
@@ -221,6 +316,18 @@ export interface components {
             name: string;
             presentation?: string | null;
             is_controlled?: boolean;
+        };
+        /**
+         * StoreStockAdjustmentRequest
+         * @description Ajuste de inventario (inventory "Ajuste de inventario"): solo inventory.adjust. `reason` de solo espacios
+         *     llega como null (TrimStrings + ConvertEmptyStringsToNull) y falla `required`. Usuario, tipo, saldo y fecha
+         *     nunca se leen del cuerpo: solo `adjustment()` llega a la acción.
+         */
+        StoreStockAdjustmentRequest: {
+            warehouse_id: number;
+            lot_id: number;
+            quantity: number;
+            reason: string;
         };
         /**
          * StoreUserRequest
@@ -295,6 +402,86 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "kardex.index": {
+        parameters: {
+            query?: {
+                warehouse_id?: number;
+                product_id?: number;
+                lot_id?: number;
+                per_page?: number;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `KardexMovementResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["KardexMovementResource"][];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
     "auth.login": {
         parameters: {
             query?: never;
@@ -649,6 +836,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "stock.index": {
+        parameters: {
+            query?: {
+                warehouse_id?: number;
+                product_id?: number;
+                lot_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of `StockResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StockResource"][];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "stock-adjustments.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreStockAdjustmentRequest"];
+            };
+        };
+        responses: {
+            /** @description `KardexMovementResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["KardexMovementResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description La operación dejaría la existencia negativa o la existencia no existe. code: insufficient_stock */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos (code: validation_failed, con errors) o ingreso a un lote vencido (code: lot_expired). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
