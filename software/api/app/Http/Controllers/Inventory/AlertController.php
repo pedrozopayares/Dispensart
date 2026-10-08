@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Requests\Inventory\ListAlertsRequest;
 use App\Http\Resources\AlertsResource;
 use App\Queries\AlertQuery;
+use App\Queries\InventoryAlerts;
 
 final class AlertController
 {
@@ -16,9 +17,9 @@ final class AlertController
     {
         $warehouseId = $request->warehouseId();
 
-        return new AlertsResource([
-            'expiring_lots' => $query->expiringLots($warehouseId),
-            'low_stock' => $query->lowStock($warehouseId),
-        ]);
+        return new AlertsResource(new InventoryAlerts(
+            expiringLots: $query->expiringLots($warehouseId),
+            lowStock: $query->lowStock($warehouseId),
+        ));
     }
 }

@@ -16,6 +16,80 @@
         }
     ],
     "paths": {
+        "/alerts": {
+            "get": {
+                "operationId": "alerts.index",
+                "summary": "Alertas de inventario (RN-11): lotes con existencia que vencen en 90 d\u00edas o menos, ya vencidos incluidos,\ny pares bodega + producto bajo su stock m\u00ednimo. Filtro opcional por bodega (inventory.view)",
+                "tags": [
+                    "Alert"
+                ],
+                "parameters": [
+                    {
+                        "name": "warehouse_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`AlertsResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AlertsResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
+            }
+        },
         "/dispensations": {
             "post": {
                 "operationId": "dispensations.store",
@@ -2840,6 +2914,28 @@
             }
         },
         "schemas": {
+            "AlertsResource": {
+                "type": "object",
+                "properties": {
+                    "expiring_lots": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExpiringLotResource"
+                        }
+                    },
+                    "low_stock": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LowStockResource"
+                        }
+                    }
+                },
+                "required": [
+                    "expiring_lots",
+                    "low_stock"
+                ],
+                "title": "AlertsResource"
+            },
             "ApiError": {
                 "type": "object",
                 "properties": {
@@ -3139,6 +3235,34 @@
                 ],
                 "title": "DispensationResource"
             },
+            "ExpiringLotResource": {
+                "type": "object",
+                "properties": {
+                    "warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ProductSummaryResource"
+                    },
+                    "lot": {
+                        "$ref": "#/components/schemas/LotSummaryResource"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "days_to_expiry": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "warehouse",
+                    "product",
+                    "lot",
+                    "quantity",
+                    "days_to_expiry"
+                ],
+                "title": "ExpiringLotResource"
+            },
             "KardexMovementResource": {
                 "type": "object",
                 "properties": {
@@ -3276,6 +3400,30 @@
                     "is_expired"
                 ],
                 "title": "LotSummaryResource"
+            },
+            "LowStockResource": {
+                "type": "object",
+                "properties": {
+                    "warehouse": {
+                        "$ref": "#/components/schemas/WarehouseResource"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ProductSummaryResource"
+                    },
+                    "minimum_quantity": {
+                        "type": "integer"
+                    },
+                    "available_quantity": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "warehouse",
+                    "product",
+                    "minimum_quantity",
+                    "available_quantity"
+                ],
+                "title": "LowStockResource"
             },
             "MovementType": {
                 "type": "string",

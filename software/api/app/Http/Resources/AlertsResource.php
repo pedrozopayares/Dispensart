@@ -4,12 +4,14 @@ namespace App\Http\Resources;
 
 use App\Models\Stock;
 use App\Models\StockMinimum;
-use Illuminate\Database\Eloquent\Collection;
+use App\Queries\InventoryAlerts;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Las dos listas de alertas bajo `data` (design D8). Una lista sin alertas se serializa `[]`, nunca se omite.
+ *
+ * @mixin InventoryAlerts
  */
 final class AlertsResource extends JsonResource
 {
@@ -18,14 +20,11 @@ final class AlertsResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var array{expiring_lots: Collection<int, Stock>, low_stock: Collection<int, StockMinimum>} $alerts */
-        $alerts = $this->resource;
-
         return [
-            'expiring_lots' => $alerts['expiring_lots']
+            'expiring_lots' => $this->expiringLots
                 ->map(fn (Stock $stock): ExpiringLotResource => new ExpiringLotResource($stock))
                 ->values()->all(),
-            'low_stock' => $alerts['low_stock']
+            'low_stock' => $this->lowStock
                 ->map(fn (StockMinimum $minimum): LowStockResource => new LowStockResource($minimum))
                 ->values()->all(),
         ];
