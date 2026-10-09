@@ -47,71 +47,75 @@
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* Paleta pública de la IPS: azul marino #232955, verde lima #a9cd43, fondo #f8f9fa, texto #212b51.
+       El verde lima nunca lleva texto: solo relleno con texto azul marino. Contraste fijado por prueba. */
+    --background: #f8f9fa;
+    --foreground: #212b51;
+    --card: #ffffff;
+    --card-foreground: #212b51;
+    --popover: #ffffff;
+    --popover-foreground: #212b51;
+    --primary: #232955;
+    --primary-foreground: #f8f9fa;
+    --secondary: #a9cd43;
+    --secondary-foreground: #232955;
+    --muted: #eef0f4;
+    --muted-foreground: #4d5578;
+    --accent: #e6f0c8;
+    --accent-foreground: #232955;
+    --destructive: #c62828;
+    --border: #dde1ea;
+    --input: #dde1ea;
+    --ring: #4a5291;
+    --chart-1: #232955;
+    --chart-2: #a9cd43;
+    --chart-3: #4a5291;
+    --chart-4: #7d9a2f;
+    --chart-5: #8a90b8;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #212b51;
+    --sidebar-primary: #232955;
+    --sidebar-primary-foreground: #f8f9fa;
+    --sidebar-accent: #e6f0c8;
+    --sidebar-accent-foreground: #232955;
+    --sidebar-border: #dde1ea;
+    --sidebar-ring: #4a5291;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
+    /* Derivado de la paleta: superficies azul marino oscuras, texto claro, primario verde lima con texto
+       azul marino. Sin selector de tema: este bloque solo aplica si la raíz lleva la clase `dark`. */
+    --background: #12162d;
+    --foreground: #f1f3f8;
+    --card: #1b2042;
+    --card-foreground: #f1f3f8;
+    --popover: #1b2042;
+    --popover-foreground: #f1f3f8;
+    --primary: #a9cd43;
+    --primary-foreground: #232955;
+    --secondary: #2a3060;
+    --secondary-foreground: #f1f3f8;
+    --muted: #252a50;
+    --muted-foreground: #a9b0cc;
+    --accent: #2a3060;
+    --accent-foreground: #f1f3f8;
+    --destructive: #f87171;
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --ring: #a9cd43;
+    --chart-1: #a9cd43;
+    --chart-2: #8a90d0;
+    --chart-3: #c9e08a;
+    --chart-4: #5b6396;
+    --chart-5: #e6f0c8;
+    --sidebar: #1b2042;
+    --sidebar-foreground: #f1f3f8;
+    --sidebar-primary: #a9cd43;
+    --sidebar-primary-foreground: #232955;
+    --sidebar-accent: #2a3060;
+    --sidebar-accent-foreground: #f1f3f8;
     --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --sidebar-ring: #a9cd43;
 }
 
 @layer base {
