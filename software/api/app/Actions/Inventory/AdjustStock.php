@@ -14,6 +14,7 @@ use App\Support\BusinessCalendar;
 /**
  * Ajuste de inventario con motivo (inventory "Ajuste de inventario"). Usuario, fecha, tipo y saldo los fija
  * el servidor. Un ingreso a un lote vencido se rechaza; una baja se permite (RN-01).
+ * No escribe en la bitácora: el ajuste manual entra por AdjustStockManually, que sí la escribe (S10 D2).
  */
 final class AdjustStock
 {
