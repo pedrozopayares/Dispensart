@@ -41,6 +41,8 @@ const COMMON_PAIRS: Pair[] = [
   { fg: 'sidebar-accent-foreground', bg: 'sidebar-accent', min: AA },
   { fg: 'destructive', bg: 'background', min: AA },
   { fg: 'destructive', bg: 'card', min: AA },
+  // Insignia «Vence en N días» de `/inventory` (S14): `bg-warning text-warning-foreground`.
+  { fg: 'warning-foreground', bg: 'warning', min: AA },
   { fg: 'ring', bg: 'background', min: NON_TEXT },
 ]
 
@@ -101,6 +103,15 @@ function parseOklch(value: string): Rgb | null {
 
 function toHex(rgb: Rgb): string {
   return `#${rgb.map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('')}`
+}
+
+// Tono HSL en grados (0..360) de un color sRGB codificado.
+function hue([r, g, b]: Rgb): number {
+  const max = Math.max(r, g, b)
+  const delta = max - Math.min(r, g, b)
+  if (delta === 0) return 0
+  const h = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4
+  return (h * 60 + 360) % 360
 }
 
 function luminance([r, g, b]: Rgb): number {
@@ -177,6 +188,17 @@ describe('contraste de los tokens de tema', () => {
       expect(r).toBeGreaterThan(1.5 * g)
       expect(r).toBeGreaterThan(1.5 * b)
     })
+
+    it(`tema ${theme}: la advertencia es ámbar, distinta de vencido y de bajo mínimo`, () => {
+      const { colors } = analyzeTheme(themeCss, theme)
+      const warning = colors.warning
+      // Ámbar: tono estrictamente entre el rojo destructivo y el verde lima de la paleta.
+      expect(hue(warning)).toBeGreaterThan(hue(colors.destructive) + 15)
+      expect(hue(warning)).toBeLessThan(hue(parseHex(LIME)!) - 15)
+      expect(toHex(warning)).not.toBe(toHex(colors.destructive))
+      expect(toHex(warning)).not.toBe(toHex(colors.secondary))
+      expect(toHex(warning)).not.toBe(LIME)
+    })
   }
 
   it('tema claro: usa la paleta de la IPS', () => {
@@ -231,6 +253,18 @@ describe('guardas: tema sin tokens o con token ausente', () => {
       .join('\n')
     expect(() => analyzeTheme(`:root {\n${declarations}\n}\n`, 'claro')).toThrow(
       'tema claro: falta el token --secondary-foreground',
+    )
+  })
+
+  it('sin tokens: falta --warning en tema oscuro y el análisis falla nombrando tema y token', () => {
+    const complete = extractTokens(themeCss, SELECTOR.oscuro)
+    expect(complete.warning).toBeDefined()
+    const declarations = Object.entries(complete)
+      .filter(([name]) => name !== 'warning')
+      .map(([name, value]) => `  --${name}: ${value};`)
+      .join('\n')
+    expect(() => analyzeTheme(`.dark {\n${declarations}\n}\n`, 'oscuro')).toThrow(
+      'tema oscuro: falta el token --warning',
     )
   })
 })

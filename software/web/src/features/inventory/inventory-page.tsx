@@ -121,7 +121,7 @@ function StockTable({ rows, alertsFor }: { rows: readonly StockRow[]; alertsFor:
                   <span className="font-mono">{row.lot.lot_code}</span>
                   {expired && <Badge variant="destructive">{strings.inventory.expired}</Badge>}
                   {expiringSoon && (
-                    <Badge className="bg-amber-500 text-white">
+                    <Badge className="bg-warning text-warning-foreground">
                       {expiresInLabel(expiring.days_to_expiry)}
                     </Badge>
                   )}

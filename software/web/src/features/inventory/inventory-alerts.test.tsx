@@ -84,7 +84,11 @@ describe('Inventario › alertas de vencimiento y stock mínimo', () => {
     await screen.findByText(format(s.expiringSummary, { count: '1' }))
 
     const highlighted = rowOf('Farmacia Central', 'ACE-A1')
-    expect(within(highlighted).getByText(format(s.expiresIn, { days: '20' }))).toBeInTheDocument()
+    const badge = within(highlighted).getByText(format(s.expiresIn, { days: '20' }))
+    expect(badge).toBeInTheDocument()
+    // S14: colores del par de advertencia del tema, no ámbar fijo con texto blanco.
+    expect(badge).toHaveClass('bg-warning', 'text-warning-foreground')
+    expect(badge).not.toHaveClass('text-white')
     expect(highlighted).toHaveAttribute('data-expiring', 'true')
     // El mismo lote en otra bodega no figura en la alerta: sin resaltado.
     const sameLotElsewhere = rowOf('Farmacia Urgencias', 'ACE-A1')

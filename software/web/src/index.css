@@ -27,6 +27,8 @@
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -64,6 +66,9 @@
     --accent: #e6f0c8;
     --accent-foreground: #232955;
     --destructive: #c62828;
+    /* Advertencia (lote por vencer): ámbar con texto azul marino, nunca texto blanco. */
+    --warning: #f59e0b;
+    --warning-foreground: #212b51;
     --border: #dde1ea;
     --input: #dde1ea;
     --ring: #4a5291;
@@ -100,6 +105,8 @@
     --accent: #2a3060;
     --accent-foreground: #f1f3f8;
     --destructive: #f87171;
+    --warning: #fbbf24;
+    --warning-foreground: #232955;
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: #a9cd43;
