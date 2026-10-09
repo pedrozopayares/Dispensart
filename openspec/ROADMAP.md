@@ -19,6 +19,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S8 | `add-delivery-pipeline` | CI/CD completo (imágenes, staging, producción con compuerta), documento de despliegue, README, AI_USAGE.md | D, E | B | archivado |
 | S9 | `fix-assistant-eval-and-health-docs` | `/health` y `/ready` en `openapi.json`; `assistant:eval` compara la bodega y el producto resueltos, no el texto (salda D-auv-7) | A, C, D | B | archivado |
 | S10 | `add-sensitive-operation-audit` | Bitácora de auditoría para creación de usuarios y ajustes de stock (`audit_events`, migración de sus CHECK) | A, RN-09 | A | archivado |
+| S11 | `use-registry-mirror-in-ci` | El CI descarga las imágenes base de Docker Hub (postgres, php, composer, node, nginx) desde el espejo `mirror.gcr.io`, sin credenciales; en local sigue Docker Hub | D | B | bloqueado: GATE 1 en pausa por el usuario (2026-10-09) |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.
