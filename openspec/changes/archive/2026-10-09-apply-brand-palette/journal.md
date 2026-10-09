@@ -104,3 +104,8 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 
 - Docker Desktop reiniciado por el usuario. 2.1 y 2.2 hechas; recorrido visual en `verification.md` § 5 con capturas.
 - Tareas completas. Siguiente: final-auditor, modo delta (tier C).
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, delta tier C)
+
+- Veredicto sobre `47bbb46..28e97c6`: APPROVED, sin observaciones.
+- Deuda al archivar: D-auv-8 (menor, badge «Por vencer» bajo AA) abierta; descubierta aquí, viaja como máximo un cambio.
