@@ -81,3 +81,10 @@ Deuda nueva: ninguna. Bloqueos: ninguno.
 | `[MUT]` M6 | `mutants/M6.patch` (`CATALOG_ARGUMENTS = ['warehouse']`): rojo en «Mismo producto con otra redacción», control «Misma bodega» verde, restaurado verde (`verification.md` § 2) |
 | Aislamiento | delta sobre `dispensart_s9fix` (creada y borrada); sin corrida completa ni `composer openapi`, por presupuesto y por S10 en `dispensart_test` |
 | Producto | sin cambios: la prueba nueva pasa con `225e911` |
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, delta tier B)
+
+- Primera pasada: OBSERVATIONS (1 mayor de prueba: el producto por catálogo no estaba fijado; 1 menor de prosa: ejemplo del escenario).
+- Arreglos: `93a5195` (caso de producto y M6) y `74f0951` (ejemplo). Re-auditoría delta sobre el hallazgo de código: APPROVED.
+- D-auv-7 saldada. Incidente: la primera auditoría corrió `composer openapi`, que migra `dispensart_test` hacia adelante,
+  mientras S10 trabajaba; sin efecto observado.
