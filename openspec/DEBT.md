@@ -11,7 +11,6 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-8 | minor | apply-brand-palette (propuesta, 2026-10-09) | El badge «Por vencer» de la pantalla de inventario usa ámbar fijo con texto blanco (≈2,2:1), por debajo de WCAG AA. No es un token de tema, así que queda fuera de S12. | Texto oscuro sobre ámbar (o ámbar oscuro con texto blanco) con prueba de contraste; cambio de frontend Tier C. |
 
 ## Settled
 
@@ -24,3 +23,4 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 | D-auv-5 | add-delivery-pipeline (`3c8e709`) | Filtro previo bloquea lo dispensado/prescrito a una persona y «fórmula»; prueba HTTP con la pregunta del auditor falla sin el cambio; residuo aceptado en README (Compromiso 6); verificado por final-auditor. |
 | D-auv-6 | add-delivery-pipeline (`df71b72`) | Nombres de herramienta saneados a `[A-Za-z0-9_-]` (64) en `ToolCallRecord`; pruebas de log y respuesta HTTP fallan sin el cambio; verificado por final-auditor. |
 | D-auv-7 | fix-assistant-eval-and-health-docs (`225e911`, `93a5195`) | `EvaluationMatcher` compara bodega y producto resueltos con `CatalogResolver`; M4–M6 hacen fallar las pruebas del comparador; verificado por final-auditor. |
+| D-auv-8 | fix-expiry-badge-contrast (`a41100d`) | Insignia «Vence en N días» con tokens `warning`/`warning-foreground` (6.39:1 claro, 8.28:1 oscuro); prueba de contraste y controles C1–C2 fallan sin el cambio; verificado por final-auditor. |

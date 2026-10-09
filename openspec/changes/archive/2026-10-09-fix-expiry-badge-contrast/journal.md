@@ -60,3 +60,10 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 ## 2026-10-09 — Orchestrator: cierre de apply
 
 - Tareas completas; 2.2 hecha en el navegador (`captures/inventario.jpg`, `verification.md` § 6). Siguiente: final-auditor delta.
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, delta tier C; hallazgo de registro re-verificado por spec-validator)
+
+- final-auditor: producto y pruebas limpios (tokens de tema, 6.39:1 claro y 8.28:1 oscuro recalculados, C1 y C2
+  reproducidos, lint, typecheck y Vitest 274 pasan). Única observación, menor y de registro: `tasks.md` vaciado por
+  el script del Orchestrator en `175e766`. Restaurado desde `8523e6d` con 2.2 marcada; spec-validator VALID.
+- D-auv-8 saldada.
