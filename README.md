@@ -80,7 +80,7 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 |---|---|
 | Elegido | Interfaz `LlmProvider` con `AI_PROVIDER=mock` (reglas deterministas, sin red ni llaves) por defecto y en CI; `ollama` en el anfitrión como modelo real, con `qwen2.5:3b` por defecto y cambiable con `OLLAMA_MODEL`. |
 | Descartado | Proveedor externo de pago: exige llaves, saca datos de la máquina y tiene costo. |
-| Costo | Un modelo local pequeño tarda segundos por pregunta y elige peor que uno grande. Medido el 2026-10-08 con `gemma4:e2b-mlx` (Ollama en el equipo Apple Silicon del autor): `assistant:eval` dio 20/24, con entre 7 y 19 s por pregunta en esa máquina. De los 4 fallos, 2 (casos 7 y 10) son del comparador de la evaluación, que penaliza «farmacia de urgencias» frente a «farmacia urgencias» aunque `CatalogResolver` resuelve la misma bodega (deuda D-auv-7); el 4 (proveedor no disponible) y el 8 (el modelo la dio por fuera de alcance) son fallos del modelo. |
+| Costo | Un modelo local pequeño tarda segundos por pregunta y elige peor que uno grande. Medido con `gemma4:e2b-mlx` (Ollama en el equipo Apple Silicon del autor): el 2026-10-08 `assistant:eval` dio 20/24 con el comparador literal, entre 7 y 19 s por pregunta; el 2026-10-09, ya comparando bodega y producto resueltos por `CatalogResolver`, dio 22/24. Los 2 fallos son del modelo: el caso 8 lo dio por fuera de alcance y el 10 respondió «desconocido» en vez de «sin resultados». El caso 4 falló el 2026-10-08 y pasó el 2026-10-09: el modelo local no es determinista entre corridas. |
 
 ### Compromiso 5 · Usuario de base de la app con todos los privilegios (riesgo aceptado)
 
@@ -130,18 +130,17 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | Edición de mínimos por API | Ninguna parte de la prueba la exige; los mínimos se siembran. |
 | Filtro de alertas por producto | La API filtra alertas solo por bodega; la SPA muestra las de la bodega elegida. |
 | División del bundle por ruta | La SPA pesa unos 513 kB en un solo bloque; para una herramienta interna de carga única se dejó como no-objetivo. |
-| Evaluación con Ollama en CI | CI corre la evaluación con `mock` (estable, sin red); el modelo real se midió a mano una vez (compromiso 4) y el comando queda documentado para repetirlo. |
+| Evaluación con Ollama en CI | CI corre la evaluación con `mock` (estable, sin red); el modelo real se midió a mano dos veces (compromiso 4) y el comando queda documentado para repetirlo. |
 
 ### Deuda abierta
 
-Una fila menor, D-auv-7: `assistant:eval` compara el texto de los argumentos y no la bodega resuelta, así que
-subestima la calidad del modelo real (compromiso 4). El registro de deuda es `openspec/DEBT.md`; las tres filas
-menores abiertas al iniciar esta entrega se saldaron en ella (humos de dominio en staging, filtro de pacientes
-del asistente, saneo de nombres de herramienta en el log).
+Ninguna. El registro de deuda es `openspec/DEBT.md`; las filas menores abiertas durante esta entrega se saldaron
+en ella (humos de dominio en staging, filtro de pacientes del asistente, saneo de nombres de herramienta en el
+log, comparador de `assistant:eval` por bodega y producto resueltos).
 
 ## Documentación de la API
 
-OpenAPI 3.1 en `software/api/openapi.json`, generado desde el código con Scramble y verificado en CI.
+OpenAPI 3.1 en `software/api/openapi.json`, generado desde el código con Scramble y verificado en CI. Incluye `/health` y `/ready`.
 
 ## Asistente de IA: evaluación
 

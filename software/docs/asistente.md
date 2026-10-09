@@ -22,11 +22,11 @@ segundos por ronda y puede elegir mal o enviar enteros como texto (`invalid_argu
 `llama3.1:8b` aciertan más con más memoria y latencia. A cambio, ningún dato sale de la máquina. Plazo total
 por pregunta: 50 s; agotado, o con Ollama caído, la API responde 503.
 
-**Medición real.** El 2026-10-08, con `gemma4:e2b-mlx` en Ollama sobre el equipo Apple Silicon del autor,
-`assistant:eval` dio 20/24, con entre 7 y 19 s por pregunta en esa máquina. Dos fallos (casos 7 y 10) son del
-comparador, que exige el texto literal «farmacia urgencias» aunque «farmacia de urgencias» resuelve la misma
-bodega (deuda D-auv-7 en `openspec/DEBT.md`); los casos 4 (proveedor no disponible) y 8 (dado por fuera de
-alcance) son fallos del modelo.
+**Medición real.** Con `gemma4:e2b-mlx` en Ollama sobre el equipo Apple Silicon del autor. El 2026-10-09, con el
+comparador que usa bodega y producto resueltos, `assistant:eval` dio 22/24. Los dos fallos son del modelo: el
+caso 8 (`stock-auditor-hospitalizacion`) lo dio por fuera de alcance y el 10 (`low-stock-equal-minimum`) respondió
+«desconocido» en vez de «sin resultados». La corrida previa (2026-10-08, comparador literal) dio 20/24, con entre
+7 y 19 s por pregunta; su caso 4 falló y ahora pasó: el modelo local no es determinista entre corridas.
 
 ## Herramientas y roles
 
