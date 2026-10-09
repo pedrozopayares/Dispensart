@@ -70,6 +70,7 @@ sin permiso → `not_permitted`. Argumentos inválidos o límite alcanzado → `
 fragmentos esperados. El comando las responde con el servicio de la ruta sobre una base desechable
 (`<base>_assistant_eval`, creada y borrada por corrida) e imprime una fila por pregunta y `Aciertos: N/T`. Sale
 con 0 solo si todas aciertan; CI lo corre con `mock`.
+El comparador usa la bodega y el producto resueltos en el catálogo, no el texto literal de los argumentos.
 
 ```sh
 docker compose -f software/compose.yaml --profile tools run --rm api-tools php artisan assistant:eval
