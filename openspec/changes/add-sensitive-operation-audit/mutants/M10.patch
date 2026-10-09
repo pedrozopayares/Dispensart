@@ -1,0 +1,12 @@
+diff --git a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+index f9aa6a2..0dfef6e 100644
+--- a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
++++ b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+@@ -32,7 +32,6 @@ public function up(): void
+             subjects: 'subject_type IN ('.implode(', ', [
+                 self::PRIOR_SUBJECTS,
+                 "'user'",
+-                "'kardex_movement'",
+             ]).')',
+             pairs: implode(' OR ', [
+                 self::PRIOR_PAIRS,

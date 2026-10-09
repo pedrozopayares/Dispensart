@@ -1,0 +1,54 @@
+diff --git a/software/api/app/Actions/Inventory/AdjustStock.php b/software/api/app/Actions/Inventory/AdjustStock.php
+index 4a134eb..d0a653f 100644
+--- a/software/api/app/Actions/Inventory/AdjustStock.php
++++ b/software/api/app/Actions/Inventory/AdjustStock.php
+@@ -2,11 +2,13 @@
+ 
+ namespace App\Actions\Inventory;
+ 
++use App\Enums\AuditAction;
+ use App\Enums\MovementType;
+ use App\Exceptions\LotExpired;
+ use App\Models\KardexMovement;
+ use App\Models\Lot;
+ use App\Models\User;
++use App\Services\Audit\AuditTrail;
+ use App\Services\Inventory\StockChange;
+ use App\Services\Inventory\StockLedger;
+ use App\Support\BusinessCalendar;
+@@ -18,7 +20,7 @@
+  */
+ final class AdjustStock
+ {
+-    public function __construct(private readonly StockLedger $ledger) {}
++    public function __construct(private readonly StockLedger $ledger, private readonly AuditTrail $audit) {}
+ 
+     /**
+      * @param  array{warehouse_id: int, lot_id: int, quantity: int, reason: string}  $data
+@@ -43,6 +45,10 @@ public function handle(User $user, array $data): KardexMovement
+                 reason: $data['reason'],
+             ),
+         ]);
++        $this->audit->record($user->id, AuditAction::StockAdjusted, $movement->id, [
++            'warehouse_id' => $movement->warehouse_id,
++            'lot_id' => $movement->lot_id,
++        ]);
+ 
+         return $movement->load(['warehouse', 'product', 'lot', 'user']);
+     }
+diff --git a/software/api/app/Actions/Inventory/AdjustStockManually.php b/software/api/app/Actions/Inventory/AdjustStockManually.php
+index f5ee32e..4ca7a18 100644
+--- a/software/api/app/Actions/Inventory/AdjustStockManually.php
++++ b/software/api/app/Actions/Inventory/AdjustStockManually.php
+@@ -32,11 +32,6 @@ public function handle(User $user, array $data): KardexMovement
+         return DB::transaction(function () use ($user, $data): KardexMovement {
+             $movement = $this->adjust->handle($user, $data);
+ 
+-            $this->audit->record($user->id, AuditAction::StockAdjusted, $movement->id, [
+-                'warehouse_id' => $movement->warehouse_id,
+-                'lot_id' => $movement->lot_id,
+-            ]);
+-
+             return $movement;
+         });
+     }

@@ -1,0 +1,12 @@
+diff --git a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+index f9aa6a2..02c80c4 100644
+--- a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
++++ b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+@@ -37,7 +37,6 @@ public function up(): void
+             pairs: implode(' OR ', [
+                 self::PRIOR_PAIRS,
+                 "(action = 'user.created' AND subject_type = 'user')",
+-                "(action = 'stock.adjusted' AND subject_type = 'kardex_movement')",
+             ]),
+             validate: true,
+         );

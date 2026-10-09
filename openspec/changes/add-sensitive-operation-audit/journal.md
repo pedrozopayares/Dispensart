@@ -73,3 +73,27 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   3. Tier A = columna Tier.
   4. RN-09 intacta; el trigger de solo inserción no se toca; ningún ADR se debilita.
 - Apply espera a que S9 cierre: comparten la base de pruebas `dispensart_test`.
+
+## 2026-10-09 — backend-implementer: apply
+
+- Costuras confirmadas (0.1): `AuditTrail::record(int $actorId, AuditAction, int $subjectId, array $details = [])`
+  escribe en la transacción en curso; `AuditAction` con 7 casos; `CHECK` `audit_events_action_check`,
+  `audit_events_subject_type_check`, `audit_events_action_subject_check` (reemplazados por nombre en
+  `2026_10_10_000004`); disparador `audit_events_append_only` (sentencia, `ENABLE ALWAYS`); `AdjustStock::handle()`
+  lo llaman el controlador del ajuste, `ResolveDiscrepancy` y cinco ayudas de prueba; `CreateUser::handle()` solo
+  `UserController::store`.
+- Commits: `4a433a7` (migración + enum + integridad), `0ed7517` (alta), `7044892` (ajuste + carreras).
+- Corridas: base 1 de 3 y cierre 2 de 3; cifras en `verification.md` § 5. `openapi.json` sin diferencias; sin
+  regenerar tipos de la SPA.
+- `[MUT]`: M1–M11 y controles M2, M6, M7, M11 con el comando de `tasks.md`; resultados en `verification.md` § 3.
+- En vivo (4.1): migración aplicada por el entrypoint de `api`, `/ready` 200, un ajuste y un alta por Nginx dejaron
+  una fila cada uno, solo ids (`verification.md` § 6). Datos sintéticos en la base de desarrollo: usuario
+  `verificacion.s10@dispensart.test` y un ajuste +1.
+- Decisión (desvío de D7): las pruebas de alta y ajuste usan `DatabaseMigrations`. Con `RefreshDatabase`, una fila
+  escrita fuera del punto de guardado (M3, M5, M6) aborta la transacción de la prueba y el estado no se puede leer;
+  el control M6 sería imposible. El disparador de prueba cae con la tabla; la función se borra en `afterEach`.
+- Decisión: precondición de árbol limpio de los `[MUT]` acotada a los archivos de cada parche; S9 tenía archivos
+  sin confirmar en `software/api` durante el bloque 1.
+- Deuda observada (sin id): el alta con correo duplicado en carrera responde 500 (previo, fuera de alcance en
+  design). Ninguna nueva.
+- Bloqueos: ninguno. Un 504 transitorio de Docker Hub en el primer `up --build`; reintento correcto.

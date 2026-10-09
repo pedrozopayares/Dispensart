@@ -1,0 +1,26 @@
+diff --git a/software/api/app/Actions/Identity/CreateUser.php b/software/api/app/Actions/Identity/CreateUser.php
+index 48c6a4b..92b8a28 100644
+--- a/software/api/app/Actions/Identity/CreateUser.php
++++ b/software/api/app/Actions/Identity/CreateUser.php
+@@ -23,7 +23,7 @@ public function __construct(private readonly AuditTrail $audit) {}
+      */
+     public function handle(User $actor, array $data): User
+     {
+-        return DB::transaction(function () use ($actor, $data): User {
++        $user = DB::transaction(function () use ($data): User {
+             $user = new User([
+                 'name' => $data['name'],
+                 'email' => LoginAction::normalizeEmail($data['email']),
+@@ -32,9 +32,10 @@ public function handle(User $actor, array $data): User
+             $user->role = Role::from($data['role']);
+             $user->save();
+ 
+-            $this->audit->record($actor->id, AuditAction::UserCreated, $user->id);
+-
+             return $user;
+         });
++        $this->audit->record($actor->id, AuditAction::UserCreated, $user->id);
++
++        return $user;
+     }
+ }

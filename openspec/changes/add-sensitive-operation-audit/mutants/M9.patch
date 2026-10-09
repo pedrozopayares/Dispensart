@@ -1,0 +1,12 @@
+diff --git a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+index f9aa6a2..5a95a18 100644
+--- a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
++++ b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+@@ -26,7 +26,6 @@ public function up(): void
+         $this->replace(
+             actions: 'action IN ('.implode(', ', [
+                 self::PRIOR_ACTIONS,
+-                "'user.created'",
+                 "'stock.adjusted'",
+             ]).')',
+             subjects: 'subject_type IN ('.implode(', ', [

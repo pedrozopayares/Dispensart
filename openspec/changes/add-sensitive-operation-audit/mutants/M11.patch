@@ -1,0 +1,13 @@
+diff --git a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+index f9aa6a2..2fb6036 100644
+--- a/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
++++ b/software/api/database/migrations/2026_10_12_000001_extend_audit_events_for_sensitive_operations.php
+@@ -49,7 +49,7 @@ public function down(): void
+             actions: 'action IN ('.self::PRIOR_ACTIONS.')',
+             subjects: 'subject_type IN ('.self::PRIOR_SUBJECTS.')',
+             pairs: self::PRIOR_PAIRS,
+-            validate: false,
++            validate: true,
+         );
+     }
+ 

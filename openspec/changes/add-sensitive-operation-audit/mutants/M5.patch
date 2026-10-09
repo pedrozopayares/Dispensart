@@ -1,0 +1,28 @@
+diff --git a/software/api/app/Actions/Inventory/AdjustStockManually.php b/software/api/app/Actions/Inventory/AdjustStockManually.php
+index f5ee32e..c72922a 100644
+--- a/software/api/app/Actions/Inventory/AdjustStockManually.php
++++ b/software/api/app/Actions/Inventory/AdjustStockManually.php
+@@ -29,15 +29,14 @@ public function __construct(
+      */
+     public function handle(User $user, array $data): KardexMovement
+     {
+-        return DB::transaction(function () use ($user, $data): KardexMovement {
+-            $movement = $this->adjust->handle($user, $data);
+-
+-            $this->audit->record($user->id, AuditAction::StockAdjusted, $movement->id, [
+-                'warehouse_id' => $movement->warehouse_id,
+-                'lot_id' => $movement->lot_id,
+-            ]);
+-
+-            return $movement;
++        $movement = DB::transaction(function () use ($user, $data): KardexMovement {
++            return $this->adjust->handle($user, $data);
+         });
++        $this->audit->record($user->id, AuditAction::StockAdjusted, $movement->id, [
++            'warehouse_id' => $movement->warehouse_id,
++            'lot_id' => $movement->lot_id,
++        ]);
++
++        return $movement;
+     }
+ }
