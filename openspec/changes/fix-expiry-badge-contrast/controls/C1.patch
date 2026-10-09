@@ -1,0 +1,13 @@
+diff --git a/software/web/src/index.css b/software/web/src/index.css
+index e9d5fd8..0836c68 100644
+--- a/software/web/src/index.css
++++ b/software/web/src/index.css
+@@ -68,7 +68,7 @@
+     --destructive: #c62828;
+     /* Advertencia (lote por vencer): ámbar con texto azul marino, nunca texto blanco. */
+     --warning: #f59e0b;
+-    --warning-foreground: #212b51;
++    --warning-foreground: #ffffff;
+     --border: #dde1ea;
+     --input: #dde1ea;
+     --ring: #4a5291;

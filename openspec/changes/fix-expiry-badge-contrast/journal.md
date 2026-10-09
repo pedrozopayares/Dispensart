@@ -40,3 +40,19 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - GATE 1: preaprobado (ROADMAP 2026-10-09, «Resuelve D-auv-8 también»), condiciones 1-4 OK, tier C.
   1. Alcance = fila S14 (badge «Vence en N días» con contraste AA y prueba). 2. spec-validator VALID tras quitar una
   cifra en prosa; ancla sin hits. 3. Tier C = columna. 4. Ningún ADR ni RN se debilita.
+
+## 2026-10-09 — frontend-implementer: apply (tareas 1.1–1.5, 2.1)
+
+| Paso | Resultado |
+|---|---|
+| Commit producto + prueba | `a41100d` `fix: el aviso de lotes por vencer se lee con contraste accesible` |
+| Par elegido claro | `--warning: #f59e0b` / `--warning-foreground: #212b51` → 6,39:1 |
+| Par elegido oscuro | `--warning: #fbbf24` / `--warning-foreground: #232955` → 8,28:1 |
+| Controles C1 / C2 | rojo 1/12 · verde 12/12 / rojo 1/7 · verde 7/7, cadenas exit 0 |
+| Suite completa Vitest (única) | 29 archivos, 274 passed; lint y typecheck exit 0 |
+| Reconstrucción web + curl `/inventory` | exit 0 · 200; CSS servido con `.bg-warning` y `.text-warning-foreground` |
+| Pendiente | 2.2 revisión visual del Orchestrator (fila en `verification.md` § 6) |
+
+- Decisión: el tema oscuro usa un ámbar más claro (`#fbbf24`) para destacar sobre superficies azul marino; texto azul marino en ambos temas, nunca blanco.
+- Nota: la roja de 1.1 nombra `--warning-foreground` (el par resuelve primero el token de texto); la guarda explícita de `--warning` ausente en oscuro cubre el token de fondo.
+- Deuda: ninguna. Bloqueos: ninguno.
