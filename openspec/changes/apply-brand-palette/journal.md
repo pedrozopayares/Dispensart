@@ -1,0 +1,69 @@
+# Journal — apply-brand-palette (S12)
+
+Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
+
+## 2026-10-09 — spec-engineer: proposal, delta y tareas borrador
+
+| Artefacto | Comando | Resultado |
+|---|---|---|
+| Requisitos ADDED en `specs/app-shell/spec.md` | `/usr/bin/grep -c '^### Requirement:' specs/app-shell/spec.md` | 3 |
+| Escenarios en el delta | `/usr/bin/grep -c '^#### Scenario:' specs/app-shell/spec.md` | 10 |
+| Tareas en `tasks.md` (MUT declarados: 0, tier C) | `/usr/bin/grep -c '^- \[ \]' tasks.md` | 8 |
+| Supuestos en `proposal.md` | `/usr/bin/grep -c '^[0-9]\. ' proposal.md` | 5 |
+| Validación | `openspec validate apply-brand-palette --strict` | válido |
+
+- Alcance: igual a la fila S12 (tokens de tema claro y oscuro con la paleta pública, contraste AA, sin logo ni
+  nombre comercial). Nada barrido fuera de la fila.
+- Tier propuesto: **C**. Disparador: solo valores de tokens CSS en `software/web/src/index.css`; sin rama,
+  cómputo ni persistencia en producto. La prueba de contraste calcula, pero es prueba nueva y no toca
+  aislamiento, orden ni reporte del arnés. Sin disparador B ni A.
+- Hallazgos del código: tokens en `oklch` (la prueba convierte o los tokens pasan a hex, a elección del
+  implementador); ningún código aplica la clase `dark`. Razones medidas (fórmula WCAG, script local) en la tabla
+  siguiente; de ellas sale que el foco no puede ser verde lima.
+- Deuda a reportar (fuera de S12): la insignia «Por vencer» de `inventory-page.tsx` usa color fijo ámbar con texto
+  blanco, bajo AA (tabla siguiente); no es token. El Orchestrator decide fila o lote.
+- Supuestos: en la propuesta (marca pública no es dato de la IPS; sin selector de tema; lista de pares;
+  `chart-*`/`border`/`input` fuera de la prueba; insignia ámbar fuera de alcance).
+- Preguntas abiertas: ninguna. Bloqueos: ninguno.
+
+| Par (texto / fondo) | Razón |
+|---|---|
+| azul marino `#232955` / blanco | 13,82 |
+| texto `#212b51` / fondo `#f8f9fa` | 13,03 |
+| azul marino `#232955` / verde lima `#a9cd43` | 7,57 |
+| verde lima `#a9cd43` / blanco | 1,83 |
+| verde lima `#a9cd43` / `#f8f9fa` | 1,73 |
+| destructivo claro actual `oklch(0.577 0.245 27.325)` / `#f8f9fa` | 4,52 (margen mínimo: mantener o reforzar) |
+| blanco / `amber-500` (`#f59e0b`, insignia «Por vencer») | 2,15 |
+
+## 2026-10-09 — spec-engineer: correcciones del spec-validator
+
+- Tareas 1.1–1.6 y 2.1 verifican con comandos ejecutables; 2.2 queda como revisión visual manual del
+  Orchestrator, con su escenario.
+- Orden del Orchestrator (mantiene tier C): escenario negativo «Prueba de contraste sin tokens no pasa en vacío» y
+  tarea 1.2 con guardas en el mismo archivo de prueba.
+- Cifras de la sección anterior movidas a tablas.
+
+| Barrido | Comando (desde la carpeta del cambio) | Resultado |
+|---|---|---|
+| Ancla de transporte | `/usr/bin/grep -rnEc '^- \*\*THEN\*\*.*(HTTP\|[^0-9](200\|201\|204\|400\|401\|403\|404\|409\|419\|422\|423\|500)[^0-9]\|5xx\|invalid_\|not_found\|conflict\|error code\|refus\|reject\|forbidden\|insufficient\|expired)' specs/` | `specs/app-shell/spec.md:0`; ninguna cláusula necesita ancla |
+| Control positivo | mismo patrón sobre `../../specs/transfers/` | `spec.md:72` (el patrón detecta) |
+
+## 2026-10-09 — spec-engineer: segunda corrección del spec-validator
+
+- Tarea 1.5: control negativo por parche `controls/C1.patch` con `git apply` / `git apply -R`; ya no restaura
+  desde HEAD.
+- Tarea 2.2: verificación de rutas por `curl` con las rutas reales de `screens.tsx`; capturas en `captures/` como
+  entregable; juicio visual del Orchestrator en `verification.md`.
+
+## 2026-10-09 — Orchestrator: GATE 1
+
+- shard = auv
+- GATE 1: preaprobado (ROADMAP 2026-10-09, «Aplica el camino 1, en autopiloto, inmediatamente»), condiciones 1-4 OK, tier C.
+  1. Alcance = fila S12 (tokens de tema claro y oscuro, contraste AA, sin logo ni nombre, sin dependencias).
+  2. `openspec validate --strict` limpio y ancla sin hits. Tras tres pasadas, el único punto del spec-validator es que
+     `controls/C1.patch` no existe todavía. La tarea 1.5 manda escribirlo en apply contra el CSS de 1.4, que aún no
+     existe; es un artefacto de apply, igual que los parches de mutantes que el validador aceptó en S9. Decisión del
+     Orchestrator: condición cumplida.
+  3. Tier C = columna Tier. 4. Ningún ADR ni RN se debilita.
+- Deuda descubierta en la propuesta: D-auv-8 (badge «Por vencer» bajo AA), fuera de alcance.

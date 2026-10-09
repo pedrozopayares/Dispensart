@@ -11,6 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
+| D-auv-8 | minor | apply-brand-palette (propuesta, 2026-10-09) | El badge «Por vencer» de la pantalla de inventario usa ámbar fijo con texto blanco (≈2,2:1), por debajo de WCAG AA. No es un token de tema, así que queda fuera de S12. | Texto oscuro sobre ámbar (o ámbar oscuro con texto blanco) con prueba de contraste; cambio de frontend Tier C. |
 
 ## Settled
 
