@@ -20,6 +20,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S9 | `fix-assistant-eval-and-health-docs` | `/health` y `/ready` en `openapi.json`; `assistant:eval` compara la bodega y el producto resueltos, no el texto (salda D-auv-7) | A, C, D | B | archivado |
 | S10 | `add-sensitive-operation-audit` | Bitácora de auditoría para creación de usuarios y ajustes de stock (`audit_events`, migración de sus CHECK) | A, RN-09 | A | archivado |
 | S11 | `use-registry-mirror-in-ci` | El CI descarga las imágenes base de Docker Hub (postgres, php, composer, node, nginx) desde el espejo `mirror.gcr.io`, sin credenciales; en local sigue Docker Hub | D | B | bloqueado: GATE 1 en pausa por el usuario (2026-10-09) |
+| S12 | `apply-brand-palette` | Paleta de color de la IPS en la SPA: tokens de tema (claro y oscuro) con azul marino `#232955`, verde lima `#a9cd43`, fondo `#f8f9fa` y texto `#212b51`, con contraste AA; sin logo ni nombre comercial | B | C | pendiente |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.
@@ -47,6 +48,12 @@ GATE 2 no se preaprueba nunca: lo emite `final-auditor`.
 Registrada el 2026-10-09 por instrucción del usuario: *"Haz los dos. Autopiloto"*, tras la auditoría de
 cobertura contra la prueba. Mismas cuatro condiciones que el lote S0–S8, con el alcance y el tier de las
 filas S9 y S10. GATE 2 sigue siendo del `final-auditor`.
+
+## Preaprobación de GATE 1 para S12
+
+Registrada el 2026-10-09 por instrucción del usuario: *"Aplica el camino 1, en autopiloto, inmediatamente"*, tras
+proponer aplicar la paleta pública del sitio de la IPS a los tokens de tema de la SPA. Mismas cuatro condiciones, con
+el alcance y el tier de la fila S12. GATE 2 sigue siendo del `final-auditor`.
 
 ## Restricciones del entorno (vinculan a S0 y S8)
 
