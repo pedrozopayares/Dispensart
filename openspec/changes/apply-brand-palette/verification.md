@@ -87,21 +87,26 @@ Corridas desde `software/web` salvo indicación.
 
 ## 5. Recorrido visual (Orchestrator)
 
-Capturas en `openspec/changes/apply-brand-palette/captures/`. Pendiente: requiere 2.1.
+Stack reconstruido tras reiniciar Docker Desktop: `docker compose -f software/compose.yaml up -d --build --wait web`.
+CSS servido `assets/index-63XT5Pii.css` con `--primary:#232955`, `--secondary:#a9cd43`, `--background:#f8f9fa`,
+`--foreground:#212b51` (claro) y el bloque oscuro. Navegador, usuario `regente@dispensart.test`, 2026-10-09.
+
+| Ruta | HTTP |
+|---|---|
+| `/login` | 200 |
+| `/` | 200 |
+| `/dispensations` | 200 |
+| `/transfers` | 200 |
+| `/inventory` | 200 |
+| `/kardex` | 200 |
+| `/assistant` | 200 |
 
 | Pantalla | Paleta aplicada | Sin logo ni nombre comercial | Legibilidad de insignias y avisos | Captura |
 |---|---|---|---|---|
-| `/login` | pendiente | pendiente | pendiente | pendiente |
-| `/` (inicio) | pendiente | pendiente | pendiente | pendiente |
-| `/dispensations` | pendiente | pendiente | pendiente | pendiente |
-| `/inventory` (insignias «Vencido» y de stock bajo) | pendiente | pendiente | pendiente | pendiente |
-| `/transfers` | pendiente | pendiente | pendiente | pendiente |
-
-## 6. Líneas de registro
-
-| Archivo | Comando | Líneas |
-|---|---|---|
-| `verification.md` | `wc -l` | 107 |
-| `journal.md` (sección del implementador) | `git diff --numstat` | +26 / −0 |
-| `tasks.md` | `git diff --numstat` | +6 / −6 |
-| `controls/C1.patch` | `wc -l` | 12 |
+| `/login` | Fondo `#f8f9fa`, botón azul marino con texto blanco | Sí: título «Dispensart» | Sin insignias | `captures/login.jpg` |
+| `/` | Insignia de rol en verde lima con texto azul marino | Sí | Legible | `captures/inicio.jpg` |
+| `/dispensations` | Pestaña activa y botón «Buscar» en verde lima con texto oscuro | Sí | Legible | `captures/dispensacion.jpg` |
+| `/transfers` | Botón «Nuevo traslado» azul marino; pestaña activa verde lima | Sí | Insignias de estado legibles | `captures/traslados.jpg` |
+| `/inventory` | «Bajo mínimo» verde lima con texto oscuro; «Vencido» rojo con texto blanco; filas resaltadas | Sí | «Vence en N días» ámbar con texto blanco: bajo AA, fuera de alcance (D-auv-8) | `captures/inventario.jpg` |
+| `/kardex` | Pestaña activa verde lima; tabla con texto `#212b51` | Sí | Legible | `captures/kardex.jpg` |
+| `/assistant` | Botón «Preguntar» azul marino; pestaña activa verde lima | Sí | Legible | `captures/asistente.jpg` |

@@ -99,3 +99,8 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Tareas 1.1–1.6 hechas (`d8b6872`, `e7177c0`, `225aeea`). 2.1–2.2 y el recorrido visual pendientes.
 - Docker Desktop se cayó durante la reconstrucción de `web` y responde «Docker Desktop is unable to start». Reiniciarlo
   afecta contenedores de otros proyectos del usuario: lo decide el usuario.
+
+## 2026-10-09 — Orchestrator: cierre de apply
+
+- Docker Desktop reiniciado por el usuario. 2.1 y 2.2 hechas; recorrido visual en `verification.md` § 5 con capturas.
+- Tareas completas. Siguiente: final-auditor, modo delta (tier C).
