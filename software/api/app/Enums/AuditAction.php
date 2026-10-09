@@ -15,6 +15,8 @@ enum AuditAction: string
     case TransferApproved = 'transfer.approved';
     case TransferVoided = 'transfer.voided';
     case TransferDiscrepancyResolved = 'transfer.discrepancy_resolved';
+    case UserCreated = 'user.created';
+    case StockAdjusted = 'stock.adjusted';
 
     public function subjectType(): string
     {
@@ -22,6 +24,8 @@ enum AuditAction: string
             self::PrescriptionCreated, self::ControlledDrugAuthorizationFailed => 'prescription',
             self::DispensationCreated, self::ControlledDrugAuthorized => 'dispensation',
             self::TransferApproved, self::TransferVoided, self::TransferDiscrepancyResolved => 'transfer',
+            self::UserCreated => 'user',
+            self::StockAdjusted => 'kardex_movement',
         };
     }
 }
