@@ -97,3 +97,10 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Deuda observada (sin id): el alta con correo duplicado en carrera responde 500 (previo, fuera de alcance en
   design). Ninguna nueva.
 - Bloqueos: ninguno. Un 504 transitorio de Docker Hub en el primer `up --build`; reintento correcto.
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, completo tier A)
+
+- M1–M11 y los 4 controles reproducidos con la comprobación de árbol limpio sobre todo `software/api`.
+- Corrida de confirmación en `dd897e0`: Pint y Larastan limpios, Pest 1039 pasan (corrida 3 de 3).
+- Base de desarrollo: fila 86 `stock.adjusted` (movimiento 83) y fila 87 `user.created` (usuario 7), solo ids.
+- Deuda: ninguna nueva. Observación previa fuera de alcance: carrera de email duplicado en alta de usuario responde 500.
