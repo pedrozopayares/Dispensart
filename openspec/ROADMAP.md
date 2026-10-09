@@ -17,6 +17,8 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S6 | `add-operator-screens` | Pantallas Dispensación, Traslados, Inventario, Kardex | B | B | archivado |
 | S7 | `add-inventory-assistant` | Interfaz de proveedor LLM, mock/Ollama, herramientas de solo lectura, defensa contra inyección, set de evaluación + script | C | A | archivado |
 | S8 | `add-delivery-pipeline` | CI/CD completo (imágenes, staging, producción con compuerta), documento de despliegue, README, AI_USAGE.md | D, E | B | archivado |
+| S9 | `fix-assistant-eval-and-health-docs` | `/health` y `/ready` en `openapi.json`; `assistant:eval` compara la bodega y el producto resueltos, no el texto (salda D-auv-7) | A, C, D | B | pendiente |
+| S10 | `add-sensitive-operation-audit` | Bitácora de auditoría para creación de usuarios y ajustes de stock (`audit_events`, migración de sus CHECK) | A, RN-09 | A | pendiente |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.
@@ -38,6 +40,12 @@ Partición permitida sin preguntar: S3 puede dividirse en `add-dispensation` y
 Ambas heredan la preaprobación y la fila S3 anota la división.
 
 GATE 2 no se preaprueba nunca: lo emite `final-auditor`.
+
+## Preaprobación de GATE 1 para S9–S10
+
+Registrada el 2026-10-09 por instrucción del usuario: *"Haz los dos. Autopiloto"*, tras la auditoría de
+cobertura contra la prueba. Mismas cuatro condiciones que el lote S0–S8, con el alcance y el tier de las
+filas S9 y S10. GATE 2 sigue siendo del `final-auditor`.
 
 ## Restricciones del entorno (vinculan a S0 y S8)
 
