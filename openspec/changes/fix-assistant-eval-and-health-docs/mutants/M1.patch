@@ -1,0 +1,61 @@
+diff --git a/software/api/openapi.json b/software/api/openapi.json
+index b47f6a5..e650480 100644
+--- a/software/api/openapi.json
++++ b/software/api/openapi.json
+@@ -3001,56 +3001,6 @@
+                 ]
+             }
+         },
+-        "/health": {
+-            "get": {
+-                "operationId": "health",
+-                "summary": "Vivacidad: el proceso atiende peticiones. No consulta base, cach\u00e9 ni sesi\u00f3n",
+-                "tags": [
+-                    "Health"
+-                ],
+-                "responses": {
+-                    "200": {
+-                        "description": "El proceso est\u00e1 vivo.",
+-                        "content": {
+-                            "application/json": {
+-                                "schema": {
+-                                    "type": "object",
+-                                    "properties": {
+-                                        "status": {
+-                                            "type": "string",
+-                                            "enum": [
+-                                                "ok"
+-                                            ]
+-                                        }
+-                                    },
+-                                    "required": [
+-                                        "status"
+-                                    ]
+-                                }
+-                            }
+-                        },
+-                        "headers": {
+-                            "X-Correlation-Id": {
+-                                "description": "Identificador de correlaci\u00f3n de la petici\u00f3n: el recibido si es v\u00e1lido, o uno nuevo.",
+-                                "required": true,
+-                                "schema": {
+-                                    "type": "string"
+-                                }
+-                            }
+-                        }
+-                    }
+-                },
+-                "security": [
+-                    {}
+-                ]
+-            },
+-            "servers": [
+-                {
+-                    "url": "/",
+-                    "description": "Ra\u00edz del mismo origen, fuera de /api."
+-                }
+-            ]
+-        },
+         "/ready": {
+             "get": {
+                 "operationId": "ready",

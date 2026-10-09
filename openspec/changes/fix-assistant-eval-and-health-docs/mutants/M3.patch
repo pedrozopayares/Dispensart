@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Providers/OpenApiServiceProvider.php b/software/api/app/Providers/OpenApiServiceProvider.php
+index e132dba..aaf5dc9 100644
+--- a/software/api/app/Providers/OpenApiServiceProvider.php
++++ b/software/api/app/Providers/OpenApiServiceProvider.php
+@@ -29,7 +29,6 @@ public function boot(): void
+ 
+         // Salud después de los errores: /health y /ready quedan fuera de la sesión, el CSRF y los rechazos 4xx.
+         Scramble::configure()
+-            ->withDocumentTransformers(ApiErrorDocumentTransformer::class)
+-            ->withDocumentTransformers(HealthDocumentTransformer::class);
++            ->withDocumentTransformers(ApiErrorDocumentTransformer::class);
+     }
+ }

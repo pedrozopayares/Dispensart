@@ -50,3 +50,24 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   4. Ningún ADR ni RN se debilita.
 - Architect no convocado: tier B sin costura nueva.
 - Pendiente de apply: los parches `mutants/M1..M5.patch` los escribe el backend-implementer.
+
+## 2026-10-09 — backend-implementer: apply
+
+| Hecho | Detalle |
+|---|---|
+| Commits | `9dc7ad7` contrato de salud · `225e911` comparador por entidad resuelta · `e44c39c` tipos de la SPA · `0393c29` línea de `asistente.md` · commit de registro (este) |
+| 1.1 roja | `HealthContractTest.php`: 6 failed / 6, todas con «openapi.json no documenta la operación GET /health.» o «… GET /ready.» |
+| 2.1 roja | `EvaluationMatcherCatalogTest.php`: «Misma bodega con otra redacción» roja por el comparador (`… obtenido "farmacia de urgencias"' is null`). «Otra bodega sigue fallando» también roja, por la prueba: su caso de comando esperaba el texto del argumento y D14 reporta antes el outcome |
+| Corrida de cierre | ver `verification.md` § 3 (Pint, Larastan `--memory-limit=1G`, Pest en una corrida, exit 0) |
+| Mutantes | M1–M5 escritos en `mutants/`, cada uno rojo con su prueba y verde con su control (`verification.md` § 2) |
+| Evaluación simulada | ver `verification.md` § 3 |
+| Imagen | `api` reconstruida; `/health` y `/ready` responden 200 |
+
+Decisiones:
+
+- Mecánica de Scramble: transformador de documento propio (`HealthDocumentTransformer`), registrado después de `ApiErrorDocumentTransformer` para que la sesión, el CSRF y los 4xx no se apliquen a la salud. Servidor `/` a nivel de ruta, no de operación: así la URL resuelve en la raíz sin tocar el servidor `/api` del documento. Enums tomados de las constantes de `ReadinessResult` y la cabecera de `AssignCorrelationId::HEADER`. Rechazado: subir `api_path` a la raíz (Scramble documentaría `sanctum/csrf-cookie` y `storage/*`).
+- Caso de comando de «Otra bodega sigue fallando»: con «farmacia central», la entrada `low-stock-equal-minimum` espera `no_results` y Central sí tiene alertas, así que la fila dice FALLO por outcome (orden D14), no por el argumento. La prueba afirma FALLO, una sola fila caída, total menos uno y código ≠ 0. El texto que nombra `warehouse`, el esperado y el obtenido lo fija la aserción del comparador en la misma prueba. Solo se reescribe la bodega de `get_low_stock_alerts` para que caiga una sola fila.
+- Lint Redocly: exit 0 con 2 avisos `operation-4xx-response` en `/health` y `/ready` (antes 0). Son honestos: estas rutas no responden 4xx. No se silencian: un `redocly.yaml` en la raíz queda fuera del alcance del backend; lo decide el Orchestrator.
+- D-auv-7 saldada en código (`225e911`): el comparador usa `CatalogResolver`; mover la fila a «Settled» en `DEBT.md` le toca al Orchestrator tras GATE 2.
+
+Deuda nueva: ninguna. Bloqueos: ninguno.

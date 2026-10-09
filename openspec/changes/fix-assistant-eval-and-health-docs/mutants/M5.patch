@@ -1,0 +1,16 @@
+diff --git a/software/api/app/Services/Assistant/Evaluation/EvaluationMatcher.php b/software/api/app/Services/Assistant/Evaluation/EvaluationMatcher.php
+index f775df9..a37f2ff 100644
+--- a/software/api/app/Services/Assistant/Evaluation/EvaluationMatcher.php
++++ b/software/api/app/Services/Assistant/Evaluation/EvaluationMatcher.php
+@@ -64,9 +64,8 @@ private function argumentMatches(string $name, mixed $expected, mixed $actual):
+     {
+         if (is_string($expected) && in_array($name, self::CATALOG_ARGUMENTS, true)) {
+             $expectedId = $this->resolve($name, $expected);
+-            if ($expectedId !== null) {
+-                return is_string($actual) && $this->resolve($name, $actual) === $expectedId;
+-            }
++
++            return is_string($actual) && $this->resolve($name, $actual) === $expectedId;
+         }
+         if (is_int($expected)) {
+             return $actual === $expected;
