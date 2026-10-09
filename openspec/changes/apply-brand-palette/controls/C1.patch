@@ -1,0 +1,12 @@
+diff --git a/software/web/src/index.css b/software/web/src/index.css
+--- a/software/web/src/index.css
++++ b/software/web/src/index.css
+@@ -58,7 +58,7 @@
+     --primary: #232955;
+     --primary-foreground: #f8f9fa;
+     --secondary: #a9cd43;
+-    --secondary-foreground: #232955;
++    --secondary-foreground: #ffffff;
+     --muted: #eef0f4;
+     --muted-foreground: #4d5578;
+     --accent: #e6f0c8;
