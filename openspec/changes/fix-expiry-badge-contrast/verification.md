@@ -81,4 +81,4 @@ Corridas desde `software/web` salvo indicación.
 
 | Pantalla | Tema | Captura | Insignia «Vence en N días» legible y ámbar | Distinta de «Vencido» y «Bajo mínimo» | Resto sin cambios |
 |---|---|---|---|---|---|
-| `/inventory` | claro | `captures/inventario.jpg` (pendiente) | pendiente | pendiente | pendiente |
+| `/inventory` | claro | `captures/inventario.jpg` (auxiliar, 2026-10-09) | Sí: ámbar con texto azul marino oscuro en los 7 lotes por vencer | Sí: «Vencido» rojo con texto blanco, «Bajo mínimo» lima | Sí: filas resaltadas, tablas y menú iguales a S12 |

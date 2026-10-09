@@ -56,3 +56,7 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Decisión: el tema oscuro usa un ámbar más claro (`#fbbf24`) para destacar sobre superficies azul marino; texto azul marino en ambos temas, nunca blanco.
 - Nota: la roja de 1.1 nombra `--warning-foreground` (el par resuelve primero el token de texto); la guarda explícita de `--warning` ausente en oscuro cubre el token de fondo.
 - Deuda: ninguna. Bloqueos: ninguno.
+
+## 2026-10-09 — Orchestrator: cierre de apply
+
+- Tareas completas; 2.2 hecha en el navegador (`captures/inventario.jpg`, `verification.md` § 6). Siguiente: final-auditor delta.
