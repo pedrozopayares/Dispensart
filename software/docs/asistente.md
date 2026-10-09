@@ -1,6 +1,7 @@
 # Asistente de inventario
 
-`POST /api/assistant/ask` responde preguntas de inventario en español (parte C). El modelo **solo elige**
+`POST /api/assistant/ask` responde preguntas de inventario en español (parte C); en la SPA lo usa la pantalla
+Asistente (`/assistant`), visible para los cinco roles. El modelo **solo elige**
 herramienta y argumentos; el servidor ejecuta, decide `outcome` y redacta `answer` con los datos. El texto del
 modelo nunca llega al usuario: no puede inventar cifras.
 
@@ -11,7 +12,7 @@ Todo el asistente depende de la interfaz `LlmProvider`; `AI_PROVIDER` elige la i
 | `AI_PROVIDER` | Qué hace | Costo y red |
 |---|---|---|
 | vacío o `mock` | Reglas deterministas sobre la pregunta (intención, producto, bodega, plazo) | Cero; sin red ni llave |
-| `ollama` | `POST {OLLAMA_BASE_URL}/api/chat`, `OLLAMA_MODEL` (`qwen2.5:3b`), temperatura 0 | Cero; modelo local |
+| `ollama` | `POST {OLLAMA_BASE_URL}/api/chat`, `OLLAMA_MODEL` (por defecto `qwen2.5:3b`), temperatura 0 | Cero; modelo local |
 | otro valor | El asistente responde 503 `assistant_unavailable`; el resto de la API sigue igual | — |
 
 `mock` es el valor por defecto: evaluación y CI corren sin llaves, sin red y con resultado estable.
@@ -20,6 +21,12 @@ Todo el asistente depende de la interfaz `LlmProvider`; `AI_PROVIDER` elige la i
 segundos por ronda y puede elegir mal o enviar enteros como texto (`invalid_arguments`). `qwen2.5:7b` o
 `llama3.1:8b` aciertan más con más memoria y latencia. A cambio, ningún dato sale de la máquina. Plazo total
 por pregunta: 50 s; agotado, o con Ollama caído, la API responde 503.
+
+**Medición real.** El 2026-10-08, con `gemma4:e2b-mlx` en Ollama sobre el equipo Apple Silicon del autor,
+`assistant:eval` dio 20/24, con entre 7 y 19 s por pregunta en esa máquina. Dos fallos (casos 7 y 10) son del
+comparador, que exige el texto literal «farmacia urgencias» aunque «farmacia de urgencias» resuelve la misma
+bodega (deuda D-auv-7 en `openspec/DEBT.md`); los casos 4 (proveedor no disponible) y 8 (dado por fuera de
+alcance) son fallos del modelo.
 
 ## Herramientas y roles
 
@@ -68,7 +75,8 @@ con 0 solo si todas aciertan; CI lo corre con `mock`.
 docker compose -f software/compose.yaml --profile tools run --rm api-tools php artisan assistant:eval
 ```
 
-Con Ollama en el anfitrión (`ollama pull qwen2.5:3b`), el mismo informe mide el modelo local:
+Con Ollama en el anfitrión (`ollama pull qwen2.5:3b`), el mismo informe mide el modelo local; `-e OLLAMA_MODEL=<modelo>`
+mide otro (p. ej. `gemma4:e2b-mlx`):
 
 ```sh
 docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=ollama api-tools php artisan assistant:eval

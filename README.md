@@ -28,11 +28,11 @@ Los puertos cambian con `WEB_PORT` y `DB_PORT` (ver `software/.env.example`).
 
 | Correo | Rol | Qué ve en la SPA |
 |---|---|---|
-| `auxiliar@dispensart.test` | Auxiliar de farmacia | Dispensación, traslados, inventario, kardex |
+| `auxiliar@dispensart.test` | Auxiliar de farmacia | Dispensación, traslados, inventario, kardex, asistente |
 | `regente@dispensart.test` | Regente de farmacia | Lo del auxiliar, más aprobar traslados y autorizar control especial |
-| `medico@dispensart.test` | Médico | Pacientes en modo consulta; crea prescripciones por API |
-| `auditor@dispensart.test` | Auditor | Consulta de inventario, kardex y traslados; pacientes enmascarados |
-| `admin@dispensart.test` | Administrador | Inicio; catálogo y usuarios por API |
+| `medico@dispensart.test` | Médico | Pacientes en modo consulta y asistente; crea prescripciones por API |
+| `auditor@dispensart.test` | Auditor | Consulta de inventario, kardex y traslados; pacientes enmascarados; asistente |
+| `admin@dispensart.test` | Administrador | Inicio y asistente (única pantalla); catálogo y usuarios por API |
 
 Contraseña de los cinco: `dispensart-dev-only`. **No es un secreto**: es un valor por defecto solo de
 desarrollo local para usuarios sintéticos, y la API nunca lo aplica con `APP_ENV=production`. Se reemplaza
@@ -43,7 +43,7 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | Parte | Dónde verlo |
 |---|---|
 | A · Modelo y API | `software/api` (Laravel 13); contrato en `software/api/openapi.json` |
-| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex |
+| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex y asistente (`/assistant`, para los cinco roles); tabla de pantallas en `software/web/src/app/screens.tsx` |
 | C · IA | `software/docs/asistente.md`; conjunto de evaluación en `software/api/resources/assistant/evaluation-set.json` |
 | D · DevOps | `software/compose.yaml`, `software/docker/`, `.github/workflows/ci.yml`, `software/docs/deployment.md` |
 | E · Calidad | Pest y Vitest en CI; decisiones en `docs/adr/`; uso de IA en `AI_USAGE.md` |
@@ -78,9 +78,9 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 
 | | |
 |---|---|
-| Elegido | Interfaz `LlmProvider` con `AI_PROVIDER=mock` (reglas deterministas, sin red ni llaves) por defecto y en CI; `ollama` con `qwen2.5:3b` en el anfitrión como modelo real. |
+| Elegido | Interfaz `LlmProvider` con `AI_PROVIDER=mock` (reglas deterministas, sin red ni llaves) por defecto y en CI; `ollama` en el anfitrión como modelo real, con `qwen2.5:3b` por defecto y cambiable con `OLLAMA_MODEL`. |
 | Descartado | Proveedor externo de pago: exige llaves, saca datos de la máquina y tiene costo. |
-| Costo | Un modelo de 3B en CPU tarda segundos por ronda y elige peor que uno grande; su calidad real no se midió (ver Fuera de alcance). |
+| Costo | Un modelo local pequeño tarda segundos por pregunta y elige peor que uno grande. Medido el 2026-10-08 con `gemma4:e2b-mlx` (Ollama en el equipo Apple Silicon del autor): `assistant:eval` dio 20/24, con entre 7 y 19 s por pregunta en esa máquina. De los 4 fallos, 2 (casos 7 y 10) son del comparador de la evaluación, que penaliza «farmacia de urgencias» frente a «farmacia urgencias» aunque `CatalogResolver` resuelve la misma bodega (deuda D-auv-7); el 4 (proveedor no disponible) y el 8 (el modelo la dio por fuera de alcance) son fallos del modelo. |
 
 ### Compromiso 5 · Usuario de base de la app con todos los privilegios (riesgo aceptado)
 
@@ -126,18 +126,18 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | Qué | Por qué |
 |---|---|
 | Endpoint de lectura de bitácoras (accesos a pacientes, eventos de auditoría) para el `auditor` | Las bitácoras se escriben y son de solo inserción; el mapa de capacidades de § 3 no le da al auditor una consulta de bitácoras y el presupuesto fue a las reglas RN. Hoy se leen en la base. |
-| Panel del asistente en la SPA | El asistente es la API `POST /api/assistant/ask` más su evaluación; el presupuesto de frontend fue a las cuatro pantallas de operación. |
 | Rol de base de mínimo privilegio | Toca los permisos de escritura del kardex: cambio de tier A que excede la entrega (compromiso 5). Fila candidata del roadmap. |
 | Edición de mínimos por API | Ninguna parte de la prueba la exige; los mínimos se siembran. |
 | Filtro de alertas por producto | La API filtra alertas solo por bodega; la SPA muestra las de la bodega elegida. |
-| División del bundle por ruta | La SPA pesa unos 506 kB en un solo bloque; para una herramienta interna de carga única se dejó como no-objetivo. |
-| Calidad de respuestas con Ollama real | No había Ollama en el anfitrión de desarrollo; la evaluación con `mock` es la que corre en CI y el comando para medir Ollama está documentado. |
+| División del bundle por ruta | La SPA pesa unos 513 kB en un solo bloque; para una herramienta interna de carga única se dejó como no-objetivo. |
+| Evaluación con Ollama en CI | CI corre la evaluación con `mock` (estable, sin red); el modelo real se midió a mano una vez (compromiso 4) y el comando queda documentado para repetirlo. |
 
 ### Deuda abierta
 
-Ninguna. El registro de deuda es `openspec/DEBT.md`; las tres filas menores abiertas al iniciar esta entrega
-se saldaron en ella (humos de dominio en staging, filtro de pacientes del asistente, saneo de nombres de
-herramienta en el log).
+Una fila menor, D-auv-7: `assistant:eval` compara el texto de los argumentos y no la bodega resuelta, así que
+subestima la calidad del modelo real (compromiso 4). El registro de deuda es `openspec/DEBT.md`; las tres filas
+menores abiertas al iniciar esta entrega se saldaron en ella (humos de dominio en staging, filtro de pacientes
+del asistente, saneo de nombres de herramienta en el log).
 
 ## Documentación de la API
 
@@ -152,7 +152,14 @@ Responde las 24 preguntas del conjunto, con su respuesta esperada, sobre una bas
 docker compose -f software/compose.yaml --profile tools run --rm api-tools php artisan assistant:eval
 ```
 
-Con Ollama en el anfitrión, agregar `-e AI_PROVIDER=ollama` antes de `api-tools`. Detalle: `software/docs/asistente.md`.
+Con Ollama en el anfitrión, agregar `-e AI_PROVIDER=ollama` antes de `api-tools`, y `-e OLLAMA_MODEL=<modelo>`
+para medir un modelo distinto de `qwen2.5:3b`:
+
+```sh
+docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=ollama -e OLLAMA_MODEL=gemma4:e2b-mlx api-tools php artisan assistant:eval
+```
+
+Detalle: `software/docs/asistente.md`.
 
 ## Pruebas y calidad
 

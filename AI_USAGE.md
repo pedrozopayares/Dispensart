@@ -11,7 +11,7 @@ del cambio, con número de línea).
 |---|---|
 | Claude Code (modelos Opus; Haiku para validación) | Único asistente. El hilo principal actúa como **Orchestrator**: no escribe código ni specs, delega en agentes declarados y lleva compuertas y bitácora (`CLAUDE.md`). |
 | Agentes declarados en `.claude/agents/` | spec-engineer, architect, backend-implementer, frontend-implementer, devops-implementer, spec-validator, final-auditor. Cada uno con alcance de archivos y leyes propias. |
-| OpenSpec (desarrollo guiado por especificaciones) | Cada tajada S0–S8 es un cambio: propuesta, specs delta con escenarios, diseño, tareas con comando de verificación, bitácora y matriz de verificación. Archivados en `openspec/changes/archive/`. |
+| OpenSpec (desarrollo guiado por especificaciones) | Cada tajada S0–S8 es un cambio: propuesta, specs delta con escenarios, diseño, tareas con comando de verificación, bitácora y matriz de verificación. Tras el roadmap, un cambio más (la pantalla del asistente) pasó por el mismo ciclo. Archivados en `openspec/changes/archive/`. |
 | Skills en `.claude/skills/` | Guías vendorizadas (Laravel, PostgreSQL, diseño de API, GitHub Actions, shadcn, accesibilidad, TDD, seguridad…). Origen, hash y licencia en `THIRD_PARTY_NOTICES.md` y `skills-lock.json`. Si una skill contradice un ADR, gana el repositorio. |
 | Comandos en `.claude/commands/` | `/opsx:*` (ciclo OpenSpec), `/autopilot` (encadena tajadas del roadmap), `/nitro` (cambios pequeños con los roles en línea). |
 
@@ -26,7 +26,7 @@ Proveedor de IA dentro del producto: ninguno de pago. El asistente usa `mock` po
 | spec-engineer | `proposal.md`, specs delta con escenarios `WHEN`/`THEN` y borrador de `tasks.md` |
 | architect | `design.md` (decisiones con alternativas rechazadas), matriz de mutantes `[MUT]` y refinamiento de tareas, cuando el cambio toca contrato, datos, seguridad o concurrencia |
 | backend-implementer | `software/api`: modelo, migraciones con `CHECK` y disparadores, FEFO, bloqueo, idempotencia, traslados, kardex, asistente; pruebas Pest |
-| frontend-implementer | `software/web`: pantallas de dispensación, traslados, inventario y kardex; pruebas Vitest |
+| frontend-implementer | `software/web`: pantallas de dispensación, traslados, inventario, kardex y asistente; pruebas Vitest |
 | devops-implementer | Dockerfiles, `software/compose.yaml`, `.github/workflows/ci.yml`, humos, `software/docs/deployment.md`, este documento y el README |
 | spec-validator | Validación estructural de cada artefacto (`openspec validate --strict`, anclas, comandos ejecutables) |
 | final-auditor | Auditoría de solo lectura al cerrar cada cambio; único que emite `APPROVED` |
