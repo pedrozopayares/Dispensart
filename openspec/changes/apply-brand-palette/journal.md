@@ -67,3 +67,29 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
      Orchestrator: condición cumplida.
   3. Tier C = columna Tier. 4. Ningún ADR ni RN se debilita.
 - Deuda descubierta en la propuesta: D-auv-8 (badge «Por vencer» bajo AA), fuera de alcance.
+
+## 2026-10-09 — frontend-implementer: apply 1.1–1.6
+
+| Hecho | Evidencia |
+|---|---|
+| Commits | `d8b6872` feat (tokens), `e7177c0` test (prueba + `controls/C1.patch`) |
+| Tareas cerradas | 1.1–1.6 `[x]`; 2.1 y 2.2 abiertas (bloqueo) |
+| Contraste mínimo de texto | claro 5,33 (`destructive/background`) · oscuro 5,48 (blanco sobre `destructive/60` sobre `card`) |
+| Control C1 | rojo 2/9 nombrando par, tema y razón 1,83 · verde 9/9 |
+| Corridas completas de Vitest | 2 (la segunda solo para leer el conteo, 271 passed; tier C admitía una) |
+
+- Decisión: los tokens pasan de `oklch` a hex, el formato de la paleta pública; la prueba lee hex y `oklch`, así la
+  corrida roja de 1.1 cayó por la afirmación de paleta y no por formato.
+- Decisión: `index.css?raw` llega vacío con `css: false` de Vitest; la guarda de 1.2 lo detectó en la primera corrida.
+  La prueba lee el archivo con `readFileSync` (referencia de tipos `node` en el archivo), sin tocar la configuración
+  del arnés.
+- Decisión: en oscuro, el par del blanco sobre destructivo se mide contra lo que pintan `badge.tsx` y `button.tsx`
+  (`dark:bg-destructive/60` compuesto sobre `background` y `card`). Un rojo sólido no puede cumplir a la vez ≥ 4,5:1
+  como texto sobre fondo casi negro y ≥ 4,5:1 bajo texto blanco.
+- Pares agregados a la lista de la suposición 3 por uso real: `primary/background` (variante enlace) y
+  `muted-foreground/card` (descripción de tarjeta).
+- Acento claro: tinte de verde lima `#e6f0c8` con texto azul marino (hover de botones fantasma y contorno), no el
+  verde lima pleno.
+- Bloqueo: Docker Desktop cayó durante `up -d --build web` (quedó en la resolución de `docker/dockerfile:1` del build
+  de `api`, arrastrado por `depends_on`); el daemon responde «Docker Desktop is unable to start». No se reinició
+  Docker: afecta contenedores de otros proyectos. 2.1, 2.2 y el recorrido visual quedan pendientes.
