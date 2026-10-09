@@ -11,8 +11,8 @@ compararse sin cambios. Salda D-auv-7 (parte C).
 - **THEN** ese argumento se cumple y, si las demás expectativas se cumplen, la fila dice acierto
 
 #### Scenario: Mismo producto con otra redacción
-- **WHEN** una entrada espera `product` «acetaminofen» y la herramienta se llamó con el nombre completo del producto en el catálogo de evaluación, con tildes y mayúsculas
-- **THEN** ese argumento se cumple
+- **WHEN** una entrada espera `product` «acetaminofen 500 mg» y la herramienta se llamó con «acetaminofen»; el texto obtenido no contiene al esperado y ambos resuelven a «Acetaminofén 500 mg» en el catálogo de evaluación
+- **THEN** ese argumento se cumple, aunque la comparación de texto anterior lo daba por fallo
 
 #### Scenario: Otra bodega sigue fallando
 - **WHEN** una entrada espera `warehouse` «farmacia urgencias» y la herramienta se llamó con «farmacia central»
