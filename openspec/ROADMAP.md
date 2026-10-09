@@ -22,6 +22,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S11 | `use-registry-mirror-in-ci` | El CI descarga las imágenes base de Docker Hub (postgres, php, composer, node, nginx) desde el espejo `mirror.gcr.io`, sin credenciales; en local sigue Docker Hub | D | B | bloqueado: GATE 1 en pausa por el usuario (2026-10-09) |
 | S12 | `apply-brand-palette` | Paleta de color de la IPS en la SPA: tokens de tema (claro y oscuro) con azul marino `#232955`, verde lima `#a9cd43`, fondo `#f8f9fa` y texto `#212b51`, con contraste AA; sin logo ni nombre comercial | B | C | archivado |
 | S13 | `add-admin-screens` | Pantallas de administración para `admin` sobre la API existente: usuarios (listar, crear con rol) y catálogo (bodegas y productos: listar, crear, editar); `admin` deja de ver el Asistente en menú, inicio y ruta | A, B, § 3 | B | pendiente |
+| S14 | `fix-expiry-badge-contrast` | Salda D-auv-8: el badge «Vence en N días» del inventario cumple contraste WCAG AA, con prueba | B | C | pendiente |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.
@@ -62,6 +63,11 @@ Registrada el 2026-10-09 por instrucción del usuario: *"Parece que el admin no 
 no aparece en el documento y porque de todas formas, su rol no tiene permisos que le permitan consultar a la IA.
 Aprobado S13"*. Mismas cuatro condiciones, con el alcance y el tier de la fila S13. GATE 2 sigue siendo del
 `final-auditor`.
+
+## Preaprobación de GATE 1 para S14
+
+Registrada el 2026-10-09 por instrucción del usuario: *"Resuelve D-auv-8 también"*. Mismas cuatro condiciones, con el
+alcance y el tier de la fila S14. GATE 2 sigue siendo del `final-auditor`.
 
 ## Restricciones del entorno (vinculan a S0 y S8)
 
