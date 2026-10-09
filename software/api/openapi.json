@@ -3000,6 +3000,188 @@
                     }
                 ]
             }
+        },
+        "/health": {
+            "get": {
+                "operationId": "health",
+                "summary": "Vivacidad: el proceso atiende peticiones. No consulta base, cach\u00e9 ni sesi\u00f3n",
+                "tags": [
+                    "Health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El proceso est\u00e1 vivo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "ok"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Correlation-Id": {
+                                "description": "Identificador de correlaci\u00f3n de la petici\u00f3n: el recibido si es v\u00e1lido, o uno nuevo.",
+                                "required": true,
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {}
+                ]
+            },
+            "servers": [
+                {
+                    "url": "/",
+                    "description": "Ra\u00edz del mismo origen, fuera de /api."
+                }
+            ]
+        },
+        "/ready": {
+            "get": {
+                "operationId": "ready",
+                "summary": "Disponibilidad: la base responde y no quedan migraciones pendientes",
+                "tags": [
+                    "Health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista para recibir tr\u00e1fico.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "ready"
+                                            ]
+                                        },
+                                        "checks": {
+                                            "type": "object",
+                                            "properties": {
+                                                "database": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ok",
+                                                        "fail"
+                                                    ]
+                                                },
+                                                "migrations": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ok",
+                                                        "pending",
+                                                        "skipped",
+                                                        "fail"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "database",
+                                                "migrations"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "checks"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Correlation-Id": {
+                                "description": "Identificador de correlaci\u00f3n de la petici\u00f3n: el recibido si es v\u00e1lido, o uno nuevo.",
+                                "required": true,
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "No lista: la base no responde o hay migraciones pendientes o sin verificar.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "not_ready"
+                                            ]
+                                        },
+                                        "checks": {
+                                            "type": "object",
+                                            "properties": {
+                                                "database": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ok",
+                                                        "fail"
+                                                    ]
+                                                },
+                                                "migrations": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ok",
+                                                        "pending",
+                                                        "skipped",
+                                                        "fail"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "database",
+                                                "migrations"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "checks"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Correlation-Id": {
+                                "description": "Identificador de correlaci\u00f3n de la petici\u00f3n: el recibido si es v\u00e1lido, o uno nuevo.",
+                                "required": true,
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {}
+                ]
+            },
+            "servers": [
+                {
+                    "url": "/",
+                    "description": "Ra\u00edz del mismo origen, fuera de /api."
+                }
+            ]
         }
     },
     "components": {

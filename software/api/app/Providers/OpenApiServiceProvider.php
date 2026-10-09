@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\OpenApi\ApiErrorDocumentTransformer;
+use App\OpenApi\HealthDocumentTransformer;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +27,9 @@ final class OpenApiServiceProvider extends ServiceProvider
             return;
         }
 
-        Scramble::configure()->withDocumentTransformers(ApiErrorDocumentTransformer::class);
+        // Salud después de los errores: /health y /ready quedan fuera de la sesión, el CSRF y los rechazos 4xx.
+        Scramble::configure()
+            ->withDocumentTransformers(ApiErrorDocumentTransformer::class)
+            ->withDocumentTransformers(HealthDocumentTransformer::class);
     }
 }
