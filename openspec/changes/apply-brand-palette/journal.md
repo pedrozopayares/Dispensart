@@ -93,3 +93,9 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Bloqueo: Docker Desktop cayó durante `up -d --build web` (quedó en la resolución de `docker/dockerfile:1` del build
   de `api`, arrastrado por `depends_on`); el daemon responde «Docker Desktop is unable to start». No se reinició
   Docker: afecta contenedores de otros proyectos. 2.1, 2.2 y el recorrido visual quedan pendientes.
+
+## 2026-10-09 — Orchestrator: bloqueo
+
+- Tareas 1.1–1.6 hechas (`d8b6872`, `e7177c0`, `225aeea`). 2.1–2.2 y el recorrido visual pendientes.
+- Docker Desktop se cayó durante la reconstrucción de `web` y responde «Docker Desktop is unable to start». Reiniciarlo
+  afecta contenedores de otros proyectos del usuario: lo decide el usuario.
