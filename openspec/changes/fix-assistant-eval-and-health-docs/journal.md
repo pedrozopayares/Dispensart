@@ -71,3 +71,13 @@ Decisiones:
 - D-auv-7 saldada en código (`225e911`): el comparador usa `CatalogResolver`; mover la fila a «Settled» en `DEBT.md` le toca al Orchestrator tras GATE 2.
 
 Deuda nueva: ninguna. Bloqueos: ninguno.
+
+## 2026-10-09 — backend-implementer: hallazgo 1 de la auditoría final
+
+| Hecho | Detalle |
+|---|---|
+| Hallazgo | «Mismo producto con otra redacción» pasaba con la contención de texto: «Acetaminofén 500 mg» contiene «acetaminofen» |
+| Arreglo (prueba) | caso nuevo: esperado «acetaminofen 500 mg», obtenido «Acetaminofén»; ninguno contiene al otro; más un negativo con «Ibuprofeno» |
+| `[MUT]` M6 | `mutants/M6.patch` (`CATALOG_ARGUMENTS = ['warehouse']`): rojo en «Mismo producto con otra redacción», control «Misma bodega» verde, restaurado verde (`verification.md` § 2) |
+| Aislamiento | delta sobre `dispensart_s9fix` (creada y borrada); sin corrida completa ni `composer openapi`, por presupuesto y por S10 en `dispensart_test` |
+| Producto | sin cambios: la prueba nueva pasa con `225e911` |

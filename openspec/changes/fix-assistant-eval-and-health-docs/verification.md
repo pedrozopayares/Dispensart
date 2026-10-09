@@ -27,17 +27,17 @@ Fuente: `git diff --numstat 5db3449..0393c29` filtrado por ruta (agregadas/borra
 | SH › Contrato derivado del código | `drift` exit 0 · `npm run openapi:lint` exit 0 · `npm run api:types:check` exit 0 (§ 3) | `software/api/app/OpenApi/HealthDocumentTransformer.php:31`, registro `software/api/app/Providers/OpenApiServiceProvider.php:33` | — |
 | SH › Edición manual del contrato | M3 (§ 2): sin el transformador, `drift` exit ≠ 0 | `openspec/changes/fix-assistant-eval-and-health-docs/mutants/M3.patch` | — |
 | AE › Misma bodega con otra redacción | `Misma bodega con otra redacción` (comparador + comando guionado) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:106` | — |
-| AE › Mismo producto con otra redacción | `Mismo producto con otra redacción` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:120` | — |
-| AE › Otra bodega sigue fallando | `Otra bodega sigue fallando` (comparador + comando guionado, código ≠ 0) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:125` | — |
-| AE › Otro producto sigue fallando | `Otro producto sigue fallando` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:141` | — |
-| AE › Texto obtenido ambiguo o inexistente | `Texto obtenido ambiguo o inexistente` (datasets ambiguo, inexistente, ausente) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:146` | — |
-| AE › Texto esperado sin resolución | `Texto esperado sin resolución` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:155` | — |
-| AE › Demás argumentos sin cambio | `Demás argumentos sin cambio` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:161` | — |
+| AE › Mismo producto con otra redacción | `Mismo producto con otra redacción` (incluye esperado y obtenido sin contención mutua, pin M6) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:120` | — |
+| AE › Otra bodega sigue fallando | `Otra bodega sigue fallando` (comparador + comando guionado, código ≠ 0) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:129` | — |
+| AE › Otro producto sigue fallando | `Otro producto sigue fallando` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:145` | — |
+| AE › Texto obtenido ambiguo o inexistente | `Texto obtenido ambiguo o inexistente` (datasets ambiguo, inexistente, ausente) | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:150` | — |
+| AE › Texto esperado sin resolución | `Texto esperado sin resolución` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:159` | — |
+| AE › Demás argumentos sin cambio | `Demás argumentos sin cambio` | `software/api/tests/Feature/Assistant/EvaluationMatcherCatalogTest.php:165` | — |
 | AE › Modo simulado sin regresión | `assistant:eval` mock (§ 3) · `Todas aciertan con el modo simulado` | `software/api/tests/Feature/Assistant/AssistantEvalCommandTest.php:66` | — |
 
 ## 2. Mutaciones
 
-Arnés de `tasks.md` (`mut`/`ctl`/`drift`), cada parche con `php -l` del archivo PHP mutado («No syntax errors detected») o JSON válido (`python3 -c json.load`) para `openapi.json`. Árbol limpio tras cada revertir (`git diff --quiet -- software/api`).
+Arnés de `tasks.md` (`mut`/`ctl`/`drift`), cada parche con `php -l` del archivo PHP mutado («No syntax errors detected») o JSON válido (`python3 -c json.load`) para `openapi.json`. Árbol limpio tras cada revertir (`git diff --quiet -- software/api`; M6: `git diff --quiet` sobre `EvaluationMatcher.php`, porque el árbol tenía archivos de S10 en curso). M6 corrió con `-e DB_DATABASE=dispensart_s9fix` (base aislada, creada y borrada).
 
 | n | mutación | Aplicada → FALLA m/k: prueba | Restaurada → PASA k/k | Control positivo (mutante aplicado, PASA) | Salida |
 |---|---|---|---|---|---|
@@ -46,6 +46,7 @@ Arnés de `tasks.md` (`mut`/`ctl`/`drift`), cada parche con `php -l` del archivo
 | M3 | quita el registro de `HealthDocumentTransformer` en `OpenApiServiceProvider` | `drift` exit ≠ 0 (182 líneas borradas en `openapi.json`) | `drift` exit 0 tras `git checkout` + revertir | `drift` sin parche exit 0 | cadena 0 · control 0 |
 | M4 | el argumento de catálogo cumple si el obtenido resuelve a cualquier entidad | 1/1: `Otra bodega sigue fallando` | 1/1 | `Misma bodega con otra redacción` 1/1 | `mut` 0 · `ctl` 0 |
 | M5 | compara ids sin respaldo de texto (null = null cumple) | 1/1: `Texto esperado sin resolución` | 1/1 | `Otra bodega sigue fallando` 1/1 | `mut` 0 · `ctl` 0 |
+| M6 | `CATALOG_ARGUMENTS` limitado a `warehouse` (el producto vuelve a la contención de texto) | 1/1: `Mismo producto con otra redacción` («… esperado "acetaminofen 500 mg", obtenido "Acetaminofén"' is null») | 1/1 | `Misma bodega con otra redacción` 1/1 | rojo exit 1 · control 0 · restaurado 0 |
 
 Autocontrol del arnés: `! pest tests/Feature/Health/HealthContractTest.php 'no-existe-zzz'` → «No tests found», exit 0. Filtros con tilde (`redacción`, `resolución`) casaron tal cual (control: 1 prueba ejecutada en cada corrida).
 
@@ -65,3 +66,4 @@ Autocontrol del arnés: `! pest tests/Feature/Health/HealthContractTest.php 'no-
 | Tipos de la SPA | `npm run api:types` · `npm run api:types:check` · `npm run typecheck` (software/web) | +110 líneas · exit 0 · exit 0 |
 | Documento | `git diff --numstat -- software/docs/asistente.md` · `/usr/bin/grep -c "resuelt" software/docs/asistente.md` vs `git show 225e911:software/docs/asistente.md \| /usr/bin/grep -c "resuelt"` | `1 0` · 1 vs 0; control positivo del 0: `git show 225e911:software/docs/asistente.md \| /usr/bin/grep -c "Evaluación"` = 1 |
 | Imagen reconstruida | `docker compose -f software/compose.yaml up -d --build api` · `curl localhost:8090/health` · `curl localhost:8090/ready` | healthy · 200 · 200 `{"status":"ready","checks":{"database":"ok","migrations":"ok"}}` |
+| Hallazgo 1 (delta, base aislada) | `… -e DB_DATABASE=dispensart_s9fix api-tools vendor/bin/pest tests/Feature/Assistant/EvaluationMatcherCatalogTest.php tests/Feature/Assistant/AssistantEvalCommandTest.php` | 18 passed (72 assertions) |

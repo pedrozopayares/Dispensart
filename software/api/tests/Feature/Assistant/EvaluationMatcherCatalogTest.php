@@ -119,7 +119,11 @@ test('Misma bodega con otra redacción', function () {
 
 test('Mismo producto con otra redacción', function () {
     expect(catalogFailure('get_stock', ['product' => 'acetaminofen'], ['product' => 'ACETAMINOFÉN 500 MG']))->toBeNull()
-        ->and(catalogFailure('get_stock', ['product' => 'acetaminofen'], ['product' => 'Acetaminofén']))->toBeNull();
+        ->and(catalogFailure('get_stock', ['product' => 'acetaminofen'], ['product' => 'Acetaminofén']))->toBeNull()
+        // Ninguno contiene al otro: solo la resolución del catálogo los iguala (la contención de texto fallaría).
+        ->and(catalogFailure('get_stock', ['product' => 'acetaminofen 500 mg'], ['product' => 'Acetaminofén']))->toBeNull()
+        ->and(catalogFailure('get_stock', ['product' => 'acetaminofen 500 mg'], ['product' => 'Ibuprofeno']))
+        ->toBe('argumento product de get_stock: esperado "acetaminofen 500 mg", obtenido "Ibuprofeno"');
 });
 
 test('Otra bodega sigue fallando', function () {

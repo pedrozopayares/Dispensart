@@ -1,6 +1,6 @@
 # Tasks
 
-Tier B. Pruebas primero. `[MUT]` declarados: 5 (M1–M5), solo donde una implementación perezosa pasaría las pruebas.
+Tier B. Pruebas primero. `[MUT]` declarados: 5 (M1–M5); entregados: 6 (M6 agregado por la auditoría final), solo donde una implementación perezosa pasaría las pruebas.
 Prefijos de escenario: SH = delta `service-health`, AE = delta `assistant-evaluation`.
 
 Archivos de prueba (fijos, los usan los comandos): `software/api/tests/Feature/Health/HealthContractTest.php` y
@@ -84,6 +84,11 @@ Autocontrol del arnés, una vez antes del primer `[MUT]`: `! pest tests/Feature/
   tests/Feature/Assistant/EvaluationMatcherCatalogTest.php 'Texto esperado sin resolución'` sale 0; control `ctl M5
   tests/Feature/Assistant/EvaluationMatcherCatalogTest.php 'Otra bodega sigue fallando'` sale 0. Verifica: filas
   M4–M5 en `verification.md`.
+- [x] 2.5 [MUT] Pin del producto (hallazgo 1 de la auditoría final: con solo contención de texto, «Mismo producto con
+  otra redacción» pasaba): caso con esperado «acetaminofen 500 mg» y obtenido «Acetaminofén», donde ninguno contiene
+  al otro. M6 parche que limita `CATALOG_ARGUMENTS` a `warehouse`: con el parche, «Mismo producto con otra
+  redacción» FALLA; control «Misma bodega con otra redacción» PASA; restaurado, PASA. Cubre AE › «Mismo producto
+  con otra redacción». Verifica: fila M6 en `verification.md`.
 - [x] 2.4 Evaluación simulada: `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock
   -e LOG_LEVEL=warning api-tools php artisan assistant:eval` imprime `Aciertos: 24/24` y sale 0. Cubre AE › «Modo
   simulado sin regresión». Verifica: salida y código en `verification.md`.
