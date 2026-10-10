@@ -184,3 +184,12 @@ Decisiones y desvíos:
   `model`, así que el usuario no ve ese 503.
 - Suites: backend 2 corridas completas, frontend 1; la confirmación del auditor es la tercera.
 - Siguiente: final-auditor, modo completo (tier A).
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, completo tier A)
+
+- Corrida de confirmación (3 de 3, `AI_PROVIDER=mock`): Pint, Larastan sin errores, Pest 1071 pasan, `assistant:eval` 24/24;
+  lint y typecheck limpios; Vitest con los 33 archivos en verde según el archivo de resultados.
+- Total exacto de Vitest no observado (salida recortada en dos corridas); el derivado es 360. Obtenerlo exige una cuarta
+  corrida completa: queda a decisión del usuario. Solo afecta al registro.
+- M1–M14 reproducidos; desvío de 7.4 aceptado (503 especificado sin `model` con `AI_PROVIDER=ollama` y Ollama caído).
+- Deuda abierta al archivar: D-auv-9 (menor, variables de entorno filtradas a las pruebas); descubierta aquí.
