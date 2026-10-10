@@ -11,7 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-9 | minor | add-assistant-model-selector (diseño, 2026-10-09) | `phpunit.xml` no fija `AI_PROVIDER`; el contenedor de pruebas hereda `AI_PROVIDER` de `software/.env`, así que con `ollama` en local las pruebas dependen del entorno y cada comando debe pasar `-e AI_PROVIDER=mock`. | Forzar `AI_PROVIDER=mock` en `phpunit.xml` (`force="true"`) con prueba que lo verifique; cambio de backend tier C. |
+| D-auv-9 | minor | add-assistant-model-selector (diseño, 2026-10-09) | `phpunit.xml` no fija `AI_PROVIDER` ni `OLLAMA_MODEL`; el contenedor de pruebas hereda ambas de `software/.env`, así que con `ollama` en local las pruebas dependen del entorno y cada comando debe pasar `-e AI_PROVIDER=mock`. | Forzar `AI_PROVIDER=mock` y un `OLLAMA_MODEL` fijo en `phpunit.xml` (`force="true"`) con prueba que lo verifique; cambio de backend tier C. |
 
 ## Settled
 
