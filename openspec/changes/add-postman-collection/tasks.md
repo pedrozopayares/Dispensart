@@ -54,7 +54,7 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
 
 ## 2. Colección y entorno
 
-- [ ] 2.1 Entorno local (`baseUrl`, correos de los 5 usuarios semilla, `password` = `dispensart-dev-only`) y
+- [x] 2.1 Entorno local (`baseUrl`, correos de los 5 usuarios semilla, `password` = `dispensart-dev-only`) y
   esqueleto de colección v2.1 con el script previo de colección (cookie CSRF si falta, `X-XSRF-TOKEN` decodificado
   en escrituras, `Origin` y `Referer`, exclusión por petición de cada cabecera) y carpetas `00 Salud` y
   `01 Sesión por rol`. Cubre AC › «Colección y entorno ejecutables», «Primera escritura sin cookie previa», «Token
@@ -63,32 +63,32 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
   `folder "00 Salud" "$C"` y `folder "01 Sesión por rol" "$C"` salen 0; con `docker compose -f software/compose.yaml
   stop db`, `folder "00 Salud" "$C"` sale distinto de 0 con la aserción de `/ready` fallida; luego `docker compose -f
   software/compose.yaml start db` y `/ready` vuelve a 200.
-- [ ] 2.2 Carpeta `02 Dispensación FEFO e idempotencia`: el `medico` crea la prescripción de la corrida
+- [x] 2.2 Carpeta `02 Dispensación FEFO e idempotencia`: el `medico` crea la prescripción de la corrida
   (`valid_until` calculado), el `auxiliar` busca el paciente semilla `9999010001`, resuelve `MED-004` y `BH` por
   código, vista previa, instantánea del kardex, confirmación con `Idempotency-Key` de la corrida (patrón
   `^[A-Za-z0-9_-]{16,128}$`), instantánea, repetición, instantánea y envío sin clave. Cubre AC › «Vista previa en
   orden FEFO sin lote vencido», «Dispensación con un movimiento nuevo en el kardex», «Repetición idempotente»,
   «Dispensación sin clave». Verifica: `folder "02 Dispensación FEFO e idempotencia" "$C"` sale 0 dos veces seguidas.
-- [ ] 2.3 Carpeta `03 Control especial` con su propia prescripción de `MED-006` y la bodega elegida por
+- [x] 2.3 Carpeta `03 Control especial` con su propia prescripción de `MED-006` y la bodega elegida por
   existencia vigente en `GET /api/stock`. Cubre AC › «Vista previa exige autorización», «Control especial sin
   autorizador», «Control especial coautorizado por el regente». Verifica: `folder "03 Control especial" "$C"` sale 0.
-- [ ] 2.4 Carpeta `04 Traslado con discrepancia`: lote vigente con existencia en dos bodegas elegido de
+- [x] 2.4 Carpeta `04 Traslado con discrepancia`: lote vigente con existencia en dos bodegas elegido de
   `GET /api/stock` como en `software/docker/smoke/transfer-smoke.sh`, recorrido completo, autoaprobación del
   regente y anulación. Cubre AC › «Recorrido hasta la recepción parcial», «Autoaprobación del regente», «Despachar
   un traslado ya recibido», «Resolución de la discrepancia», «Consulta del traslado». Verifica:
   `folder "04 Traslado con discrepancia" "$C"` sale 0 dos veces seguidas.
-- [ ] 2.5 Carpeta `05 Alertas, existencias y kardex`: alertas, existencia semilla leída antes del ajuste de -1,
+- [x] 2.5 Carpeta `05 Alertas, existencias y kardex`: alertas, existencia semilla leída antes del ajuste de -1,
   kardex con el ajuste y ajuste excesivo. Cubre AC › «Alertas con el lote vencido sembrado», «Ajuste con movimiento
   en el kardex», «Ajuste mayor que la existencia». Verifica: `folder "05 Alertas, existencias y kardex" "$C"` sale 0.
-- [ ] 2.6 Carpeta `06 Asistente`. Cubre AC › «Lista de modelos con mock primero», «Pregunta con el modelo mock»,
+- [x] 2.6 Carpeta `06 Asistente`. Cubre AC › «Lista de modelos con mock primero», «Pregunta con el modelo mock»,
   «Modelo fuera de la lista». Verifica: `folder "06 Asistente" "$C"` sale 0.
-- [ ] 2.7 Carpeta `07 Catálogo y administración` con sufijo único de la corrida en correo y códigos (`code` de
+- [x] 2.7 Carpeta `07 Catálogo y administración` con sufijo único de la corrida en correo y códigos (`code` de
   bodega ≤ 20 caracteres). Cubre AC › «Altas y ediciones del admin», «Código de bodega duplicado». Verifica:
   `folder "07 Catálogo y administración" "$C"` sale 0 dos veces seguidas.
-- [ ] 2.8 Carpeta `08 Permisos denegados`, con peticiones excluidas de cabeceras por el mecanismo de 2.1. Cubre AC
+- [x] 2.8 Carpeta `08 Permisos denegados`, con peticiones excluidas de cabeceras por el mecanismo de 2.1. Cubre AC
   › «Escritura excluida del token», «Login excluido de Origin y Referer», «Sin sesión», «Rol sin la capacidad»,
   «CSRF antes que permisos». Verifica: `folder "08 Permisos denegados" "$C"` sale 0.
-- [ ] 2.9 Guarda verde y contraseña del entorno. Cubre AC › «Colección completa», «Contraseña sobrescrita al
+- [x] 2.9 Guarda verde y contraseña del entorno. Cubre AC › «Colección completa», «Contraseña sobrescrita al
   ejecutar», «Contraseña equivocada», «Sin credenciales reales». Verifica: `guard "$C"` sale 0; con el entorno copiado
   a `/tmp/e.json` y `password` vacía, `npx --yes "newman@$NV" run "$C" -e /tmp/e.json --env-var
   password=dispensart-dev-only` sale 0; `nm "$C" --env-var password=no-es-la-clave` sale distinto de 0 y el primer

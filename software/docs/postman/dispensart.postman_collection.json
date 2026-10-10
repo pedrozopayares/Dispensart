@@ -1,0 +1,4822 @@
+{
+  "info": {
+    "name": "Dispensart API",
+    "description": "Colección ejecutable de la API de Dispensart (FARTMAR IPS): dispensación FEFO con idempotencia, control especial,\ntraslados con discrepancia, alertas, existencias y kardex, asistente, catálogo y permisos.\n\nUso: importar esta colección y `local.postman_environment.json`, levantar el stack (`docker compose -f software/compose.yaml up --build`)\ny ejecutar la colección completa o una carpeta. Cada carpeta abre y cierra su sesión y crea sus datos de la corrida.\nEl script de colección resuelve la sesión Sanctum SPA (cookie CSRF, `X-XSRF-TOKEN`, `Origin`, `Referer`).\nContraseña del entorno: valor por defecto SOLO de desarrollo, no es secreto. Guía: `software/docs/postman/README.md`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Sesión Sanctum SPA para toda petición de la colección (newman y Postman):",
+          "// - Origin y Referer = baseUrl: Sanctum trata la petición como de la SPA (sin ellos, sin sesión; el login da 403).",
+          "// - Escrituras (POST, PUT, PATCH, DELETE): X-XSRF-TOKEN con el valor DECODIFICADO de la cookie XSRF-TOKEN.",
+          "//   Si aún no hay cookie en esta corrida, primero GET /sanctum/csrf-cookie (204) en el mismo tarro de cookies.",
+          "// - Exclusión por petición: la cabecera X-Omit-Headers lista lo que NO se envía (\"X-XSRF-TOKEN, Origin, Referer\");",
+          "//   el script la quita antes de enviar. Documenta los rechazos 403 (cliente ajeno) y 419 (CSRF).",
+          "const baseUrl = pm.variables.get('baseUrl');",
+          "const omitted = (pm.request.headers.get('X-Omit-Headers') || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);",
+          "pm.request.headers.remove('X-Omit-Headers');",
+          "const sends = (name) => !omitted.includes(name.toLowerCase());",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "if (sends('Origin')) pm.request.headers.upsert({ key: 'Origin', value: baseUrl });",
+          "if (sends('Referer')) pm.request.headers.upsert({ key: 'Referer', value: baseUrl + '/' });",
+          "",
+          "const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method.toUpperCase());",
+          "const useToken = (raw) => {",
+          "    pm.variables.set('xsrfCookieRaw', raw);",
+          "    pm.variables.set('xsrfSentRaw', raw);",
+          "    pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: decodeURIComponent(raw) });",
+          "};",
+          "if (isWrite && sends('X-XSRF-TOKEN')) {",
+          "    const known = pm.variables.get('xsrfCookieRaw');",
+          "    if (known) {",
+          "        useToken(known);",
+          "    } else {",
+          "        pm.sendRequest({",
+          "            url: baseUrl + '/sanctum/csrf-cookie',",
+          "            method: 'GET',",
+          "            header: { Accept: 'application/json', Origin: baseUrl, Referer: baseUrl + '/' },",
+          "        }, (err, res) => {",
+          "            if (err) { throw err; }",
+          "            // El valor sale de Set-Cookie: res.cookies no lo expone en newman.",
+          "            const cookie = res.headers.all()",
+          "                .filter((h) => h.key.toLowerCase() === 'set-cookie')",
+          "                .map((h) => h.value).find((v) => v.startsWith('XSRF-TOKEN='));",
+          "            if (res.code !== 204 || !cookie) { throw new Error('GET /sanctum/csrf-cookie sin cookie XSRF-TOKEN (HTTP ' + res.code + ')'); }",
+          "            useToken(cookie.split(';')[0].slice('XSRF-TOKEN='.length));",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Guarda la cookie XSRF-TOKEN vigente (Laravel la reemite en cada respuesta con sesión; cambia al cerrar sesión).",
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) { pm.variables.set('xsrfCookieRaw', xsrf); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Salud",
+      "description": "Vivacidad y disponibilidad en la raíz del origen (fuera de `/api`), sin sesión.",
+      "item": [
+        {
+          "name": "Vivacidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));",
+                  "pm.test('fuera del prefijo /api', () => pm.expect(pm.request.url.getPath()).to.eql('/health'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disponibilidad (base y migraciones)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ready"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('fuera del prefijo /api', () => pm.expect(pm.request.url.getPath()).to.eql('/ready'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 Sesión por rol",
+      "description": "Login, usuario actual y cierre de sesión de los 5 roles semilla.",
+      "item": [
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));",
+                  "",
+                  "pm.test('X-XSRF-TOKEN = cookie XSRF-TOKEN decodificada', () => {",
+                  "    const raw = pm.variables.get('xsrfSentRaw');",
+                  "    pm.expect(raw, 'cookie XSRF-TOKEN').to.be.a('string').and.not.empty;",
+                  "    pm.expect(pm.request.headers.get('X-XSRF-TOKEN')).to.eql(decodeURIComponent(raw));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email del usuario', () => pm.expect(pm.response.json().data.email).to.eql(pm.variables.replaceIn('{{auxiliarEmail}}')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: usuario actual tras cerrar sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email del usuario', () => pm.expect(pm.response.json().data.email).to.eql(pm.variables.replaceIn('{{regenteEmail}}')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: usuario actual tras cerrar sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{medicoEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol medico', () => pm.expect(pm.response.json().data.role).to.eql('medico'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email del usuario', () => pm.expect(pm.response.json().data.email).to.eql(pm.variables.replaceIn('{{medicoEmail}}')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: usuario actual tras cerrar sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auditorEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auditor', () => pm.expect(pm.response.json().data.role).to.eql('auditor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email del usuario', () => pm.expect(pm.response.json().data.email).to.eql(pm.variables.replaceIn('{{auditorEmail}}')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: usuario actual tras cerrar sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol admin', () => pm.expect(pm.response.json().data.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email del usuario', () => pm.expect(pm.response.json().data.email).to.eql(pm.variables.replaceIn('{{adminEmail}}')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: usuario actual tras cerrar sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Dispensación FEFO e idempotencia",
+      "description": "RN-01, RN-02, RN-06, RN-09. El médico crea la prescripción de la corrida; el auxiliar la dispensa en BH (FEFO, sin el lote vencido L-LOS-2401) con `Idempotency-Key`, la repite con la misma clave (sin movimiento nuevo en el kardex) y la envía sin clave (422).",
+      "item": [
+        {
+          "name": "Médico: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{medicoEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));",
+                  "",
+                  "// Claves de idempotencia de la corrida (patrón ^[A-Za-z0-9_-]{16,128}$).",
+                  "pm.collectionVariables.set('dispensationKey', 'postman-disp-' + pm.collectionVariables.get('runId'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol medico', () => pm.expect(pm.response.json().data.role).to.eql('medico'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: busca al paciente semilla por prefijo de documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?q=99990100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "99990100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const patient = pm.response.json().data.find((p) => p.document_number === '9999010001');",
+                  "pm.test('paciente semilla 9999010001 encontrado', () => pm.expect(patient).to.be.an('object'));",
+                  "pm.collectionVariables.set('patientId', patient.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: catálogo de productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const byCode = (c) => pm.response.json().data.find((p) => p.code === c);",
+                  "pm.test('MED-004 y MED-006 en el catálogo', () => { pm.expect(byCode('MED-004')).to.be.an('object'); pm.expect(byCode('MED-006')).to.be.an('object'); });",
+                  "pm.test('MED-006 es de control especial', () => pm.expect(byCode('MED-006').is_controlled).to.eql(true));",
+                  "pm.collectionVariables.set('med004Id', byCode('MED-004').id);",
+                  "pm.collectionVariables.set('med006Id', byCode('MED-006').id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: crea la prescripción de la corrida (MED-004 x2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "prescriptions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patientId}},\n  \"valid_until\": \"{{validUntil}}\",\n  \"items\": [\n    { \"product_id\": {{med004Id}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Vigencia de la prescripción: hoy + 7 días.",
+                  "pm.collectionVariables.set('validUntil', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const payload = pm.response.json().data;",
+                  "const item = payload.items.find((i) => i.product.id === Number(pm.collectionVariables.get('med004Id')));",
+                  "pm.test('ítem de MED-004', () => pm.expect(item).to.be.an('object'));",
+                  "pm.collectionVariables.set('prescriptionId', payload.id);",
+                  "pm.collectionVariables.set('item004Id', item.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: busca al paciente semilla por prefijo de documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?q=99990100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "99990100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const patient = pm.response.json().data.find((p) => p.document_number === '9999010001');",
+                  "pm.test('paciente semilla 9999010001 encontrado', () => pm.expect(patient).to.be.an('object'));",
+                  "pm.collectionVariables.set('patientId', patient.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: ficha del paciente con la prescripción de la corrida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye la prescripción de la corrida', () => {",
+                  "    const ids = pm.response.json().data.prescriptions.map((p) => p.id);",
+                  "    pm.expect(ids).to.include(Number(pm.collectionVariables.get('prescriptionId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: bodegas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const bh = pm.response.json().data.find((w) => w.code === 'BH');",
+                  "pm.test('bodega BH', () => pm.expect(bh).to.be.an('object'));",
+                  "pm.collectionVariables.set('bhId', bh.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: vista previa FEFO de 2 unidades de MED-004 en BH",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations",
+                "preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{prescriptionId}},\n  \"warehouse_id\": {{bhId}},\n  \"items\": [\n    { \"prescription_item_id\": {{item004Id}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Lote vencido sembrado en BH: nunca se asigna (RN-02), pero se cuenta como excluido.",
+                  "const EXPIRED_LOT = 'L-LOS-2401';",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json().data;",
+                  "const allocations = payload.items[0].allocations;",
+                  "pm.test('fulfillable y sin autorización', () => { pm.expect(payload.fulfillable).to.eql(true); pm.expect(payload.requires_authorization).to.eql(false); });",
+                  "pm.test('asignaciones en expires_on ascendente (FEFO)', () => {",
+                  "    const dates = allocations.map((a) => a.expires_on);",
+                  "    pm.expect(dates).to.eql([...dates].sort());",
+                  "});",
+                  "pm.test('ninguna asignación del lote vencido ' + EXPIRED_LOT, () => pm.expect(allocations.map((a) => a.lot_code)).to.not.include(EXPIRED_LOT));",
+                  "pm.test('expired_excluded_quantity > 0', () => pm.expect(payload.items[0].expired_excluded_quantity).to.be.above(0));",
+                  "pm.collectionVariables.set('dispLotId', allocations[0].lot_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: kardex de BH y el lote antes de dispensar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/kardex?warehouse_id={{bhId}}&lot_id={{dispLotId}}&per_page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "kardex"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{bhId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{dispLotId}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.collectionVariables.set('kardexTotal', body.meta.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: dispensa con Idempotency-Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{dispensationKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{prescriptionId}},\n  \"warehouse_id\": {{bhId}},\n  \"items\": [\n    { \"prescription_item_id\": {{item004Id}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('sin autorizador y con líneas', () => { pm.expect(payload.authorized_by).to.eql(null); pm.expect(payload.lines.length).to.be.at.least(1); });",
+                  "pm.collectionVariables.set('firstDispensationBody', pm.response.text());",
+                  "pm.collectionVariables.set('movementId', payload.lines[0].kardex_movement_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: kardex tras la dispensación (un movimiento nuevo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/kardex?warehouse_id={{bhId}}&lot_id={{dispLotId}}&per_page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "kardex"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{bhId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{dispLotId}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('total del kardex +1', () => pm.expect(body.meta.total).to.eql(Number(pm.collectionVariables.get('kardexTotal')) + 1));",
+                  "pm.test('el más reciente es el de la dispensación', () => pm.expect(body.data[0].id).to.eql(Number(pm.collectionVariables.get('movementId'))));",
+                  "pm.test('salida_dispensacion de cantidad negativa', () => { pm.expect(body.data[0].type).to.eql('salida_dispensacion'); pm.expect(body.data[0].quantity).to.be.below(0); });",
+                  "pm.collectionVariables.set('kardexTotal', body.meta.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: repite la dispensación con la misma clave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{dispensationKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{prescriptionId}},\n  \"warehouse_id\": {{bhId}},\n  \"items\": [\n    { \"prescription_item_id\": {{item004Id}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201 (estado original)', () => pm.response.to.have.status(201));",
+                  "pm.test('mismo cuerpo que la primera respuesta', () => pm.expect(pm.response.text()).to.eql(pm.collectionVariables.get('firstDispensationBody')));",
+                  "pm.test('Idempotent-Replayed: true', () => pm.expect(pm.response.headers.get('Idempotent-Replayed')).to.eql('true'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: kardex tras la repetición (sin movimiento nuevo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/kardex?warehouse_id={{bhId}}&lot_id={{dispLotId}}&per_page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "kardex"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{bhId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{dispLotId}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('total del kardex sin cambio', () => pm.expect(body.meta.total).to.eql(Number(pm.collectionVariables.get('kardexTotal'))));",
+                  "pm.test('el más reciente sigue siendo el de la dispensación', () => pm.expect(body.data[0].id).to.eql(Number(pm.collectionVariables.get('movementId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: dispensa sin Idempotency-Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{prescriptionId}},\n  \"warehouse_id\": {{bhId}},\n  \"items\": [\n    { \"prescription_item_id\": {{item004Id}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('code invalid_idempotency_key', () => pm.expect(pm.response.json().code).to.eql('invalid_idempotency_key'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: kardex tras el envío sin clave (sin cambio)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/kardex?warehouse_id={{bhId}}&lot_id={{dispLotId}}&per_page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "kardex"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{bhId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{dispLotId}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('total del kardex sin cambio', () => pm.expect(body.meta.total).to.eql(Number(pm.collectionVariables.get('kardexTotal'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Control especial",
+      "description": "RN-05. Dispensación de MED-006 (control especial): la vista previa exige autorización; sin autorizador 422; con el regente semilla como coautorizador 201.",
+      "item": [
+        {
+          "name": "Médico: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{medicoEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol medico', () => pm.expect(pm.response.json().data.role).to.eql('medico'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: busca al paciente semilla por prefijo de documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?q=99990100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "99990100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const patient = pm.response.json().data.find((p) => p.document_number === '9999010001');",
+                  "pm.test('paciente semilla 9999010001 encontrado', () => pm.expect(patient).to.be.an('object'));",
+                  "pm.collectionVariables.set('patientId', patient.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: catálogo de productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const byCode = (c) => pm.response.json().data.find((p) => p.code === c);",
+                  "pm.test('MED-004 y MED-006 en el catálogo', () => { pm.expect(byCode('MED-004')).to.be.an('object'); pm.expect(byCode('MED-006')).to.be.an('object'); });",
+                  "pm.test('MED-006 es de control especial', () => pm.expect(byCode('MED-006').is_controlled).to.eql(true));",
+                  "pm.collectionVariables.set('med004Id', byCode('MED-004').id);",
+                  "pm.collectionVariables.set('med006Id', byCode('MED-006').id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: crea la prescripción de la corrida (MED-006 x1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "prescriptions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patientId}},\n  \"valid_until\": \"{{validUntil}}\",\n  \"items\": [\n    { \"product_id\": {{med006Id}}, \"quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Vigencia de la prescripción: hoy + 7 días.",
+                  "pm.collectionVariables.set('validUntil', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const payload = pm.response.json().data;",
+                  "pm.collectionVariables.set('ctrlPrescriptionId', payload.id);",
+                  "pm.collectionVariables.set('ctrlItemId', payload.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: existencias vigentes de MED-006",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock?product_id={{med006Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock"
+              ],
+              "query": [
+                {
+                  "key": "product_id",
+                  "value": "{{med006Id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "// Bodega con la mayor existencia vigente del producto.",
+                  "const rows = pm.response.json().data.filter((s) => !s.lot.is_expired && s.quantity > 0).sort((a, b) => b.quantity - a.quantity);",
+                  "pm.test('MED-006 con existencia vigente', () => pm.expect(rows.length).to.be.above(0));",
+                  "pm.collectionVariables.set('ctrlWarehouseId', rows[0].warehouse.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: vista previa de MED-006 (exige autorización)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations",
+                "preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{ctrlPrescriptionId}},\n  \"warehouse_id\": {{ctrlWarehouseId}},\n  \"items\": [\n    { \"prescription_item_id\": {{ctrlItemId}}, \"quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('requires_authorization true', () => pm.expect(pm.response.json().data.requires_authorization).to.eql(true));",
+                  "pm.test('fulfillable', () => pm.expect(pm.response.json().data.fulfillable).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: dispensa MED-006 sin autorizador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-noauth-{{runId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{ctrlPrescriptionId}},\n  \"warehouse_id\": {{ctrlWarehouseId}},\n  \"items\": [\n    { \"prescription_item_id\": {{ctrlItemId}}, \"quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('code authorization_required', () => pm.expect(pm.response.json().code).to.eql('authorization_required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: dispensa MED-006 coautorizado por el regente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-ctrl-{{runId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": {{ctrlPrescriptionId}},\n  \"warehouse_id\": {{ctrlWarehouseId}},\n  \"items\": [\n    { \"prescription_item_id\": {{ctrlItemId}}, \"quantity\": 1 }\n  ],\n  \"authorizer_email\": \"{{regenteEmail}}\",\n  \"authorizer_password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('authorized_by distinto de dispensed_by', () => {",
+                  "    pm.expect(payload.authorized_by).to.not.eql(null);",
+                  "    pm.expect(JSON.stringify(payload.authorized_by)).to.not.eql(JSON.stringify(payload.dispensed_by));",
+                  "});",
+                  "pm.test('la respuesta no trae authorizer_password', () => pm.expect(pm.response.text()).to.not.include('authorizer_password'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Traslado con discrepancia",
+      "description": "RN-07, RN-08. Lote vigente con existencia en dos bodegas: crear, solicitar, aprobar (regente), despachar, recibir parcial, transición prohibida, resolver la discrepancia y consultar. Además, la autoaprobación del regente (403) y su anulación.",
+      "item": [
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: existencias (elige lote en dos bodegas)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "// Como transfer-smoke.sh: lote vigente presente en dos bodegas; origen = la de más unidades (>= 4), destino = otra.",
+                  "const groups = {};",
+                  "pm.response.json().data.filter((s) => !s.lot.is_expired).forEach((s) => (groups[s.lot.id] = groups[s.lot.id] || []).push(s));",
+                  "const candidates = Object.values(groups).filter((g) => g.length >= 2)",
+                  "    .map((g) => g.sort((a, b) => b.quantity - a.quantity)).filter((g) => g[0].quantity >= 4)",
+                  "    .sort((a, b) => b[0].quantity - a[0].quantity);",
+                  "pm.test('lote vigente con existencia en dos bodegas', () => pm.expect(candidates.length).to.be.above(0));",
+                  "pm.collectionVariables.set('originId', candidates[0][0].warehouse.id);",
+                  "pm.collectionVariables.set('destinationId', candidates[0][1].warehouse.id);",
+                  "pm.collectionVariables.set('transferLotId', candidates[0][0].lot.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: crea el traslado (2 unidades)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_warehouse_id\": {{originId}},\n  \"destination_warehouse_id\": {{destinationId}},\n  \"notes\": \"Colección Postman {{runId}}\",\n  \"lines\": [\n    { \"lot_id\": {{transferLotId}}, \"quantity\": 2 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('BORRADOR con una línea', () => { pm.expect(payload.status).to.eql('BORRADOR'); pm.expect(payload.lines).to.have.lengthOf(1); });",
+                  "pm.collectionVariables.set('transferId', payload.id);",
+                  "pm.collectionVariables.set('transferLineId', payload.lines[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: solicita el traslado",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "request"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SOLICITADO', () => pm.expect(pm.response.json().data.status).to.eql('SOLICITADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: aprueba el traslado del auxiliar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('APROBADO', () => pm.expect(payload.status).to.eql('APROBADO'));",
+                  "pm.test('aprobador distinto del solicitante (RN-08)', () => pm.expect(payload.approved_by.id).to.not.eql(payload.requested_by.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: crea su propio traslado (1 unidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_warehouse_id\": {{originId}},\n  \"destination_warehouse_id\": {{destinationId}},\n  \"notes\": \"Colección Postman segregación {{runId}}\",\n  \"lines\": [\n    { \"lot_id\": {{transferLotId}}, \"quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('ownTransferId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: solicita su propio traslado",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{ownTransferId}}/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{ownTransferId}}",
+                "request"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SOLICITADO', () => pm.expect(pm.response.json().data.status).to.eql('SOLICITADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: aprueba su propia solicitud (segregación)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{ownTransferId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{ownTransferId}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code segregation_of_duties', () => pm.expect(pm.response.json().code).to.eql('segregation_of_duties'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: su traslado sigue SOLICITADO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{ownTransferId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{ownTransferId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SOLICITADO sin aprobador', () => { pm.expect(pm.response.json().data.status).to.eql('SOLICITADO'); pm.expect(pm.response.json().data.approved_by).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: anula su traslado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{ownTransferId}}/void",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{ownTransferId}}",
+                "void"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Colección Postman: prueba de segregación\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ANULADO', () => pm.expect(pm.response.json().data.status).to.eql('ANULADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: despacha el traslado",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "dispatch"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('EN_TRANSITO', () => pm.expect(pm.response.json().data.status).to.eql('EN_TRANSITO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: recibe 1 de 2 (recepción parcial)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/receive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "receive"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lines\": [\n    { \"line_id\": {{transferLineId}}, \"received_quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('RECIBIDO_PARCIAL', () => pm.expect(payload.status).to.eql('RECIBIDO_PARCIAL'));",
+                  "const pending = payload.discrepancies.filter((d) => d.status === 'pending' && d.shortage === 1);",
+                  "pm.test('discrepancia pending de faltante 1', () => pm.expect(pending).to.have.lengthOf(1));",
+                  "pm.collectionVariables.set('discrepancyId', pending[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: despacha de nuevo un traslado ya recibido",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "dispatch"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code invalid_transfer_transition', () => pm.expect(pm.response.json().code).to.eql('invalid_transfer_transition'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: resuelve la discrepancia (devolución al origen)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/discrepancies/{{discrepancyId}}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "discrepancies",
+                "{{discrepancyId}}",
+                "resolve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"returned_to_origin\",\n  \"reason\": \"Colección Postman: faltante devuelto a origen\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resolved / returned_to_origin', () => { pm.expect(pm.response.json().data.status).to.eql('resolved'); pm.expect(pm.response.json().data.resolution).to.eql('returned_to_origin'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: resuelve de nuevo la misma discrepancia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}/discrepancies/{{discrepancyId}}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}",
+                "discrepancies",
+                "{{discrepancyId}}",
+                "resolve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"returned_to_origin\",\n  \"reason\": \"Colección Postman: faltante devuelto a origen\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code discrepancy_already_resolved', () => pm.expect(pm.response.json().code).to.eql('discrepancy_already_resolved'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: detalle del traslado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers/{{transferId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers",
+                "{{transferId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('RECIBIDO_PARCIAL con la discrepancia resolved', () => { pm.expect(payload.status).to.eql('RECIBIDO_PARCIAL'); pm.expect(payload.discrepancies[0].status).to.eql('resolved'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: traslados en RECIBIDO_PARCIAL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers?status=RECIBIDO_PARCIAL&per_page=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transfers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "RECIBIDO_PARCIAL"
+                },
+                {
+                  "key": "per_page",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el traslado de la corrida', () => pm.expect(pm.response.json().data.map((t) => t.id)).to.include(Number(pm.collectionVariables.get('transferId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 Alertas, existencias y kardex",
+      "description": "RN-11, RN-01, RN-06. Como regente: alertas, existencia semilla FC / L-IBU-2402 leída antes de un ajuste de -1, kardex con el ajuste y ajuste mayor que la existencia (409).",
+      "item": [
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: alertas de vencimiento y stock bajo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json().data;",
+                  "pm.test('expiring_lots y low_stock son listas', () => { pm.expect(payload.expiring_lots).to.be.an('array'); pm.expect(payload.low_stock).to.be.an('array'); });",
+                  "pm.test('L-ACE-2401 listado como vencido', () => {",
+                  "    const rows = payload.expiring_lots.filter((r) => r.lot.lot_code === 'L-ACE-2401');",
+                  "    pm.expect(rows.length).to.be.above(0);",
+                  "    rows.forEach((r) => pm.expect(r.lot.is_expired).to.eql(true));",
+                  "});",
+                  "pm.test('cada fila de low_stock bajo su mínimo', () => payload.low_stock.forEach((r) => pm.expect(r.available_quantity).to.be.below(r.minimum_quantity)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: bodegas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const fc = pm.response.json().data.find((w) => w.code === 'FC');",
+                  "pm.test('bodega FC', () => pm.expect(fc).to.be.an('object'));",
+                  "pm.collectionVariables.set('fcId', fc.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: existencias de FC (lee la cantidad antes del ajuste)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock?warehouse_id={{fcId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{fcId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const row = pm.response.json().data.find((s) => s.lot.lot_code === 'L-IBU-2402');",
+                  "pm.test('existencia semilla FC / L-IBU-2402 con cantidad > 0', () => { pm.expect(row).to.be.an('object'); pm.expect(row.quantity).to.be.above(0); });",
+                  "pm.collectionVariables.set('adjLotId', row.lot.id);",
+                  "pm.collectionVariables.set('adjQuantity', row.quantity);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: ajuste de -1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-adjustments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": {{fcId}},\n  \"lot_id\": {{adjLotId}},\n  \"quantity\": -1,\n  \"reason\": \"Colección Postman {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('balance_after = cantidad - 1', () => pm.expect(pm.response.json().data.balance_after).to.eql(Number(pm.collectionVariables.get('adjQuantity')) - 1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: existencia tras el ajuste",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock?warehouse_id={{fcId}}&lot_id={{adjLotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{fcId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{adjLotId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('existencia = cantidad - 1', () => pm.expect(pm.response.json().data[0].quantity).to.eql(Number(pm.collectionVariables.get('adjQuantity')) - 1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: kardex de FC y el lote con el ajuste",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/kardex?warehouse_id={{fcId}}&lot_id={{adjLotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "kardex"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{fcId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{adjLotId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const latest = pm.response.json().data[0];",
+                  "pm.test('el más reciente es el ajuste con su motivo', () => {",
+                  "    pm.expect(latest.type).to.eql('ajuste');",
+                  "    pm.expect(latest.reason).to.eql('Colección Postman ' + pm.collectionVariables.get('runId'));",
+                  "    pm.expect(latest.quantity).to.eql(-1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: ajuste mayor que la existencia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-adjustments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": {{fcId}},\n  \"lot_id\": {{adjLotId}},\n  \"quantity\": {{excessQuantity}},\n  \"reason\": \"Colección Postman exceso {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Una unidad más que la existencia actual (cantidad leída - 1).",
+                  "pm.collectionVariables.set('excessQuantity', -Number(pm.collectionVariables.get('adjQuantity')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code insufficient_stock', () => pm.expect(pm.response.json().code).to.eql('insufficient_stock'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: existencia intacta tras el 409",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock?warehouse_id={{fcId}}&lot_id={{adjLotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock"
+              ],
+              "query": [
+                {
+                  "key": "warehouse_id",
+                  "value": "{{fcId}}"
+                },
+                {
+                  "key": "lot_id",
+                  "value": "{{adjLotId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('existencia = cantidad - 1', () => pm.expect(pm.response.json().data[0].quantity).to.eql(Number(pm.collectionVariables.get('adjQuantity')) - 1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 Asistente",
+      "description": "Asistente de inventario con el modelo `mock` (sin red ni llaves). No depende de Ollama.",
+      "item": [
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: modelos disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/models",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "models"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('mock primero', () => pm.expect(pm.response.json().data[0].id).to.eql('mock'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: pregunta con el modelo mock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "ask"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"¿Cuántos traslados hay en tránsito?\",\n  \"model\": \"mock\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('payload.model = mock', () => pm.expect(pm.response.json().data.model).to.eql('mock'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: pregunta con un modelo fuera de la lista",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "ask"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"¿Cuántos traslados hay en tránsito?\",\n  \"model\": \"ollama:no-existe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('errors.model no vacío', () => pm.expect(pm.response.json().errors.model).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 Catálogo y administración",
+      "description": "Como admin: usuarios, bodegas, productos y lotes. Códigos y correo con el sufijo de la corrida.",
+      "item": [
+        {
+          "name": "Admin: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol admin', () => pm.expect(pm.response.json().data.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: crea un usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario Postman {{runId}}\",\n  \"email\": \"postman-{{runId}}@dispensart.test\",\n  \"password\": \"{{password}}\",\n  \"role\": \"auditor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('rol auditor', () => pm.expect(pm.response.json().data.role).to.eql('auditor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: lista usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el usuario creado', () => pm.expect(pm.response.json().data.map((u) => u.email)).to.include('postman-' + pm.collectionVariables.get('runId') + '@dispensart.test'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: crea una bodega",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PM-{{runId}}\",\n  \"name\": \"Bodega Postman {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('newWarehouseId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: edita la bodega",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses/{{newWarehouseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses",
+                "{{newWarehouseId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bodega Postman {{runId}} editada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('nombre nuevo', () => pm.expect(pm.response.json().data.name).to.eql('Bodega Postman ' + pm.collectionVariables.get('runId') + ' editada'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: crea de nuevo la bodega con el mismo código",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PM-{{runId}}\",\n  \"name\": \"Otra bodega Postman {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('code validation_failed', () => pm.expect(pm.response.json().code).to.eql('validation_failed'));",
+                  "pm.test('errors.code', () => pm.expect(pm.response.json().errors.code).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: crea un producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PM-{{runId}}\",\n  \"name\": \"Producto Postman {{runId}}\",\n  \"presentation\": \"Caja x 10\",\n  \"is_controlled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('newProductId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: edita el producto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{newProductId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"presentation\": \"Caja x 20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('presentación nueva', () => pm.expect(pm.response.json().data.presentation).to.eql('Caja x 20'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: lotes en orden de vencimiento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "lots"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('expires_on ascendente', () => {",
+                  "    const dates = pm.response.json().data.map((l) => l.expires_on);",
+                  "    pm.expect(dates.length).to.be.above(0);",
+                  "    pm.expect(dates).to.eql([...dates].sort());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 Permisos denegados",
+      "description": "Rechazos de acceso: sin sesión (401), cliente ajeno a la SPA (403), rol sin la capacidad (403) y CSRF antes que permisos (419). Las exclusiones de cabeceras van en `X-Omit-Headers`.",
+      "item": [
+        {
+          "name": "Sin sesión: bodegas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufijo único de esta corrida (la carpeta es autónoma y repetible).",
+                  "pm.collectionVariables.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login sin Origin, Referer ni X-XSRF-TOKEN (cliente ajeno)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Omit-Headers",
+                "value": "X-XSRF-TOKEN, Origin, Referer",
+                "description": "Cabeceras que el script de colección NO envía en esta petición."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario actual tras el login rechazado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code unauthenticated', () => pm.expect(pm.response.json().code).to.eql('unauthenticated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{medicoEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol medico', () => pm.expect(pm.response.json().data.role).to.eql('medico'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: alertas (sin lectura de inventario)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: crea bodega sin X-XSRF-TOKEN (CSRF antes que permisos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Omit-Headers",
+                "value": "X-XSRF-TOKEN",
+                "description": "Cabeceras que el script de colección NO envía en esta petición."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PM419-{{runId}}\",\n  \"name\": \"Bodega 419 {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 419', () => pm.response.to.have.status(419));",
+                  "pm.test('code csrf_token_mismatch', () => pm.expect(pm.response.json().code).to.eql('csrf_token_mismatch'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Médico: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol admin', () => pm.expect(pm.response.json().data.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: la bodega del 419 no existe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warehouses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sin la bodega PM419 de la corrida', () => pm.expect(pm.response.json().data.map((w) => w.code)).to.not.include('PM419-' + pm.collectionVariables.get('runId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: pacientes (sin acceso)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auxiliarEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auxiliar_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('auxiliar_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: ajuste de stock (sin la capacidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-adjustments"
+              ]
+            },
+            "description": "La autorización se evalúa antes que la validación: los ids del ejemplo no necesitan existir.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": 1,\n  \"lot_id\": 1,\n  \"quantity\": -1,\n  \"reason\": \"Colección Postman: rol sin la capacidad\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auditorEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol auditor', () => pm.expect(pm.response.json().data.role).to.eql('auditor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: vista previa de dispensación (sin la capacidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dispensations/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dispensations",
+                "preview"
+              ]
+            },
+            "description": "La autorización se evalúa antes que la validación: los ids del ejemplo no necesitan existir.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription_id\": 1,\n  \"warehouse_id\": 1,\n  \"items\": [\n    { \"prescription_item_id\": 1, \"quantity\": 1 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: inicia sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login de la SPA. El script de colección pide la cookie CSRF si falta y envía `X-XSRF-TOKEN`, `Origin` y `Referer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regenteEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol regente_farmacia', () => pm.expect(pm.response.json().data.role).to.eql('regente_farmacia'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: usuarios (solo admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: cierra sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": []
+}
