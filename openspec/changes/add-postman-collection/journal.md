@@ -63,3 +63,24 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Encabezados en inglés de la plantilla de `openspec instructions` en `proposal.md`: estructurales, se conservan (ley de idioma).
 - GATE 1 registrado: condiciones 1-4 OK (alcance = fila S16 precisada en `676c2dc`; spec-validator VALID en la segunda
   pasada; tier B = columna; ningún ADR ni RN se debilita).
+
+## 2026-10-10 — devops-implementer: apply
+
+- Commits: `52092df` guarda de cobertura; `db73b5b` colección y entorno; `74beca7` mutantes M0–M5; `15ac760` pasos de
+  CI; `810b988` guía y README. Push de `dev` hecho por el implementador paralelo de S17 (`436d874` contiene los
+  cinco); el run del CI de ese push queda en `verification.md` § 7.
+- newman `6.2.3` corre con el Node del anfitrión: no hizo falta `.nvmrc`. Staging usa el Node del runner con `npx`,
+  sin acción nueva ni `setup-node`.
+- Decisiones de la colección: `data` es global reservado del sandbox de Postman (datos de iteración) y no se usa
+  como identificador; `pm.sendRequest` comparte el tarro pero no expone `res.cookies` en newman, por eso el token
+  sale de `Set-Cookie`; el token vigente vive en variable local (`pm.variables`), que en Postman muere con cada envío
+  suelto y obliga a pedir la cookie de nuevo, nunca a reusar una vieja. Exclusión por petición con la cabecera
+  `X-Omit-Headers`, que el script quita antes de enviar.
+- Desvío del arnés: durante 2.10 el árbol `software/api/phpunit.xml` lo modificaba S17 en paralelo; los `mut` se
+  corrieron cuando `git status --porcelain -- software .github README.md` estaba vacío (cambios propios sin confirmar
+  apartados en `/tmp` y restaurados después).
+- La corrida con contraseña equivocada activa el limitador de login (5 fallos / 60 s por correo); la captura del
+  cuerpo 422 se hizo tras 70 s y el cierre esperó otros 70 s. Quien repita 2.9 debe esperar lo mismo.
+- Suite: Pest y Vitest no se tocaron (los corre el CI). Corridas de newman: por carpeta, negativas, mutantes y una de
+  cierre completa (R1) más sus repeticiones R2/R4 exigidas por 5.1.
+- Deuda: ninguna nueva. Bloqueos: ninguno.

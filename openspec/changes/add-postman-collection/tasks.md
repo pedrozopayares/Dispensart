@@ -138,16 +138,16 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
 
 ## 5. Cierre
 
-- [ ] 5.1 Corrida de cierre: `up`; el comando de la guía, copiado literalmente, sale 0; `nm "$C"` de nuevo sale 0
+- [x] 5.1 Corrida de cierre: `up`; el comando de la guía, copiado literalmente, sale 0; `nm "$C"` de nuevo sale 0
   (repetible); `bash software/docker/smoke.sh` y luego `nm "$C"` salen 0 (orden del staging). Registrar en
   `verification.md` por corrida: peticiones, aserciones, aserciones fallidas, código de salida, con el comando. Cubre
   AC › «Corrida verde», «Corrida repetida sobre la misma base», PD › «Comando documentado ejecutable».
-- [ ] 5.2 `verification.md` en tablas: § 0 reparto de líneas (producto, prueba, registro); escenario → carpeta y
+- [x] 5.2 `verification.md` en tablas: § 0 reparto de líneas (producto, prueba, registro); escenario → carpeta y
   petición; cláusula de estado → ancla; filas M0–M5; barridos con `/usr/bin/grep` y su control positivo. Cubre AC ›
   «Sin credenciales reales» (fila del barrido), «Aserción fallida» (filas M3–M5), DP › «Fallo no silenciado» (fila
   del barrido de 3.2). Verifica: cada escenario de los cuatro deltas tiene fila, comprobado con
   `/usr/bin/grep -h '^#### Scenario:' specs/*/spec.md | sed 's/#### Scenario: //'` contra la columna de escenarios.
-- [ ] 5.3 Push a `dev` y run del CI en verde: el paso de la guarda en `backend` y el de newman en `staging` pasan.
+- [x] 5.3 Push a `dev` y run del CI en verde: el paso de la guarda en `backend` y el de newman en `staging` pasan.
   Verifica: `gh run list --branch dev --workflow CI -L 1 --json databaseId,conclusion` da `success`; `gh run view
   <id> --log | /usr/bin/grep -nE 'check-coverage|newman'` muestra ambos pasos; id y URL del run en `verification.md`.
   Cubre DP › «Colección verde en staging», CI › «Contrato cubierto».
