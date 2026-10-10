@@ -1,0 +1,16 @@
+diff --git a/software/api/app/Services/Assistant/Llm/ModelCatalog.php b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+index b494c55..1d0738c 100644
+--- a/software/api/app/Services/Assistant/Llm/ModelCatalog.php
++++ b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+@@ -111,11 +111,7 @@ private function discover(string $baseUrl): array
+             return [];
+         }
+ 
+-        // Plazo agotado tras /api/tags: no se espera ninguna ficha.
+         $remaining = $this->remaining($deadline);
+-        if ($remaining <= 0) {
+-            return [];
+-        }
+ 
+         // Todas las fichas en una sola ronda; cada elemento que falla se omite sin afectar a los demás.
+         $responses = Http::pool(function (Pool $pool) use ($names, $baseUrl, $remaining): void {

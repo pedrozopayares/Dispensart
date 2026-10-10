@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Rules/AvailableModel.php b/software/api/app/Rules/AvailableModel.php
+index 09dc0cf..8bc61ca 100644
+--- a/software/api/app/Rules/AvailableModel.php
++++ b/software/api/app/Rules/AvailableModel.php
+@@ -16,7 +16,7 @@ public function __construct(private ModelCatalog $catalog) {}
+ 
+     public function validate(string $attribute, mixed $value, Closure $fail): void
+     {
+-        if (! is_string($value) || ! $this->catalog->contains($value)) {
++        if (! is_string($value)) {
+             $fail('assistant.model_unavailable')->translate();
+         }
+     }

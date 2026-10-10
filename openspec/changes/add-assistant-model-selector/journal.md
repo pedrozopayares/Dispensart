@@ -105,3 +105,37 @@ GATE 1 **no** está preaprobado para S15: lo aprueba el usuario tras leer el res
   4. RN-10 intacta (sin datos de pacientes hacia el modelo; defensa contra inyección y permisos de herramientas sin cambios);
      ningún ADR se debilita.
 - Orden de apply: backend → tipos de la SPA → frontend → humo y recorrido. Presupuesto: 3 corridas completas.
+
+## 2026-10-09 — backend-implementer: tareas 0, 1, 2, 3 y 4
+
+| Fase | Comando | Resultado |
+|---|---|---|
+| Base Pest (corrida completa 1 de 3) | `… -e AI_PROVIDER=mock api-tools vendor/bin/pest` | 1039 passed |
+| Base Vitest | `cd software/web && npx vitest run` | 338 passed, 32 archivos |
+| Base contrato | `composer openapi` + `git diff --exit-code` en el anfitrión; `api:types:check` | sin deriva |
+| Rojo de 1.2 | `… vendor/bin/pest tests/Feature/Assistant/AssistantModelsEndpointTest.php` | falla por 404 en todas, sin error de sintaxis |
+| Asistente + Arch (2.3) | `… vendor/bin/pest tests/Feature/Assistant tests/Arch` | 246 passed; `AssistantArchTest.php` sin diff |
+| `assistant:eval` simulado | `… -e AI_PROVIDER=mock api-tools php artisan assistant:eval` | 24/24, exit 0 |
+| Cierre backend (corrida completa 2 de 3) | Pint `--test`, Larastan `--memory-limit=1G`, Pest completo | PASS; No errors; 1071 passed |
+| Pins backend | M1–M9, M14 | todos FALLAN aplicados y PASAN restaurados (`verification.md` § 3) |
+
+Commits: `3f5417a` lista de modelos; `a09eb72` modelo elegido, validación y log; OpenAPI; tipos de la SPA.
+
+Decisiones y desvíos:
+- Clave de caché con `hash('sha256', …)` en lugar de `sha1` (design D3): el preset `security` de Pest prohíbe `sha1`;
+  mismo efecto (cambiar la URL invalida la clave).
+- `composer openapi:check` sale 129 dentro de `api-tools`: el contenedor no tiene `.git`. Se verifica con
+  `composer openapi` en el contenedor y `git diff --exit-code` en el anfitrión, como hace CI en su checkout.
+- No se agrega `AskAssistantBody` (tarea 4.1): `AskAssistantRequest` ya es `BodyOf<'/assistant/ask','post'>` y ahora
+  lleva `model?: string`; un segundo alias idéntico sería duplicado. Se agrega `AssistantModel`.
+- `ModelChoice::ollama()` exige el alfabeto seguro también para `OLLAMA_MODEL`: un valor fuera de él deja el proveedor
+  por defecto en `unavailable` (503), nunca un nombre sin validar hacia Ollama.
+- Las pruebas nuevas fijan `assistant.provider` y `assistant.ollama.model` por config: `software/.env` fija
+  `OLLAMA_MODEL` y se filtra a `api-tools` igual que `AI_PROVIDER` (misma causa que D-auv-9).
+- Pruebas extra sin escenario propio: alfabeto seguro y orden por nombre (design D1, D2); control de `Http::recorded()`
+  para el barrido de destinos; dataset `null` en «Modelo con tipo inválido» y `models` no lista en «Ollama con error».
+- Para la SPA: `GET /api/assistant/models` → `{"data":[{"id","provider","name"}]}`, `mock` primero; `data.model` en
+  la respuesta de `ask` (`mock` | `ollama:<name>`); 422 `errors.model` = `["El modelo elegido no está disponible."]`.
+
+Deuda observada (para el Orchestrator): la fuga de `OLLAMA_MODEL` de `software/.env` a `api-tools` acompaña a la de
+`AI_PROVIDER` ya registrada; fijar ambos en `phpunit.xml` cerraría las dos.

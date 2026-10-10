@@ -1,0 +1,12 @@
+diff --git a/software/api/app/Services/Assistant/AssistantQueryLogger.php b/software/api/app/Services/Assistant/AssistantQueryLogger.php
+index 68e51a6..4556272 100644
+--- a/software/api/app/Services/Assistant/AssistantQueryLogger.php
++++ b/software/api/app/Services/Assistant/AssistantQueryLogger.php
+@@ -24,6 +24,7 @@ public function log(string $outcome, QueryTrace $trace, string $provider, string
+             'rounds' => $trace->rounds,
+             'provider' => $provider,
+             'model' => $model,
++            'question' => request()->input('question'),
+             'duration_ms' => round($durationMs, 2),
+         ]);
+     }

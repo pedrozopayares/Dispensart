@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Services/Assistant/Llm/ModelCatalog.php b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+index b494c55..1998d70 100644
+--- a/software/api/app/Services/Assistant/Llm/ModelCatalog.php
++++ b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+@@ -131,7 +131,7 @@ private function discover(string $baseUrl): array
+         $kept = [];
+         foreach ($names as $index => $name) {
+             $response = $responses['m'.$index] ?? null;
+-            if ($response instanceof Response && $response->successful() && $this->declaresTools($response)) {
++            if ($response instanceof Response && $response->successful()) {
+                 $kept[] = $name;
+             }
+         }

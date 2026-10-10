@@ -1,0 +1,18 @@
+diff --git a/software/api/routes/api.php b/software/api/routes/api.php
+index 05a1678..1d897f2 100644
+--- a/software/api/routes/api.php
++++ b/software/api/routes/api.php
+@@ -34,6 +34,7 @@
+ */
+ 
+ Route::post('/auth/login', LoginController::class)->name('auth.login');
++Route::get('/assistant/models', AssistantModelController::class)->name('assistant.models');
+ 
+ Route::middleware('auth:sanctum')->group(function (): void {
+     Route::post('/auth/logout', LogoutController::class)->name('auth.logout');
+@@ -101,5 +102,4 @@
+         ->name('assistant.ask');
+     // Modelos elegibles (S15, design D6): misma autorización que la pregunta y sin limitador (la caché del catálogo
+     // acota las consultas a Ollama).
+-    Route::get('/assistant/models', AssistantModelController::class)->name('assistant.models');
+ });

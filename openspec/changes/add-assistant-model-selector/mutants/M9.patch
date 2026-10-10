@@ -1,0 +1,17 @@
+diff --git a/software/api/app/Services/Assistant/Llm/ModelCatalog.php b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+index b494c55..954d666 100644
+--- a/software/api/app/Services/Assistant/Llm/ModelCatalog.php
++++ b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+@@ -73,11 +73,7 @@ private function ollamaNames(): array
+ 
+         // El almacén es externo al proceso: lo leído se trata como dato no confiable.
+         /** @var mixed $names */
+-        $names = Cache::store((string) config('assistant.models.cache_store'))->remember(
+-            self::CACHE_PREFIX.hash('sha256', $baseUrl),
+-            (int) config('assistant.models.cache_ttl_seconds'),
+-            fn (): array => $this->discover($baseUrl),
+-        );
++        $names = $this->discover($baseUrl);
+ 
+         return is_array($names) ? array_values(array_filter($names, 'is_string')) : [];
+     }

@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Services/Assistant/Llm/ModelCatalog.php b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+index b494c55..14a686d 100644
+--- a/software/api/app/Services/Assistant/Llm/ModelCatalog.php
++++ b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+@@ -36,7 +36,7 @@ public function available(): array
+     public function contains(string $id): bool
+     {
+         if ($id === ModelChoice::MOCK) {
+-            return true;
++            return in_array($id, array_map(fn (ModelChoice $model): string => $model->id(), $this->available()), true);
+         }
+ 
+         $choice = ModelChoice::parse($id);

@@ -50,7 +50,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 0. Línea base
 
-- [ ] 0.1 Stack sano y suites base en verde antes de tocar código; contrato sin deriva (design D9, D10). Habilita
+- [x] 0.1 Stack sano y suites base en verde antes de tocar código; contrato sin deriva (design D9, D10). Habilita
   todos los escenarios del cambio; ancla de partida de IA «Proveedor configurable por entorno»:
   «Sin variable usa el modo simulado». Verifica: `docker compose -f software/compose.yaml up -d --wait` sano;
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest`
@@ -60,7 +60,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 1. API — catálogo de modelos y ruta `GET /api/assistant/models`
 
-- [ ] 1.1 Arnés de caché (design D3, D10): `phpunit.xml` gana
+- [x] 1.1 Arnés de caché (design D3, D10): `phpunit.xml` gana
   `<env name="ASSISTANT_MODELS_CACHE_STORE" value="array" force="true"/>` (cada prueba con caché vacía).
   `config/assistant.php` gana `models.budget_seconds`, `models.cache_ttl_seconds` y `models.cache_store`
   (`env('ASSISTANT_MODELS_CACHE_STORE', 'file')`), con los valores de design D2 y D3. Cimiento de IA
@@ -68,7 +68,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   Verifica: `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools php artisan tinker --execute="echo config('assistant.models.cache_store');"`
   imprime `file`; dentro de Pest, la prueba «Ollama caído» de 1.2 afirma además
   `config('assistant.models.cache_store') === 'array'`.
-- [ ] 1.2 Pruebas HTTP reales en rojo en `tests/Feature/Assistant/AssistantModelsEndpointTest.php` (design D2, D6):
+- [x] 1.2 Pruebas HTTP reales en rojo en `tests/Feature/Assistant/AssistantModelsEndpointTest.php` (design D2, D6):
   IA «Lista de modelos disponibles»: «Modelos con Ollama disponible», «Respuesta sin datos del servidor»,
   «Lista sin sesión», «Lista con proveedor por defecto desconocido», «Lista sin efectos en la base» (vacía la caché
   del catálogo entre los dos estados de Ollama, design D10); IA «Disponibilidad de modelos de Ollama»:
@@ -78,14 +78,14 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Ficha de un modelo que falla», «Ollama sin modelos descargados». Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantModelsEndpointTest.php`
   falla por 404 de ruta inexistente, no por error de sintaxis.
-- [ ] 1.3 `ModelChoice` (design D1: `parse`, `id`, alfabeto del nombre) y `ModelCatalog` (design D2, D3:
+- [x] 1.3 `ModelChoice` (design D1: `parse`, `id`, alfabeto del nombre) y `ModelCatalog` (design D2, D3:
   `available`, `contains`, `defaultChoice`; descubrimiento con plazo total, `Http::pool` para `/api/show`, filtro
   `tools`, toda excepción → lista vacía; caché de nombres en el almacén configurado). Cubre IA
   «Disponibilidad de modelos de Ollama»: «Modelo sin herramientas omitido», «Ollama caído», «Ollama lento»,
   «Ollama con error o respuesta mal formada», «Ficha de un modelo que falla», «Ollama sin modelos descargados».
   Verifica: `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantModelsEndpointTest.php --filter 'Modelo sin herramientas omitido|Ollama caído|Ollama lento|Ollama con error o respuesta mal formada|Ficha de un modelo que falla|Ollama sin modelos descargados'`
   verde una vez exista la ruta (1.4).
-- [ ] 1.4 Ruta `GET /api/assistant/models` (`assistant.models`) en el grupo `auth:sanctum` junto a `assistant.ask`, sin
+- [x] 1.4 Ruta `GET /api/assistant/models` (`assistant.models`) en el grupo `auth:sanctum` junto a `assistant.ask`, sin
   `throttle`; `AssistantModelController` invocable de una línea; `AssistantModelResource` con solo `id`, `provider`,
   `name` (design D6). Cubre IA «Lista de modelos disponibles»: «Modelos con Ollama disponible»,
   «Respuesta sin datos del servidor», «Lista sin sesión», «Lista con proveedor por defecto desconocido»,
@@ -93,7 +93,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantModelsEndpointTest.php`
   verde completo; `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Arch`
   verde.
-- [ ] 1.5 Commit en español (p. ej. `feat: la API lista los modelos del asistente disponibles en Ollama`). `[MUT]` M1,
+- [x] 1.5 Commit en español (p. ej. `feat: la API lista los modelos del asistente disponibles en Ollama`). `[MUT]` M1,
   M2, M3, M14 con el procedimiento del encabezado (design D2, D6, D10). M1 (aceptar todo modelo de `/api/tags`) → IA
   «Modelo sin herramientas omitido» FALLA; M2 (relanzar la `ConnectionException` de `/api/tags`) →
   «Ollama caído» FALLA; M3 (quitar el corte por plazo restante antes de `/api/show`) → «Ollama lento» FALLA; M14
@@ -107,7 +107,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 2. API — proveedor por petición y validación de `model`
 
-- [ ] 2.1 Pruebas HTTP reales en rojo en `tests/Feature/Assistant/AssistantModelChoiceTest.php` (design D3, D4, D5):
+- [x] 2.1 Pruebas HTTP reales en rojo en `tests/Feature/Assistant/AssistantModelChoiceTest.php` (design D3, D4, D5):
   IA «Modelo elegido por pregunta»: «Pregunta con un modelo de Ollama disponible», más su variante de caché (título que
   empieza igual y afirma un solo `GET /api/tags` entre `GET /api/assistant/models` y la pregunta, design D3),
   «Modelo simulado sin red» (`AI_PROVIDER=ollama` por config; `Http::assertNothingSent()`),
@@ -118,13 +118,13 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Pregunta sobre un paciente con un modelo de Ollama», «El servidor no recuerda la elección». Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantModelChoiceTest.php`
   falla por `model` ignorado o `data.model` ausente.
-- [ ] 2.2 `AvailableModel` (`App\Rules`) y `AskAssistantRequest`: `model` → `sometimes`, `bail`, `string`, `max:220`,
+- [x] 2.2 `AvailableModel` (`App\Rules`) y `AskAssistantRequest`: `model` → `sometimes`, `bail`, `string`, `max:220`,
   `AvailableModel`; `rules(ModelCatalog $catalog)`; `model(): ?ModelChoice`; `lang/es/assistant.php` gana
   `model_unavailable` = "El modelo elegido no está disponible." (design D5). Cubre IA «Modelo fuera de la lista»,
   «Modelo descargado sin herramientas», «Modelo elegido con Ollama caído», «Modelo con tipo inválido». Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantModelChoiceTest.php --filter 'Modelo fuera de la lista|Modelo descargado sin herramientas|Modelo elegido con Ollama caído|Modelo con tipo inválido'`
   verde.
-- [ ] 2.3 `LlmProviderResolver` (`for(?ModelChoice)`; `null` → enlace `LlmProvider` del contenedor) y fábrica única en
+- [x] 2.3 `LlmProviderResolver` (`for(?ModelChoice)`; `null` → enlace `LlmProvider` del contenedor) y fábrica única en
   `AssistantServiceProvider` usada por el enlace por defecto y por el resolver (design D4).
   `AssistantOrchestrator::answer()` recibe el `LlmProvider` por argumento; `AskAssistant::handle(User, string,
   ?ModelChoice = null)` resuelve proveedor e `id`; el controlador pasa `$request->model()`. Cubre IA
@@ -135,7 +135,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant tests/Arch`
   verde (reglas `arch()` de proveedores concretos **sin modificar**:
   `git diff --exit-code -- software/api/tests/Arch/AssistantArchTest.php`).
-- [ ] 2.4 `data.model` en `AssistantAnswer`/`AssistantAnswerResource` con el `id` sellado por `AskAssistant`, también
+- [x] 2.4 `data.model` en `AssistantAnswer`/`AssistantAnswerResource` con el `id` sellado por `AskAssistant`, también
   con el filtro previo (design D4). Cubre IA «Pregunta con un modelo de Ollama disponible»,
   «Pregunta sobre un paciente con un modelo de Ollama»; sin regresión en «Modo simulado determinista»:
   «Misma pregunta, misma respuesta» (spec viva). Verifica:
@@ -145,24 +145,24 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 3. API — registro, contrato y cierre
 
-- [ ] 3.1 Pruebas en rojo y luego el log con `model` (design D7): IA «Registro de consultas sin contenido»:
+- [x] 3.1 Pruebas en rojo y luego el log con `model` (design D7): IA «Registro de consultas sin contenido»:
   «Línea de la consulta» (actualizada: proveedor `mock`, modelo `mock`), «Línea con un modelo de Ollama» (nueva),
   «Pregunta sensible fuera del log» (sin cambio, con su control positivo). Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest tests/Feature/Assistant/AssistantQueryLogTest.php`
   verde; el barrido de la prueba encuentra el control positivo.
-- [ ] 3.2 `openapi.json` regenerado (design D9): operación `GET /assistant/models` con su 401; `model` opcional en el
+- [x] 3.2 `openapi.json` regenerado (design D9): operación `GET /assistant/models` con su 401; `model` opcional en el
   cuerpo de `assistant.ask`; `model` en `data`; `errors.model` posible en el 422. Ancla de IA
   «Lista de modelos disponibles»: «Modelos con Ollama disponible», «Lista sin sesión». Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm api-tools composer openapi` y, tras commit,
   `docker compose -f software/compose.yaml --profile tools run --rm api-tools composer openapi:check` limpio;
   `/usr/bin/grep -c '"/assistant/models"' software/api/openapi.json` distinto de cero, con control positivo
   `/usr/bin/grep -c '"/assistant/ask"' software/api/openapi.json` distinto de cero.
-- [ ] 3.3 `assistant:eval` sin cambio de comportamiento (sin `model` → `AI_PROVIDER`; design D4). Cubre
+- [x] 3.3 `assistant:eval` sin cambio de comportamiento (sin `model` → `AI_PROVIDER`; design D4). Cubre
   assistant-evaluation «Comando que reporta aciertos»: «Todas aciertan con el modo simulado» (spec viva) e IA
   «Sin modelo usa el valor por defecto». Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools php artisan assistant:eval`
   código 0, total igual al número de entradas, en tabla de `verification.md`.
-- [ ] 3.4 Commit en español (p. ej. `feat: el asistente atiende con el modelo elegido entre los disponibles`).
+- [x] 3.4 Commit en español (p. ej. `feat: el asistente atiende con el modelo elegido entre los disponibles`).
   `[MUT]` M4–M9 con el procedimiento del encabezado (design D3, D4, D5, D7, D10): M4 (`AvailableModel` pasa siempre)
   → IA «Modelo fuera de la lista» FALLA; M5 (fábrica de Ollama con `assistant.ollama.model`) →
   «Pregunta con un modelo de Ollama disponible» FALLA; M6 (`contains('mock')` pasa por `available()`) →
@@ -171,7 +171,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   `remember`) → variante de caché de «Pregunta con un modelo de Ollama disponible» FALLA. Verifica, por pin:
   `docker compose -f software/compose.yaml --profile tools run --rm -e AI_PROVIDER=mock api-tools vendor/bin/pest --filter '<título del escenario>'`
   FALLA aplicado y PASA restaurado; `mutants/M4.patch` a `M9.patch`; filas en `verification.md`.
-- [ ] 3.5 Pint, Larastan y corrida completa de cierre del backend (cuenta en el presupuesto; design D10). Cubre todos
+- [x] 3.5 Pint, Larastan y corrida completa de cierre del backend (cuenta en el presupuesto; design D10). Cubre todos
   los escenarios IA del cambio por la suite; ancla nombrada: IA «Registro de consultas sin contenido»:
   «Pregunta sensible fuera del log» (sin regresión en S7). Verifica:
   `docker compose -f software/compose.yaml --profile tools run --rm api-tools vendor/bin/pint --test`,
@@ -181,7 +181,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 4. Tipos del contrato
 
-- [ ] 4.1 `npm --prefix software/web run api:types` sobre el `openapi.json` de 3.2 (design D9); `src/lib/api-types.ts`
+- [x] 4.1 `npm --prefix software/web run api:types` sobre el `openapi.json` de 3.2 (design D9); `src/lib/api-types.ts`
   gana `AssistantModel` (`ResponseOf<'/assistant/models','get'>['data'][number]`) y `AskAssistantBody`
   (`BodyOf<'/assistant/ask','post'>`). Cimiento de AS «Envío de una pregunta»: «Pregunta enviada» (el cuerpo con
   `model` tipa). Verifica: tras commit, `npm --prefix software/web run api:types:check` limpio y

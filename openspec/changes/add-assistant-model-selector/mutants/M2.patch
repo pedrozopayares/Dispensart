@@ -1,0 +1,15 @@
+diff --git a/software/api/app/Services/Assistant/Llm/ModelCatalog.php b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+index b494c55..220b92b 100644
+--- a/software/api/app/Services/Assistant/Llm/ModelCatalog.php
++++ b/software/api/app/Services/Assistant/Llm/ModelCatalog.php
+@@ -102,7 +102,9 @@ private function discover(string $baseUrl): array
+                 ->get($baseUrl.'/api/tags')
+                 ->throw()
+                 ->json('models');
+-        } catch (ConnectionException|RequestException) {
++        } catch (ConnectionException $e) {
++            throw $e;
++        } catch (RequestException) {
+             return [];
+         }
+ 

@@ -1,0 +1,13 @@
+diff --git a/software/api/app/Providers/AssistantServiceProvider.php b/software/api/app/Providers/AssistantServiceProvider.php
+index 8c3a468..dce9104 100644
+--- a/software/api/app/Providers/AssistantServiceProvider.php
++++ b/software/api/app/Providers/AssistantServiceProvider.php
+@@ -48,7 +48,7 @@ private function provider(ModelChoice $choice): LlmProvider
+             ModelChoice::MOCK => new MockLlmProvider($this->app->make(CatalogVocabulary::class)),
+             ModelChoice::OLLAMA => new OllamaLlmProvider(
+                 (string) config('assistant.ollama.base_url'),
+-                $choice->name,
++                (string) config('assistant.ollama.model'),
+                 (float) config('assistant.ollama.timeout'),
+             ),
+             // Valor desconocido: 503 solo en el asistente; nunca `mock` en silencio.
