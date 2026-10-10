@@ -1,19 +1,16 @@
 import { PageHeader } from '@/components/page-header'
+import { ProductsSection } from '@/features/catalog/products-section'
+import { WarehousesSection } from '@/features/catalog/warehouses-section'
 import { strings } from '@/lib/strings'
 
-const labels = strings.catalog
-
-// Pantalla Catálogo (/catalog, solo catalog.manage): bodegas y productos.
+// Pantalla Catálogo (/catalog, solo catalog.manage): bodegas y productos, cada sección con su alta,
+// su lista, su edición en contexto y sus propios estados de carga, vacío y error.
 export function CatalogPage() {
   return (
-    <section className="flex w-full max-w-5xl flex-col gap-8">
-      <PageHeader title={labels.title} description={labels.description} />
-      <section className="flex flex-col gap-4">
-        <h3 className="text-xl font-semibold">{labels.warehouses.title}</h3>
-      </section>
-      <section className="flex flex-col gap-4">
-        <h3 className="text-xl font-semibold">{labels.products.title}</h3>
-      </section>
+    <section className="flex w-full max-w-5xl flex-col gap-10">
+      <PageHeader title={strings.catalog.title} description={strings.catalog.description} />
+      <WarehousesSection />
+      <ProductsSection />
     </section>
   )
 }
