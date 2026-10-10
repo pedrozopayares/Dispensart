@@ -145,6 +145,18 @@ log, comparador de `assistant:eval` por bodega y producto resueltos, contraste d
 
 OpenAPI 3.1 en `software/api/openapi.json`, generado desde el código con Scramble y verificado en CI. Incluye `/health` y `/ready`.
 
+Colección de Postman ejecutable en `software/docs/postman/dispensart.postman_collection.json`, con su entorno
+`software/docs/postman/local.postman_environment.json`: cuerpos de ejemplo, aserciones por flujo y la sesión
+Sanctum resuelta por script; cubre cada operación del contrato (`software/docs/postman/check-coverage.sh`, en CI).
+Contraseña del entorno: el valor por defecto solo de desarrollo, sobrescribible con `--env-var password=…`. Con el
+stack arriba, desde la raíz (lo mismo corre en staging):
+
+```sh
+npx --yes newman@6.2.3 run software/docs/postman/dispensart.postman_collection.json -e software/docs/postman/local.postman_environment.json
+```
+
+Guía para importar en Postman: `software/docs/postman/README.md`.
+
 ## Asistente de IA: evaluación
 
 Responde las 24 preguntas del conjunto, con su respuesta esperada, sobre una base desechable e imprime

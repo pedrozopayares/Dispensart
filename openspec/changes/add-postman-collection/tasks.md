@@ -127,7 +127,7 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
 
 ## 4. Documentación
 
-- [ ] 4.1 Guía `software/docs/postman/README.md` (importar en Postman, entorno, sesión resuelta por el script,
+- [x] 4.1 Guía `software/docs/postman/README.md` (importar en Postman, entorno, sesión resuelta por el script,
   contraseña solo de desarrollo y cómo sobrescribirla con `--env-var`, comando newman con `NV`, guarda) y en
   `README.md` § «Documentación de la API» la ruta de la colección y el mismo comando. Cubre PD › «Rutas de la guía
   existentes», «Contraseña marcada como solo de desarrollo», «Versión desalineada». Verifica: cada ruta relativa
