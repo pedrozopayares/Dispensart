@@ -149,3 +149,29 @@ Deuda observada (para el Orchestrator): la fuga de `OLLAMA_MODEL` de `software/.
   `Humo VERDE`; control negativo de las variables opcionales exit 1 (2 fallas esperadas). Tablas en
   `verification.md` § 6.
 - Desvío: el humo pasa de 5 a 7 preguntas por corrida (sigue bajo el límite de 20 por minuto).
+
+## 2026-10-09 — frontend-implementer: tareas 5 y 6
+
+| Fase | Comando | Resultado |
+|---|---|---|
+| Delta del asistente | `cd software/web && npx vitest run src/features/assistant` | 65 passed, 3 archivos |
+| Pins SPA | M10–M13 | todos FALLAN aplicados y PASAN restaurados (`verification.md` § 8) |
+| Cierre frontend (corrida completa Vitest 2 del cambio: base + cierre) | `npm run lint && npm run typecheck && npx vitest run` | lint y `tsc -b` exit 0; 33 archivos, 0 fallidos (caché de resultados de esa corrida); 360 por derivación (`verification.md` § 9) |
+
+Commits: `60a6e7f` selector, preferencia e historial; `785c250` guía y README.
+
+Decisiones y desvíos:
+- `resolveModel(ids, stored, chosen)` solo con la lista recibida; mientras carga o si falla, `mock` sin aviso de
+  preferencia perdida (el aviso de lista fallida tiene prioridad). Aviso de preferencia también para un valor
+  guardado manipulado no vacío: nunca se pinta el valor.
+- Invalidación de `['assistant','models']` ante 422 con `errors.model` en `onError` de `useAskAssistant`.
+- `chooseModel` ignora cambios con la pregunta en curso además de `disabled` (spec «Selector durante una consulta»).
+- Prueba S8 «Pregunta sobre un paciente» (texto completo de la entrada) gana `Respondió: Simulado (sin red)`: consecuencia
+  del requisito «Modelo que respondió». «Médico abre el asistente desde el menú» espera "Preguntar" habilitado con
+  `waitFor` (misma aserción; el botón espera la lista).
+- La salida de la corrida de cierre quedó cortada por `tail`; no se repitió para no pasar el tope de corridas. Evidencia:
+  33 entornos jsdom en la salida y `results.json` de Vitest sin archivos fallidos; el conteo exacto lo da la
+  confirmación del auditor.
+- Captura de la pantalla: no tomada aquí (stack sin reconstruir; 7.1 y 7.3 son del Orchestrator).
+- Árbol de los pins: `openspec/DEBT.md` y `software/docker/smoke/assistant-smoke.sh` estaban modificados por otros
+  agentes; `software/web` limpio antes y después de cada pin.

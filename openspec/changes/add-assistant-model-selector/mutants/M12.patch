@@ -1,0 +1,12 @@
+diff --git a/software/web/src/features/assistant/assistant-page.tsx b/software/web/src/features/assistant/assistant-page.tsx
+index 876d6ce..d4a9d66 100644
+--- a/software/web/src/features/assistant/assistant-page.tsx
++++ b/software/web/src/features/assistant/assistant-page.tsx
+@@ -75,6 +75,7 @@ export function AssistantPage() {
+       ask.mutate({ question, model: model.id }, {
+         onSuccess: (answer) => {
+           const entry = { id: nextId.current++, question, answer }
++          window.localStorage.setItem('dispensart.assistant.question', question)
+           setHistory((current) => [entry, ...current].slice(0, HISTORY_SIZE))
+           setText('')
+           box.current?.focus()

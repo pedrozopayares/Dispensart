@@ -189,7 +189,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 5. SPA — selector, preferencia e historial
 
-- [ ] 5.1 Textos en `src/lib/strings.ts` (design D8; `assistant.model`: "Modelo", "Simulado (sin red)",
+- [x] 5.1 Textos en `src/lib/strings.ts` (design D8; `assistant.model`: "Modelo", "Simulado (sin red)",
   "Ollama · {name}", "Cargando modelos…", "No se pudo consultar los modelos disponibles. Se usa Simulado (sin red).",
   "El modelo que elegiste ya no está disponible. Se usa Simulado (sin red).", "Respondió: {model}",
   "Modelo desconocido"); `modelLabel(id)` en `assistant-labels.ts`; manejador por defecto `GET /api/assistant/models`
@@ -197,12 +197,12 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Modelo desconocido en la respuesta» (etiqueta sin el texto recibido). Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-page.test.tsx` sigue verde con el manejador por
   defecto (ninguna petición sin manejar).
-- [ ] 5.2 Pruebas en rojo en `src/features/assistant/assistant-model.test.tsx` (design D8): AS «Selector de modelo»:
+- [x] 5.2 Pruebas en rojo en `src/features/assistant/assistant-model.test.tsx` (design D8): AS «Selector de modelo»:
   «Selector con Ollama disponible», «Ollama no disponible», «Apertura consulta solo la lista», «Carga de la lista»,
   «Fallo de la lista», «Pregunta con un modelo de Ollama», «Selector durante una consulta»,
   «Modelo rechazado por el servidor», «Admin sin consulta de modelos». Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-model.test.tsx` falla por selector ausente.
-- [ ] 5.3 `listAssistantModels()`, `askAssistant({ question, model })`, `useAssistantModels()` (`retry: false`,
+- [x] 5.3 `listAssistantModels()`, `askAssistant({ question, model })`, `useAssistantModels()` (`retry: false`,
   `staleTime` igual al TTL de design D3), `assistant-model-select.tsx` con `NativeSelect` en `Field` sobre la caja;
   deshabilitado en carga y con la pregunta en curso; "Preguntar" espera la lista; `errors.model` junto al selector e
   `invalidateQueries(['assistant','models'])` ante ese 422 (design D8). Cubre AS «Selector de modelo»:
@@ -211,19 +211,19 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Modelo rechazado por el servidor», «Admin sin consulta de modelos». Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-model.test.tsx -t 'Selector con Ollama disponible|Ollama no disponible|Apertura consulta solo la lista|Carga de la lista|Fallo de la lista|Pregunta con un modelo de Ollama|Selector durante una consulta|Modelo rechazado por el servidor|Admin sin consulta de modelos'`
   verde.
-- [ ] 5.4 Pruebas en rojo y luego la preferencia (design D8; `model-preference.ts`: clave
+- [x] 5.4 Pruebas en rojo y luego la preferencia (design D8; `model-preference.ts`: clave
   `dispensart.assistant.model`, lectura/escritura en `try/catch`, `resolveModel` puro, escritura solo en `onChange`):
   AS «Elección de modelo conservada al recargar»: «La elección sobrevive a una recarga», «Primera carga»,
   «Modelo guardado que ya no está disponible», «Valor guardado manipulado» (cada valor del escenario),
   «Almacenamiento no disponible». Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-model.test.tsx -t 'La elección sobrevive a una recarga|Primera carga|Modelo guardado que ya no está disponible|Valor guardado manipulado|Almacenamiento no disponible'`
   verde.
-- [ ] 5.5 Pruebas en rojo y luego el modelo en el historial (design D8; etiqueta desde `entry.answer.model`): AS
+- [x] 5.5 Pruebas en rojo y luego el modelo en el historial (design D8; etiqueta desde `entry.answer.model`): AS
   «Modelo que respondió»: «Respuesta de Ollama», «Cambiar el selector no reescribe el historial»,
   «Modelo desconocido en la respuesta». Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-model.test.tsx -t 'Respuesta de Ollama|Cambiar el selector no reescribe el historial|Modelo desconocido en la respuesta'`
   verde.
-- [ ] 5.6 Pruebas existentes de `assistant-page.test.tsx` llevadas a los requisitos modificados (design D8): AS
+- [x] 5.6 Pruebas existentes de `assistant-page.test.tsx` llevadas a los requisitos modificados (design D8): AS
   «Envío de una pregunta»: «Pregunta enviada» (cuerpo con `model` `mock`); AS
   «Pantalla Asistente para los roles de operación»: «Apertura sin preguntas enviadas» (la única petición al asistente
   es la lista); AS «Historial de la pantalla solo en memoria»:
@@ -233,19 +233,19 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Tope de 500 caracteres», «Doble clic produce una sola pregunta», «Enter repetido», «Salto de línea sin envío»,
   «Dos preguntas seguidas», «Undécima pregunta», «Salir y volver vacía el historial». Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-page.test.tsx` verde completo.
-- [ ] 5.7 Revisión de experiencia (design D8): disposición común (título, formulario arriba, resultados abajo), solo
+- [x] 5.7 Revisión de experiencia (design D8): disposición común (título, formulario arriba, resultados abajo), solo
   kit y tokens de tema (S12), selector alcanzable con teclado y con etiqueta asociada. Cubre AS «Selector de modelo»:
   «Selector con Ollama disponible» (consulta por `getByLabelText('Modelo')`). Verifica:
   `cd software/web && npx vitest run src/features/assistant/assistant-model.test.tsx -t 'Selector con Ollama disponible'`
   verde; captura citada en `verification.md` en 7.3.
-- [ ] 5.8 Commit en español (p. ej. `feat: la pantalla Asistente permite elegir el modelo y lo recuerda`). `[MUT]`
+- [x] 5.8 Commit en español (p. ej. `feat: la pantalla Asistente permite elegir el modelo y lo recuerda`). `[MUT]`
   M10–M13 con el procedimiento del encabezado, sin `php -l` (design D8, D10): M10 (usar el valor guardado sin
   comprobar la lista) → AS «Modelo guardado que ya no está disponible» FALLA; M11 (etiquetar con la selección actual)
   → «Cambiar el selector no reescribe el historial» FALLA; M12 (guardar además la pregunta) →
   «Almacenamiento solo con el modelo» FALLA; M13 (no escribir en `onChange`) → «La elección sobrevive a una recarga»
   FALLA. Verifica, por pin: `cd software/web && npx vitest run src/features/assistant -t '<título del escenario>'`
   FALLA aplicado y PASA restaurado; `mutants/M10.patch` a `M13.patch`; filas en `verification.md`.
-- [ ] 5.9 ESLint, `tsc` y corrida completa de cierre del frontend (cuenta en el presupuesto; design D10). Cubre todos
+- [x] 5.9 ESLint, `tsc` y corrida completa de cierre del frontend (cuenta en el presupuesto; design D10). Cubre todos
   los escenarios AS del cambio por la suite; ancla nombrada: AS «Historial de la pantalla solo en memoria»:
   «Pregunta con un documento fuera del navegador persistente» (sin regresión en S8). Verifica:
   `npm --prefix software/web run lint`, `npm --prefix software/web run typecheck`,
@@ -253,7 +253,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 6. Documentación (paralelo con 5, tras 3.5)
 
-- [ ] 6.1 `software/docs/asistente.md` y README (design D2, D3, D4, D8): selector, regla de disponibilidad (descargado
+- [x] 6.1 `software/docs/asistente.md` y README (design D2, D3, D4, D8): selector, regla de disponibilidad (descargado
   + `tools`, plazo y caché de design D2 y D3, Ollama caído → solo simulado), `AI_PROVIDER` como valor por defecto para
   preguntas sin `model`, `assistant:eval` y CI; cómo ofrecer un modelo local (`ollama pull` de un modelo con
   herramientas). Cubre IA «Disponibilidad de modelos de Ollama»: «Ollama caído» e IA

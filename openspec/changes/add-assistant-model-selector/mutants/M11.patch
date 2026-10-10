@@ -1,0 +1,13 @@
+diff --git a/software/web/src/features/assistant/assistant-page.tsx b/software/web/src/features/assistant/assistant-page.tsx
+index 876d6ce..4b5ab13 100644
+--- a/software/web/src/features/assistant/assistant-page.tsx
++++ b/software/web/src/features/assistant/assistant-page.tsx
+@@ -190,7 +190,7 @@ export function AssistantPage() {
+           <ol className="flex flex-col gap-3">
+             {history.map((entry) => (
+               <li key={entry.id}>
+-                <AssistantAnswerCard entry={entry} />
++                <AssistantAnswerCard entry={{ ...entry, answer: { ...entry.answer, model: model.id } }} />
+               </li>
+             ))}
+           </ol>

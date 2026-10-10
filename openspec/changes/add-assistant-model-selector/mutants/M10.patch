@@ -1,0 +1,13 @@
+diff --git a/software/web/src/features/assistant/model-preference.ts b/software/web/src/features/assistant/model-preference.ts
+index 348d0e9..140042d 100644
+--- a/software/web/src/features/assistant/model-preference.ts
++++ b/software/web/src/features/assistant/model-preference.ts
+@@ -30,7 +30,7 @@ export type ResolvedModel = { id: string; storedMissing: boolean }
+ // lista; si no, `mock`. `storedMissing` avisa que la preferencia ya no está disponible.
+ export function resolveModel(ids: readonly string[], stored: string | null, chosen: string | null): ResolvedModel {
+   if (chosen !== null && ids.includes(chosen)) return { id: chosen, storedMissing: false }
+-  if (stored !== null && ids.includes(stored)) return { id: stored, storedMissing: false }
++  if (stored !== null) return { id: stored, storedMissing: false }
+   const preferred = chosen ?? stored
+   return { id: DEFAULT_MODEL, storedMissing: preferred !== null && preferred !== '' && preferred !== DEFAULT_MODEL }
+ }

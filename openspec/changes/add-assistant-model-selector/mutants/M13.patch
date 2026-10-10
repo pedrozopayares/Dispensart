@@ -1,0 +1,12 @@
+diff --git a/software/web/src/features/assistant/assistant-page.tsx b/software/web/src/features/assistant/assistant-page.tsx
+index 876d6ce..20be050 100644
+--- a/software/web/src/features/assistant/assistant-page.tsx
++++ b/software/web/src/features/assistant/assistant-page.tsx
+@@ -61,7 +61,6 @@ export function AssistantPage() {
+   const chooseModel = (id: string) => {
+     if (ask.isPending) return
+     setChosen(id)
+-    storeModel(id)
+   }
+ 
+   const submit = () => {

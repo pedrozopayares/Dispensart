@@ -136,3 +136,91 @@ Local con `AI_PROVIDER=ollama` (`software/.env`) y Ollama del anfitrión encendi
 | Barrido | Comando | Resultado | Control positivo |
 |---|---|---|---|
 | Secretos en el diff del humo | `git diff -- software/docker/smoke/assistant-smoke.sh \| /usr/bin/grep -E '^\+' \| /usr/bin/grep -ciE '(api[_-]?key\|secret\|token\|password)\s*[:=]'` | 0 | línea sintética `+API_KEY=abc` por el mismo filtro: 1 |
+
+## 6. Reparto de líneas (parte SPA y documentación)
+
+| Tipo | Alcance | Comando (raíz del repo) | Resultado |
+|---|---|---|---|
+| Producto | `software/web/src` sin `*.test.*` | `git diff --numstat 849ff92..785c250 -- software/web/src \| /usr/bin/grep -v '\.test\.'` (suma) | +227 −18 |
+| Prueba | `software/web/src/**/*.test.*` | mismo rango \| `/usr/bin/grep '\.test\.'` (suma) | +375 −16 |
+| Documentación | `README.md`, `software/docs/asistente.md` | `git diff --numstat 849ff92..785c250 -- README.md software/docs/asistente.md` | +26 −3 |
+
+## 7. Escenarios AS → prueba
+
+`T-model` = `software/web/src/features/assistant/assistant-model.test.tsx`; `T-page` =
+`software/web/src/features/assistant/assistant-page.test.tsx`. Sin THEN anclado nuevo en `assistant-screen`
+(el único ancla, «Tope de 500 caracteres», no cambia).
+
+| Requisito AS | Escenario | Prueba | Archivo:línea |
+|---|---|---|---|
+| Selector de modelo | Selector con Ollama disponible | `Selector con Ollama disponible: …` (por `getByLabelText('Modelo')` y rol `combobox`) | T-model:72 |
+| Selector de modelo | Ollama no disponible | `Ollama no disponible: …` | T-model:82 |
+| Selector de modelo | Apertura consulta solo la lista | `Apertura consulta solo la lista: …` | T-model:92 |
+| Selector de modelo | Carga de la lista | `Carga de la lista: …` | T-model:103 |
+| Selector de modelo | Fallo de la lista | `Fallo de la lista (%s): …` (dataset `red`, `server_error`) | T-model:122 |
+| Selector de modelo | Pregunta con un modelo de Ollama | `Pregunta con un modelo de Ollama: …` | T-model:136 |
+| Selector de modelo | Selector durante una consulta | `Selector durante una consulta: …` | T-model:147 |
+| Selector de modelo | Modelo rechazado por el servidor | `Modelo rechazado por el servidor: …` | T-model:167 |
+| Selector de modelo | Admin sin consulta de modelos | `Admin sin consulta de modelos: …` | T-model:190 |
+| Elección de modelo conservada al recargar | La elección sobrevive a una recarga | `La elección sobrevive a una recarga: …` | T-model:201 |
+| Elección de modelo conservada al recargar | Primera carga | `Primera carga: …` | T-model:216 |
+| Elección de modelo conservada al recargar | Modelo guardado que ya no está disponible | `Modelo guardado que ya no está disponible: …` | T-model:226 |
+| Elección de modelo conservada al recargar | Valor guardado manipulado | `Valor guardado manipulado (%j): …` (dataset `http://atacante.example/api`, `<img src=x onerror=alert(1)>`, texto vacío) | T-model:238 |
+| Elección de modelo conservada al recargar | Almacenamiento no disponible | `Almacenamiento no disponible: …` | T-model:255 |
+| Modelo que respondió | Respuesta de Ollama | `Respuesta de Ollama: …` | T-model:280 |
+| Modelo que respondió | Cambiar el selector no reescribe el historial | `Cambiar el selector no reescribe el historial: …` | T-model:289 |
+| Modelo que respondió | Modelo desconocido en la respuesta | `Modelo desconocido en la respuesta: …` | T-model:302 |
+| Pantalla Asistente para los roles de operación | Médico abre el asistente desde el menú | sin cambio de aserción (espera "Preguntar" habilitado con `waitFor`) | T-page:66 |
+| Pantalla Asistente para los roles de operación | Apertura sin preguntas enviadas | `Apertura sin preguntas enviadas: … la única petición al asistente es la lista de modelos` (actualizada) | T-page:79 |
+| Pantalla Asistente para los roles de operación | Acceso directo sin sesión | sin cambio | T-page:89 |
+| Pantalla Asistente para los roles de operación | Admin escribe la dirección del asistente | sin cambio | T-page:100 |
+| Envío de una pregunta | Pregunta enviada | `Pregunta enviada: … {"question": …, "model": "mock"} …` (actualizada) | T-page:121 |
+| Envío de una pregunta | Pregunta vacía | sin cambio | T-page:139 |
+| Envío de una pregunta | Pregunta demasiado corta | sin cambio | T-page:151 |
+| Envío de una pregunta | Tope de 500 caracteres | sin cambio | T-page:162 |
+| Envío de una pregunta | Doble clic produce una sola pregunta | sin cambio | T-page:174 |
+| Envío de una pregunta | Enter repetido | sin cambio | T-page:190 |
+| Envío de una pregunta | Salto de línea sin envío | sin cambio | T-page:205 |
+| Historial de la pantalla solo en memoria | Dos preguntas seguidas | sin cambio | T-page:408 |
+| Historial de la pantalla solo en memoria | Undécima pregunta | sin cambio | T-page:425 |
+| Historial de la pantalla solo en memoria | Salir y volver vacía el historial | sin cambio | T-page:437 |
+| Historial de la pantalla solo en memoria | Pregunta con un documento fuera del navegador persistente | sin cambio | T-page:456 |
+| Historial de la pantalla solo en memoria | Almacenamiento solo con el modelo | `Almacenamiento solo con el modelo: …` (nueva) | T-page:485 |
+| (S8 viva) Resultado según el outcome | Pregunta sobre un paciente | texto completo de la entrada gana `Respondió: Simulado (sin red)` | T-page:267 |
+
+## 8. Pins `[MUT]` de la SPA
+
+Árbol con commit `60a6e7f` antes de cada pin; `git status --porcelain -- software/web` vacío antes y después
+(fuera de `software/web` solo `openspec/DEBT.md` y `software/docker/smoke/assistant-smoke.sh`, de otros agentes, y
+`mutants/`). Comando: `cd software/web && npx vitest run src/features/assistant -t '<título>'`.
+
+| n | mutación | Applied → FAILS m/k: prueba | Restored → PASSES k/k |
+|---|---|---|---|
+| M10 | `resolveModel`: usa el valor guardado sin comprobar la lista | FAILS 1/1: T-model `Modelo guardado que ya no está disponible` | PASSES 1/1 |
+| M11 | historial etiquetado con la selección actual (`model.id`) en vez de `data.model` | FAILS 1/1: T-model `Cambiar el selector no reescribe el historial` | PASSES 1/1 |
+| M12 | `localStorage` guarda además la pregunta al recibir la respuesta | FAILS 1/1: T-page `Almacenamiento solo con el modelo` | PASSES 1/1 |
+| M13 | sin `storeModel` en el `onChange` del selector | FAILS 1/1: T-model `La elección sobrevive a una recarga` | PASSES 1/1 |
+
+Parches: `mutants/M10.patch` … `M13.patch`.
+
+## 9. Corridas de la SPA
+
+| Corrida | Comando | Resultado |
+|---|---|---|
+| Delta del asistente (antes del commit) | `cd software/web && npx vitest run src/features/assistant` | 3 archivos, 65 passed |
+| Cierre frontend (5.9, corrida completa) | `npm run lint && npm run typecheck && npx vitest run` desde `software/web` | lint exit 0; `tsc -b` exit 0; vitest: 33 entornos jsdom (33 archivos), 0 archivos fallidos según `node_modules/.vite/vitest/<hash>/results.json` escrito por esa corrida |
+| Conteo del cierre | derivado: base 338 + 20 (`T-model`) + 1 (`api.test.ts`) + 1 (`T-page`) | 360; control: el delta del asistente da 65 = 43 previas + 22 |
+| Comandos de la guía (6.1) | `ollama pull gemma4:e2b-mlx`; `ollama show gemma4:e2b-mlx \| /usr/bin/grep -c tools` | exit 0; 1 |
+| URL en la guía | `/usr/bin/grep -rnE 'https?://[^ )]*' software/docs/asistente.md` | 0 hits; control: el mismo patrón sobre `software/.env.example` da 1 |
+
+## 10. Barridos de la SPA
+
+| Barrido | Comando (raíz del repo) | Resultado | Control positivo |
+|---|---|---|---|
+| Consola en líneas agregadas | `git diff 849ff92..HEAD -- software/web/src \| /usr/bin/grep -E '^\+' \| /usr/bin/grep -cE 'console\.(log\|info\|warn\|error\|debug)'` | 0 | línea sintética `+ console.log(x)` por la misma tubería: 1 |
+| Almacenamiento del navegador en producto | `/usr/bin/grep -rlE 'localStorage\|sessionStorage' software/web/src \| /usr/bin/grep -v '\.test\.'` | solo `features/assistant/model-preference.ts` | archivos de prueba con el patrón: 4 |
+| Colores crudos en archivos tocados | `cat` de `assistant-model-select.tsx model-preference.ts assistant-answer.tsx assistant-page.tsx` \| `/usr/bin/grep -cE '#[0-9a-fA-F]{3,6}\b\|-(red\|blue\|green\|gray\|slate\|zinc\|neutral\|white\|black)(-[0-9]{2,3})?\b\|\[(rgb\|hsl\|oklch)'` | 0 | `className="bg-blue-500"` sintético: 1; tokens `text-muted-foreground` en los mismos archivos: 4 |
+| Texto de UI fuera de `strings.ts` | `/usr/bin/grep -nE "[>'\"][¿¡]?[A-ZÁÉÍÓÚ][a-záéíóúñ]+ [a-záéíóúñ]+"` sobre `assistant-model-select.tsx model-preference.ts`, sin comentarios | 0 | `'Cargando modelos ya'` sintético: 1; `'Simulado (sin red)'` en `strings.ts`: 1 |
+| `catch` sin relanzar | `/usr/bin/grep -c catch software/web/src/features/assistant/model-preference.ts` | 2, ambos por spec «Almacenamiento no disponible» (sin error visible) | `assistant-model-select.tsx`: 0 |
+| HTML crudo | `/usr/bin/grep -rc dangerouslySetInnerHTML software/web/src/features/assistant` (archivos con hits) | 0 | línea sintética: 1 |
+| Captura | — | pendiente de 7.3 (Orchestrator, stack reconstruido en 7.1) | — |
