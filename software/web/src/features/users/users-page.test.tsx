@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { strings } from '@/lib/strings'
 import { spyOnConsole } from '@/test/console-spy'
@@ -239,29 +239,35 @@ describe('Alta de usuario', () => {
   })
 
   it('Doble clic produce un solo alta: una sola petición y "Creando usuario…" deshabilitado hasta la respuesta', async () => {
-    const pending = deferred<Response>()
+    // Cada petición recibe su propia respuesta al abrir la compuerta: un segundo alta llegaría a la lista.
+    const gate = deferred<void>()
     const { api } = await openUsers({
       [USERS]: [listOf(seedUsers), listOf([...seedUsers, newUserResource])],
-      [CREATE]: () => pending.promise,
+      [CREATE]: () => gate.promise.then(() => json(201, { data: newUserResource })),
     })
     fill()
 
+    // Dos clics en el mismo ciclo, antes del re-render que deshabilita el botón (design D4): solo el
+    // candado síncrono los separa; `isPending` aún no llegó a la pantalla.
     const button = createButton()
-    fireEvent.click(button)
-    fireEvent.click(button)
+    act(() => {
+      button.click()
+      button.click()
+    })
 
     expect(await screen.findByRole('button', { name: f.submitting })).toBeDisabled()
     await waitFor(() => expect(created(api).length).toBeGreaterThan(0))
-    pending.resolve(json(201, { data: newUserResource }))
+    gate.resolve()
     expect(await screen.findByText('Usuario Nueva Auxiliar creado.')).toBeInTheDocument()
     expect(created(api)).toHaveLength(1)
   })
 
   it('Enter repetido: dos envíos seguidos del formulario producen una sola petición', async () => {
-    const pending = deferred<Response>()
+    // Cada petición recibe su propia respuesta al abrir la compuerta: un segundo alta llegaría a la lista.
+    const gate = deferred<void>()
     const { api } = await openUsers({
       [USERS]: [listOf(seedUsers), listOf([...seedUsers, newUserResource])],
-      [CREATE]: () => pending.promise,
+      [CREATE]: () => gate.promise.then(() => json(201, { data: newUserResource })),
     })
     fill()
 
@@ -270,7 +276,7 @@ describe('Alta de usuario', () => {
     fireEvent.submit(form)
 
     await waitFor(() => expect(created(api).length).toBeGreaterThan(0))
-    pending.resolve(json(201, { data: newUserResource }))
+    gate.resolve()
     expect(await screen.findByText('Usuario Nueva Auxiliar creado.')).toBeInTheDocument()
     expect(created(api)).toHaveLength(1)
   })
