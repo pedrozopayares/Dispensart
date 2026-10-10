@@ -1,0 +1,14 @@
+diff --git a/software/web/src/features/catalog/products-section.tsx b/software/web/src/features/catalog/products-section.tsx
+index b826d79..6f75187 100644
+--- a/software/web/src/features/catalog/products-section.tsx
++++ b/software/web/src/features/catalog/products-section.tsx
+@@ -243,7 +243,8 @@ function EditProductForm({
+   const submit = () =>
+     form.submit((draft, callbacks) =>
+       update.mutate(
+-        { id: product.id, changes: toBody(draft) },
++        // MUTANTE M6: la edición de producto no envía `is_controlled`.
++        { id: product.id, changes: { ...toBody(draft), is_controlled: undefined } },
+         { ...callbacks, onSuccess: (saved) => onSaved(format(p.updated, { name: saved.name })) },
+       ),
+     )

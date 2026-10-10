@@ -1,0 +1,13 @@
+diff --git a/software/web/src/features/users/users-page.tsx b/software/web/src/features/users/users-page.tsx
+index 570fd0a..8c71b47 100644
+--- a/software/web/src/features/users/users-page.tsx
++++ b/software/web/src/features/users/users-page.tsx
+@@ -75,6 +75,8 @@ function NewUserForm() {
+     setLocalErrors(found)
+     if (Object.keys(found).length > 0 || draft.role === '') return
+     const role = draft.role
++    // MUTANTE M5: sin candado síncrono, solo `isPending` deshabilita el botón.
++    const guard = (run: (release: () => void) => void) => run(() => undefined)
+     guard((release) => {
+       setSubmitError(null)
+       setNotice(null)

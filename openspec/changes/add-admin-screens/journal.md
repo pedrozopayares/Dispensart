@@ -81,3 +81,28 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
      Asistente en menú, inicio y ruta. Sin cambio de backend; el rechazo del endpoint para `admin` queda fuera (tier A aparte).
   2. spec-validator VALID en la segunda pasada; ancla sin hits. 3. Tier B = columna. 4. Ningún ADR ni RN se debilita.
 - Architect no convocado: tier B sin costura nueva (patrones de pantallas, mutaciones y catálogo de errores existentes).
+
+## 2026-10-09 — frontend-implementer: apply
+
+| Hecho | Evidencia |
+|---|---|
+| Tareas cerradas | 0.1–6.2 `[x]`; 6.3 (recorrido del Orchestrator) abierta |
+| Commits en `dev` | `8d14fef` API y textos · `f83e90c` menú y guardas · `f0f8e77` Usuarios · `5c55158` prueba de doble clic · `3db9528` Catálogo |
+| Corrida completa única (6.1) | lint exit 0 · typecheck exit 0 · 32 archivos, 338 pruebas pasan |
+| Mutantes | M1–M6 rojo con el parche, verde restaurado, exit 0 (`verification.md` § 2) |
+| Contenedor `web` (6.2) | reconstruido, Healthy; `/users`, `/catalog`, `/assistant` → 200; el bundle servido trae los textos nuevos |
+| Barridos (5.1) | textos, colores y privacidad en 0 con su control positivo (`verification.md` § 4) |
+
+- Decisión: casilla nativa con `accent-primary` en vez del `Checkbox` de shadcn. El de Radix exige `ResizeObserver`
+  (ausente en jsdom) y polirrellenarlo tocaba el arnés de pruebas. Sin paquete ni archivo de kit nuevo.
+- Decisión: la variante `'session'` de la tabla de pantallas se retira; el asistente exige la unión de capacidades de
+  las cuatro pantallas de operación. Misma guarda para toda fila, sin costura nueva.
+- Desviación: `src/app/shell-header.test.tsx` actualizado (afirmaba el acceso "Asistente" del admin); no figuraba en
+  la lista de archivos de 2.1.
+- Hallazgo de prueba: con dos `fireEvent.click` el re-render dentro de `act` deshabilita el botón entre clics y M5
+  sobrevivía. Las pruebas de doble clic ahora pulsan dos veces dentro de un solo `act` y cada petición recibe su
+  propia respuesta; M5 cae por conteo de peticiones.
+- Deuda (prosa, el Orchestrator decide fila): negar `POST /api/assistant/ask` a `admin` en la API sigue fuera (tier A
+  aparte, ya anotado en la propuesta). La pantalla Usuarios no reutiliza el `TextField` del catálogo; unificar ambos
+  formularios es una limpieza menor sin efecto en escenarios.
+- Bloqueos: ninguno.

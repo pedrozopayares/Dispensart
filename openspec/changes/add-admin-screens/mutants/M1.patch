@@ -1,0 +1,23 @@
+diff --git a/software/web/src/app/screens.tsx b/software/web/src/app/screens.tsx
+index 2044463..abfd161 100644
+--- a/software/web/src/app/screens.tsx
++++ b/software/web/src/app/screens.tsx
+@@ -7,7 +7,7 @@ import { KardexPage } from '@/features/kardex/kardex-page'
+ import { TransferDetailPage } from '@/features/transfers/transfer-detail-page'
+ import { TransfersPage } from '@/features/transfers/transfers-page'
+ import { UsersPage } from '@/features/users/users-page'
+-import { canAny, type Ability } from '@/lib/abilities'
++import { ABILITIES, canAny, type Ability } from '@/lib/abilities'
+ import type { AuthenticatedUser } from '@/lib/api'
+ import { strings } from '@/lib/strings'
+ 
+@@ -65,7 +65,8 @@ export const screens: readonly Screen[] = [
+   {
+     path: '/users',
+     Component: UsersPage,
+-    abilities: ['users.manage'],
++    // MUTANTE M1: sin guarda, abierta a toda sesión.
++    abilities: ABILITIES,
+     navLabel: strings.nav.users,
+     description: strings.users.description,
+   },

@@ -1,0 +1,14 @@
+diff --git a/software/web/src/features/users/users-page.tsx b/software/web/src/features/users/users-page.tsx
+index 570fd0a..057e4a8 100644
+--- a/software/web/src/features/users/users-page.tsx
++++ b/software/web/src/features/users/users-page.tsx
+@@ -149,7 +149,8 @@ function NewUserForm() {
+               <FieldLabel htmlFor={`${ids}-password`}>{form.password}</FieldLabel>
+               <Input
+                 {...fieldProps('password')}
+-                type="password"
++                // MUTANTE M3: contraseña como texto visible.
++                type="text"
+                 autoComplete="new-password"
+                 maxLength={255}
+                 aria-describedby={[`${ids}-password-hint`, errorOf('password') && errorId('password')]

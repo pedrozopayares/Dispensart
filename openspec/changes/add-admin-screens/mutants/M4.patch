@@ -1,0 +1,24 @@
+diff --git a/software/web/src/features/users/queries.ts b/software/web/src/features/users/queries.ts
+index 4de1180..d8a6d3b 100644
+--- a/software/web/src/features/users/queries.ts
++++ b/software/web/src/features/users/queries.ts
+@@ -1,4 +1,4 @@
+-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
++import { useMutation, useQuery } from '@tanstack/react-query'
+ import { createUser, listUsers } from '@/features/users/api'
+ import { queryKeys } from '@/lib/query-keys'
+ 
+@@ -9,11 +9,11 @@ export function useUsers() {
+ // Alta sin reintento automático. Termina cuando la lista ya se volvió a pedir, así la confirmación y
+ // la fila nueva aparecen juntas. `gcTime: 0`: la contraseña enviada no queda en la caché de mutaciones.
+ export function useCreateUser() {
+-  const client = useQueryClient()
+   return useMutation({
+     mutationFn: createUser,
+     retry: false,
+     gcTime: 0,
+-    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.users() }),
++    // MUTANTE M4: el alta no refresca la lista de usuarios.
++    onSuccess: () => undefined,
+   })
+ }

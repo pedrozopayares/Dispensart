@@ -1,0 +1,23 @@
+diff --git a/software/web/src/app/screens.tsx b/software/web/src/app/screens.tsx
+index 2044463..118658f 100644
+--- a/software/web/src/app/screens.tsx
++++ b/software/web/src/app/screens.tsx
+@@ -7,7 +7,7 @@ import { KardexPage } from '@/features/kardex/kardex-page'
+ import { TransferDetailPage } from '@/features/transfers/transfer-detail-page'
+ import { TransfersPage } from '@/features/transfers/transfers-page'
+ import { UsersPage } from '@/features/users/users-page'
+-import { canAny, type Ability } from '@/lib/abilities'
++import { ABILITIES, canAny, type Ability } from '@/lib/abilities'
+ import type { AuthenticatedUser } from '@/lib/api'
+ import { strings } from '@/lib/strings'
+ 
+@@ -82,7 +82,8 @@ export const screens: readonly Screen[] = [
+   {
+     path: '/assistant',
+     Component: AssistantPage,
+-    abilities: operationScreens.flatMap((screen) => screen.abilities),
++    // MUTANTE M2: asistente de nuevo abierto a toda sesión.
++    abilities: ABILITIES,
+     navLabel: strings.nav.assistant,
+     description: strings.assistant.description,
+   },
