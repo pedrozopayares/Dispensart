@@ -9,6 +9,7 @@ import { renderAs } from '@/test/render'
 // Tarea 6.1 — operator-workspace › «Navegación por rol» e «Inicio con accesos del rol»; app-shell ›
 // «Página de inicio sin pantallas aún» y «Página de inicio con saludo».
 // add-assistant-screen 3.1 — "Asistente" al final del menú y del inicio para toda sesión.
+// add-admin-screens 2.1 — "Usuarios" y "Catálogo" solo para el admin, que deja de ver "Asistente".
 
 const stockRoutes = {
   ...catalogRoutes(),
@@ -62,6 +63,7 @@ describe('guarda de ruta por capacidad', () => {
 
 const ALL_FOUR = [strings.nav.dispensations, strings.nav.transfers, strings.nav.inventory, strings.nav.kardex]
 const ASSISTANT = strings.nav.assistant
+const ADMIN_SCREENS = [strings.nav.users, strings.nav.catalog]
 // Texto del estado vacío retirado del módulo (ya no se alcanza): solo se afirma su ausencia.
 const NO_SCREENS = 'Tu rol no tiene pantallas de operación en esta versión.'
 
@@ -73,7 +75,7 @@ describe('menú por rol', () => {
     return nav === null ? [] : within(nav).getAllByRole('link').map((link) => link.textContent)
   }
 
-  it('Auxiliar ve sus cuatro pantallas y al final "Asistente", en ese orden', async () => {
+  it('Auxiliar ve sus cuatro pantallas y al final "Asistente", en ese orden, sin "Usuarios" ni "Catálogo"', async () => {
     renderAs('auxiliar_farmacia', '/')
     expect(await menuOf()).toEqual([...ALL_FOUR, ASSISTANT])
   })
@@ -93,12 +95,12 @@ describe('menú por rol', () => {
     expect(await menuOf()).toEqual([strings.nav.dispensations, ASSISTANT])
   })
 
-  it('Admin sin pantallas de operación: solo "Asistente"', async () => {
+  it('Admin sin pantallas de operación: "Usuarios" y "Catálogo", en ese orden, sin "Asistente"', async () => {
     renderAs('admin', '/')
-    expect(await menuOf()).toEqual([ASSISTANT])
+    expect(await menuOf()).toEqual(ADMIN_SCREENS)
   })
 
-  it('abrir Kardex desde el menú lo marca como página actual', async () => {
+  it('Navegación con teclado: abrir Kardex desde el menú lo marca como página actual', async () => {
     const { router } = renderAs('regente_farmacia', '/', {
       ...catalogRoutes(),
       'GET /api/kardex': () => json(200, kardexPage([])),
@@ -165,11 +167,13 @@ describe('inicio con accesos del rol', () => {
     }
   })
 
-  it('Admin sin accesos de operación: saludo y un solo acceso, Asistente, sin estado vacío', async () => {
+  it('Admin sin accesos: saludo y exactamente dos accesos, Usuarios y Catálogo, sin Asistente ni estado vacío', async () => {
     renderAs('admin', '/')
 
     expect(await screen.findByRole('heading', { name: 'Bienvenido, Administrador Demo' })).toBeInTheDocument()
-    expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/assistant'])
+    const links = await shortcuts()
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/users', '/catalog'])
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual(ADMIN_SCREENS)
     expect(document.body.textContent).not.toContain(NO_SCREENS)
     expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
   })
@@ -183,7 +187,7 @@ describe('inicio con accesos del rol', () => {
     expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
   })
 
-  it('Médico sin accesos de inventario: Dispensación y Asistente', async () => {
+  it('Médico sin accesos de inventario: Dispensación y Asistente, sin Usuarios ni Catálogo', async () => {
     renderAs('medico', '/')
 
     expect((await shortcuts()).map((link) => link.getAttribute('href'))).toEqual(['/dispensations', '/assistant'])

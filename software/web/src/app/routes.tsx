@@ -12,19 +12,16 @@ export const routes: RouteObject[] = [
     element: <ProtectedLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      // Cada pantalla de operación con su guarda, desde la tabla única (design D6).
+      // Cada pantalla con su guarda, desde la tabla única (design D6): operación, administración y
+      // asistente.
       ...screens.flatMap(({ path, Component, abilities, children = [] }) =>
         [{ path, Component }, ...children].map((route) => ({
           path: route.path,
-          // Sin capacidad propia basta la sesión, que ya exige la ruta de diseño protegida.
-          element:
-            abilities === 'session' ? (
+          element: (
+            <RequireAbility anyOf={abilities}>
               <route.Component />
-            ) : (
-              <RequireAbility anyOf={abilities}>
-                <route.Component />
-              </RequireAbility>
-            ),
+            </RequireAbility>
+          ),
         })),
       ),
       { path: '*', element: <Navigate to="/" replace /> },

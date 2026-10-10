@@ -36,13 +36,15 @@ describe('encabezado del shell', () => {
     expect(document.body.textContent).not.toContain('regente_farmacia')
   })
 
-  // add-assistant-screen 3.1: "Asistente" es de toda sesión, así que el admin ya no ve estado vacío.
-  it('Página de inicio sin pantallas aún: saludo y acceso "Asistente", sin estado vacío', async () => {
+  // add-admin-screens 2.1: el admin ve sus accesos "Usuarios" y "Catálogo", sin "Asistente" ni estado vacío.
+  it('Página de inicio sin pantallas aún: saludo y accesos "Usuarios" y "Catálogo", sin "Asistente" ni estado vacío', async () => {
     await openShell({})
 
     expect(screen.getByRole('heading', { name: 'Bienvenido, Ana Admin' })).toBeInTheDocument()
     const shortcuts = screen.getByRole('navigation', { name: strings.home.shortcuts })
-    expect(within(shortcuts).getByRole('link', { name: strings.nav.assistant })).toHaveAttribute('href', '/assistant')
+    expect(within(shortcuts).getByRole('link', { name: strings.nav.users })).toHaveAttribute('href', '/users')
+    expect(within(shortcuts).getByRole('link', { name: strings.nav.catalog })).toHaveAttribute('href', '/catalog')
+    expect(within(shortcuts).queryByRole('link', { name: strings.nav.assistant })).not.toBeInTheDocument()
     expect(document.body.textContent).not.toContain('Tu rol no tiene pantallas de operación en esta versión.')
     expect(document.body.textContent).not.toContain('Las pantallas de operación aparecerán aquí.')
   })

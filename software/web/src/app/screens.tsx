@@ -1,22 +1,23 @@
 import type { ComponentType } from 'react'
 import { AssistantPage } from '@/features/assistant/assistant-page'
+import { CatalogPage } from '@/features/catalog/catalog-page'
 import { DispensationPage } from '@/features/dispensations/dispensation-page'
 import { InventoryPage } from '@/features/inventory/inventory-page'
 import { KardexPage } from '@/features/kardex/kardex-page'
 import { TransferDetailPage } from '@/features/transfers/transfer-detail-page'
 import { TransfersPage } from '@/features/transfers/transfers-page'
+import { UsersPage } from '@/features/users/users-page'
 import { canAny, type Ability } from '@/lib/abilities'
 import type { AuthenticatedUser } from '@/lib/api'
 import { strings } from '@/lib/strings'
 
-// Tabla única de pantallas de operación (design D6): el menú y la guarda leen la misma fila, así no
-// hay ruta sin enlace ni enlace sin guarda. Orden = orden del menú.
+// Tabla única de pantallas (design D6): el menú, el inicio y la guarda leen la misma fila, así no hay
+// ruta sin enlace ni enlace sin guarda. Orden = orden del menú.
 export type Screen = {
   path: string
   Component: ComponentType
-  // Basta una de ellas. `'session'`: toda sesión, sin capacidad propia (la ruta del asistente solo
-  // exige `auth:sanctum`; cada herramienta autoriza en el servidor).
-  abilities: readonly Ability[] | 'session'
+  // Basta una de ellas; sin ninguna, la guarda muestra el aviso de permiso.
+  abilities: readonly Ability[]
   navLabel: string
   // Texto del acceso en el inicio.
   description: string
@@ -24,7 +25,8 @@ export type Screen = {
   children?: ReadonlyArray<{ path: string; Component: ComponentType }>
 }
 
-export const screens: readonly Screen[] = [
+// Las cuatro pantallas de operación (parte B).
+const operationScreens: readonly Screen[] = [
   // Modo consulta para quien solo ve pacientes (auditor, médico).
   {
     path: '/dispensations',
@@ -55,16 +57,37 @@ export const screens: readonly Screen[] = [
     navLabel: strings.nav.kardex,
     description: strings.kardex.description,
   },
-  // Al final, para toda sesión (operator-workspace «Navegación por rol»).
+]
+
+export const screens: readonly Screen[] = [
+  ...operationScreens,
+  // Gestión de usuarios y catálogos del admin (§ 3, admin-screens).
+  {
+    path: '/users',
+    Component: UsersPage,
+    abilities: ['users.manage'],
+    navLabel: strings.nav.users,
+    description: strings.users.description,
+  },
+  {
+    path: '/catalog',
+    Component: CatalogPage,
+    abilities: ['catalog.manage'],
+    navLabel: strings.nav.catalog,
+    description: strings.catalog.description,
+  },
+  // Al final, para los roles de operación: quien abre al menos una pantalla de operación. El admin no
+  // la ve (assistant-screen «Pantalla Asistente para los roles de operación»); cada herramienta sigue
+  // autorizando en el servidor.
   {
     path: '/assistant',
     Component: AssistantPage,
-    abilities: 'session',
+    abilities: operationScreens.flatMap((screen) => screen.abilities),
     navLabel: strings.nav.assistant,
     description: strings.assistant.description,
   },
 ]
 
 export function screensFor(user: AuthenticatedUser): Screen[] {
-  return screens.filter((screen) => screen.abilities === 'session' || canAny(user, screen.abilities))
+  return screens.filter((screen) => canAny(user, screen.abilities))
 }

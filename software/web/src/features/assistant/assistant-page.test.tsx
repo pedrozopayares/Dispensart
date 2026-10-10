@@ -53,7 +53,7 @@ async function ask(box: HTMLTextAreaElement, question: string) {
   return screen.findByRole('article', { name: question })
 }
 
-describe('Pantalla Asistente para toda sesión', () => {
+describe('Pantalla Asistente para los roles de operación', () => {
   it('Médico abre el asistente desde el menú: título, caja con foco, "Preguntar" y enlace actual', async () => {
     const { router } = renderAs('medico', '/')
     const menu = await screen.findByRole('navigation', { name: strings.nav.label })
@@ -83,6 +83,24 @@ describe('Pantalla Asistente para toda sesión', () => {
     expect(router.state.location.pathname).toBe('/login')
     expect(screen.queryByText(a.title)).not.toBeInTheDocument()
     expect(api.callsTo('POST', '/api/assistant/ask')).toHaveLength(0)
+  })
+
+  // add-admin-screens 2.1 — el asistente no es función del admin (§ 3): la guarda muestra el aviso.
+  it('Admin escribe la dirección del asistente: aviso de permiso, sin la caja ni preguntas', async () => {
+    const { api, client } = renderAs('admin', '/assistant', { [ASK]: reply(answer()) })
+
+    expect(await screen.findByText(strings.guard.forbidden)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: strings.guard.backHome })).toHaveAttribute('href', '/')
+    expect(screen.queryByLabelText(a.question)).not.toBeInTheDocument()
+    await settle(client)
+    expect(asked(api)).toHaveLength(0)
+  })
+
+  it('control positivo: el médico que escribe la misma dirección ve la caja "Tu pregunta"', async () => {
+    renderAs('medico', '/assistant')
+
+    expect(await screen.findByLabelText(a.question)).toBeInTheDocument()
+    expect(screen.queryByText(strings.guard.forbidden)).not.toBeInTheDocument()
   })
 })
 
@@ -330,7 +348,7 @@ describe('Consultas hechas por pregunta', () => {
   })
 
   it('Llamada negada: "Sin permiso" y ninguna línea de argumentos', async () => {
-    const { box } = await openAssistant('admin', {
+    const { box } = await openAssistant('medico', {
       [ASK]: reply(
         answer({
           outcome: 'not_permitted',

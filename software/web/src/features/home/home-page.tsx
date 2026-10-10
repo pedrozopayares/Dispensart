@@ -6,8 +6,9 @@ import type { AuthenticatedUser } from '@/lib/api'
 import { format, strings } from '@/lib/strings'
 
 // Inicio: saludo y un acceso por cada pantalla del menú del rol (operator-workspace "Inicio con
-// accesos del rol"). Lee la misma tabla de pantallas que el menú y la guarda (design D6). "Asistente"
-// es de toda sesión: ningún rol queda sin accesos, así que no hay estado vacío.
+// accesos del rol"). Lee la misma tabla de pantallas que el menú y la guarda (design D6). Todo rol
+// tiene al menos un acceso ("Asistente" los de operación; "Usuarios" y "Catálogo" el admin), así que no
+// hay estado vacío.
 export function HomePage() {
   const ids = useId()
   const user = useOutletContext<AuthenticatedUser>()
