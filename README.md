@@ -43,7 +43,7 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | Parte | Dónde verlo |
 |---|---|
 | A · Modelo y API | `software/api` (Laravel 13); contrato en `software/api/openapi.json`; bitácora `audit_events` (solo ids) en la misma transacción que cada operación sensible, incluidas creación de usuario y ajuste manual de stock |
-| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex, asistente (`/assistant`, para los cuatro roles de operación), y para el admin Usuarios (`/users`) y Catálogo (`/catalog`); tabla de pantallas en `software/web/src/app/screens.tsx` |
+| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex, asistente (`/assistant`, para los cuatro roles de operación, con selector de modelo), y para el admin Usuarios (`/users`) y Catálogo (`/catalog`); tabla de pantallas en `software/web/src/app/screens.tsx` |
 | C · IA | `software/docs/asistente.md`; conjunto de evaluación en `software/api/resources/assistant/evaluation-set.json` |
 | D · DevOps | `software/compose.yaml`, `software/docker/`, `.github/workflows/ci.yml`, `software/docs/deployment.md` |
 | E · Calidad | Pest y Vitest en CI; decisiones en `docs/adr/`; uso de IA en `AI_USAGE.md` |
@@ -78,7 +78,7 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 
 | | |
 |---|---|
-| Elegido | Interfaz `LlmProvider` con `AI_PROVIDER=mock` (reglas deterministas, sin red ni llaves) por defecto y en CI; `ollama` en el anfitrión como modelo real, con `qwen2.5:3b` por defecto y cambiable con `OLLAMA_MODEL`. |
+| Elegido | Interfaz `LlmProvider` con `AI_PROVIDER=mock` (reglas deterministas, sin red ni llaves) por defecto y en CI; `ollama` en el anfitrión como modelo real, con `qwen2.5:3b` por defecto y cambiable con `OLLAMA_MODEL`. En la pantalla Asistente el usuario elige entre `mock` y los modelos de Ollama descargados con herramientas (`GET /api/assistant/models`); la primera visita usa `mock` y la elección queda en el navegador. `AI_PROVIDER` decide solo las preguntas sin `model`, la evaluación y CI. |
 | Descartado | Proveedor externo de pago: exige llaves, saca datos de la máquina y tiene costo. |
 | Costo | Un modelo local pequeño tarda segundos por pregunta y elige peor que uno grande. Medido con `gemma4:e2b-mlx` (Ollama en el equipo Apple Silicon del autor): el 2026-10-08 `assistant:eval` dio 20/24 con el comparador literal, entre 7 y 19 s por pregunta; el 2026-10-09, ya comparando bodega y producto resueltos por `CatalogResolver`, dio 22/24. Los 2 fallos son del modelo: el caso 8 lo dio por fuera de alcance y el 10 respondió «desconocido» en vez de «sin resultados». El caso 4 falló el 2026-10-08 y pasó el 2026-10-09: el modelo local no es determinista entre corridas. |
 

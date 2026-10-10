@@ -16,6 +16,29 @@ Todo el asistente depende de la interfaz `LlmProvider`; `AI_PROVIDER` elige la i
 | otro valor | El asistente responde 503 `assistant_unavailable`; el resto de la API sigue igual | — |
 
 `mock` es el valor por defecto: evaluación y CI corren sin llaves, sin red y con resultado estable.
+`AI_PROVIDER` decide solo las preguntas que llegan sin `model`: `assistant:eval`, CI y clientes que no eligen.
+
+## Selector de modelo en la pantalla Asistente
+
+La pantalla ofrece el selector "Modelo" con lo que devuelve `GET /api/assistant/models`: "Simulado (sin red)"
+(`mock`) siempre y primero, y "Ollama · {nombre}" por cada modelo disponible. La pregunta viaja con
+`model` = `mock` u `ollama:<nombre>`; la API lo valida contra esa misma lista (422 «El modelo elegido no está
+disponible.» si no figura) y la respuesta trae `data.model`, que la pantalla muestra en cada entrada del
+historial ("Respondió: …").
+
+Un modelo de Ollama está disponible si está descargado (`/api/tags`) y su ficha (`/api/show`) declara la
+capacidad `tools`. El descubrimiento tiene un plazo total de 2 s y la lista de nombres se guarda 30 s en caché
+de archivos (nunca en la base). Ollama caído, lento o con error → solo `mock`, HTTP 200, sin aviso de error; un
+modelo borrado puede seguir hasta 30 s en la lista y su pregunta responde 503.
+
+La primera visita arranca en `mock`, aunque `AI_PROVIDER=ollama`. La elección se guarda en el navegador
+(`localStorage`, clave `dispensart.assistant.model`, solo el `id`); al volver se restaura si sigue en la lista
+y, si no, la pantalla usa `mock` con el aviso «El modelo que elegiste ya no está disponible. Se usa Simulado
+(sin red).». La pregunta y el historial nunca se guardan.
+
+Para ofrecer un modelo local: descargarlo con `ollama pull <modelo>` y comprobar que `ollama show <modelo>`
+lista `tools` en `Capabilities` (p. ej. `gemma4:e2b-mlx`). Aparece en el selector sin reiniciar nada, al
+vencer la caché de 30 s del servidor y la de 30 s de la pantalla. La URL de Ollama sale solo de `OLLAMA_BASE_URL`.
 
 **Compromiso del modelo local.** `qwen2.5:3b` (unos 2 GB) entiende español y herramientas, pero en CPU tarda
 segundos por ronda y puede elegir mal o enviar enteros como texto (`invalid_arguments`). `qwen2.5:7b` o
@@ -55,7 +78,7 @@ sesión, nunca de un argumento: `medico` y `admin` reciben `not_permitted`.
 
 Ninguna herramienta lee pacientes, prescripciones ni dispensaciones (prueba de arquitectura). Una pregunta que
 los menciona, o con 7 o más dígitos seguidos, responde `out_of_scope` sin llamar al modelo. El log guarda
-resultado, herramientas y estados, nunca pregunta ni respuesta. **Riesgo:** las observaciones de un traslado
+resultado, herramientas, estados, proveedor y modelo, nunca pregunta ni respuesta. **Riesgo:** las observaciones de un traslado
 son texto libre y podrían traer un dato personal tecleado; con Ollama no sale de la máquina, pero un proveedor
 externo futuro debe excluirlas.
 
