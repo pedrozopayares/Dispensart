@@ -152,7 +152,15 @@ Comando de cada tarea `[MUT]` (2.4, 2.5, 3.5, 3.6, 3.7, 4.7) tal cual, desde la 
 
 | Paso | Resultado |
 |---|---|
-| Recorrido en navegador del Orchestrator | pendiente |
+| `auxiliar@dispensart.test`: menú | Dispensación, Traslados, Inventario, Kardex, Asistente; sin Usuarios ni Catálogo |
+| `auxiliar`: `/users` y `/catalog` a mano | «No tienes permiso para ver esta pantalla.» (`captures/auxiliar-catalogo-sin-permiso.jpg`) |
+| `admin@dispensart.test`: menú e inicio | Usuarios y Catálogo; sin Asistente (`captures/admin-inicio.jpg`) |
+| `admin`: alta de usuario | «Auxiliar Sintetico S13» (`verificacion.s13@dispensart.test`, auxiliar de farmacia) creado y listado; la contraseña no aparece (`captures/admin-usuarios.jpg`) |
+| `admin`: alta y edición de bodega | `S13` «Bodega Sintetica S13» creada; renombrada a «Bodega Sintetica S13 editada» |
+| `admin`: alta de producto y control especial | `S13-001` «Producto Sintetico S13» creado con «No»; editado a «Sí» (`captures/admin-catalogo.jpg`) |
+| `admin`: `/assistant` a mano | «No tienes permiso para ver esta pantalla.» |
+| Juicio visual | Disposición común, componentes del kit, paleta de S12; botones azul marino, pestaña activa lima |
+| Observación de redacción (no defecto, regla 12) | El aviso de éxito repite la palabra cuando el nombre la contiene: «Bodega Bodega Sintetica S13 creada», «Producto Producto Sintetico S13 creado» |
 
 ## 7. Registro
 

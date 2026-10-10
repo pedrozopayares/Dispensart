@@ -106,3 +106,10 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   aparte, ya anotado en la propuesta). La pantalla Usuarios no reutiliza el `TextField` del catálogo; unificar ambos
   formularios es una limpieza menor sin efecto en escenarios.
 - Bloqueos: ninguno.
+
+## 2026-10-09 — Orchestrator: cierre de apply
+
+- Tarea 6.3 hecha en el navegador con `auxiliar` y `admin`; tablas en `verification.md` § 6 y capturas en `captures/`.
+- Datos sintéticos en la base de desarrollo: usuario `verificacion.s13@dispensart.test`, bodega `S13`, producto `S13-001`.
+- Observación de redacción en los avisos de éxito (palabra repetida); no reabre nada (regla 12).
+- Siguiente: final-auditor, modo delta (tier B).
