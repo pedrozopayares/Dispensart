@@ -44,7 +44,7 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
 
 ## 1. Guarda de cobertura del contrato
 
-- [ ] 1.1 Escribir `check-coverage.sh <colección>`: operaciones de `software/api/openapi.json` como `MÉTODO ruta`
+- [x] 1.1 Escribir `check-coverage.sh <colección>`: operaciones de `software/api/openapi.json` como `MÉTODO ruta`
   (`/health` y `/ready` en la raíz, el resto bajo `/api`, parámetros de ruta normalizados), peticiones de la
   colección recorriendo carpetas anidadas (sin `{{baseUrl}}`, segmentos `{{var}}` o `:var` normalizados), lista
   explícita con `GET /sanctum/csrf-cookie`; imprime operaciones cubiertas; sale distinto de 0 nombrando cada
