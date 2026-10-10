@@ -32,7 +32,7 @@ Los puertos cambian con `WEB_PORT` y `DB_PORT` (ver `software/.env.example`).
 | `regente@dispensart.test` | Regente de farmacia | Lo del auxiliar, más aprobar traslados y autorizar control especial |
 | `medico@dispensart.test` | Médico | Pacientes en modo consulta y asistente; crea prescripciones por API |
 | `auditor@dispensart.test` | Auditor | Consulta de inventario, kardex y traslados; pacientes enmascarados; asistente |
-| `admin@dispensart.test` | Administrador | Inicio y asistente (única pantalla); catálogo y usuarios por API |
+| `admin@dispensart.test` | Administrador | Usuarios (listar, crear con rol) y Catálogo (bodegas y productos: listar, crear, editar); sin asistente |
 
 Contraseña de los cinco: `dispensart-dev-only`. **No es un secreto**: es un valor por defecto solo de
 desarrollo local para usuarios sintéticos, y la API nunca lo aplica con `APP_ENV=production`. Se reemplaza
@@ -42,8 +42,8 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 
 | Parte | Dónde verlo |
 |---|---|
-| A · Modelo y API | `software/api` (Laravel 13); contrato en `software/api/openapi.json` |
-| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex y asistente (`/assistant`, para los cinco roles); tabla de pantallas en `software/web/src/app/screens.tsx` |
+| A · Modelo y API | `software/api` (Laravel 13); contrato en `software/api/openapi.json`; bitácora `audit_events` (solo ids) en la misma transacción que cada operación sensible, incluidas creación de usuario y ajuste manual de stock |
+| B · Frontend | `software/web` (React + Vite): dispensación, traslados, inventario con alertas, kardex, asistente (`/assistant`, para los cuatro roles de operación), y para el admin Usuarios (`/users`) y Catálogo (`/catalog`); tabla de pantallas en `software/web/src/app/screens.tsx` |
 | C · IA | `software/docs/asistente.md`; conjunto de evaluación en `software/api/resources/assistant/evaluation-set.json` |
 | D · DevOps | `software/compose.yaml`, `software/docker/`, `.github/workflows/ci.yml`, `software/docs/deployment.md` |
 | E · Calidad | Pest y Vitest en CI; decisiones en `docs/adr/`; uso de IA en `AI_USAGE.md` |
@@ -120,6 +120,7 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | "Hoy" es el día calendario de Bogotá (`America/Bogota`); la app guarda en UTC | Un lote que vence hoy ya cuenta como vencido; la ventana de vencimiento es de 90 días |
 | Los mínimos de stock por bodega llegan solo por la siembra | Las alertas de stock bajo funcionan con 4 mínimos sembrados; no hay edición |
 | Las cantidades son unidades enteras | Sin fracciones de presentación |
+| Los colores de la SPA son la paleta pública de la IPS (azul marino `#232955`, verde lima `#a9cd43`, fondo `#f8f9fa`, texto `#212b51`), sin logo ni nombre comercial | Contraste WCAG AA de los tokens de tema, incluida la insignia «Vence en N días», verificado en CI por `software/web/src/theme-contrast.test.ts` |
 
 ## Fuera de alcance
 
@@ -129,14 +130,15 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 | Rol de base de mínimo privilegio | Toca los permisos de escritura del kardex: cambio de tier A que excede la entrega (compromiso 5). Fila candidata del roadmap. |
 | Edición de mínimos por API | Ninguna parte de la prueba la exige; los mínimos se siembran. |
 | Filtro de alertas por producto | La API filtra alertas solo por bodega; la SPA muestra las de la bodega elegida. |
-| División del bundle por ruta | La SPA pesa unos 513 kB en un solo bloque; para una herramienta interna de carga única se dejó como no-objetivo. |
+| Bloquear al admin en `POST /api/assistant/ask` | La SPA ya no le muestra el asistente, pero la API aún lo acepta; cada herramienta le responde `not_permitted`, sin datos. |
+| División del bundle por ruta | La SPA pesa unos 530 kB en un solo bloque; para una herramienta interna de carga única se dejó como no-objetivo. |
 | Evaluación con Ollama en CI | CI corre la evaluación con `mock` (estable, sin red); el modelo real se midió a mano dos veces (compromiso 4) y el comando queda documentado para repetirlo. |
 
 ### Deuda abierta
 
 Ninguna. El registro de deuda es `openspec/DEBT.md`; las filas menores abiertas durante esta entrega se saldaron
 en ella (humos de dominio en staging, filtro de pacientes del asistente, saneo de nombres de herramienta en el
-log, comparador de `assistant:eval` por bodega y producto resueltos).
+log, comparador de `assistant:eval` por bodega y producto resueltos, contraste de la insignia de vencimiento).
 
 ## Documentación de la API
 
@@ -178,7 +180,9 @@ Humo del stack y de dominio (lo mismo que corre staging): `bash software/docker/
 
 `.github/workflows/ci.yml`: compuertas de calidad en todo push y pull request; en `dev` y `main`, imágenes en
 GHCR por SHA, staging simulado por digest con humo, y producción solo desde `main` con aprobación manual en el
-entorno `production`. Estrategia, rollback y respaldo: `software/docs/deployment.md`.
+entorno `production`. Estrategia, rollback y respaldo: `software/docs/deployment.md`. El CI descarga las imágenes
+base de Docker Hub sin credenciales y puede fallar a ratos por su límite de descargas anónimas; se repite con
+`gh run rerun <id> --failed` (el espejo de registro quedó en pausa, sin construir).
 
 ## Estructura del repositorio
 
