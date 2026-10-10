@@ -13,6 +13,8 @@ export const queryKeys = {
   warehouses: () => ['catalog', 'warehouses'] as const,
   products: () => ['catalog', 'products'] as const,
   lots: (filters: LotQuery) => ['catalog', 'lots', filters] as const,
+  // Usuarios del sistema (solo admin); se invalida tras cada alta.
+  users: () => ['users'] as const,
   // Raíz `transfers`: listado y detalle se invalidan juntos tras cada acción de traslado.
   transfers: (filters: TransferQuery) => ['transfers', 'list', filters] as const,
   transfer: (transferId: number) => ['transfers', 'detail', transferId] as const,

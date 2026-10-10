@@ -38,6 +38,11 @@ export type Warehouse = ResponseOf<'/warehouses', 'get'>['data'][number]
 export type Product = ResponseOf<'/products', 'get'>['data'][number]
 export type Lot = ResponseOf<'/lots', 'get'>['data'][number]
 export type LotQuery = QueryOf<'/lots', 'get'>
+// Escrituras del catálogo (S13, solo catalog.manage). La edición envía todos los campos del formulario.
+export type NewWarehouse = BodyOf<'/warehouses', 'post'>
+export type WarehouseChanges = BodyOf<'/warehouses/{warehouse}', 'patch'>
+export type NewProduct = BodyOf<'/products', 'post'>
+export type ProductChanges = BodyOf<'/products/{product}', 'patch'>
 export type ApiErrorBody = components['schemas']['ApiError']
 // Faltante por ítem de `insufficient_stock` en la dispensación (publicado por S3).
 export type Shortage = NonNullable<ApiErrorBody['shortages']>[number]
@@ -83,3 +88,7 @@ export type AssistantAnswer = ResponseOf<'/assistant/ask', 'post'>['data']
 export type AssistantOutcome = AssistantAnswer['outcome']
 export type AssistantToolCall = AssistantAnswer['tool_calls'][number]
 export type ToolCallStatus = AssistantToolCall['status']
+
+// Usuarios (S13, solo users.manage). `UserResource` no trae contraseña.
+export type User = ResponseOf<'/users', 'get'>['data'][number]
+export type NewUser = BodyOf<'/users', 'post'>
