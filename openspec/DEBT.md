@@ -11,7 +11,6 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
-| D-auv-9 | minor | add-assistant-model-selector (diseño, 2026-10-09) | `phpunit.xml` no fija `AI_PROVIDER` ni `OLLAMA_MODEL`; el contenedor de pruebas hereda ambas de `software/.env`, así que con `ollama` en local las pruebas dependen del entorno y cada comando debe pasar `-e AI_PROVIDER=mock`. | Forzar `AI_PROVIDER=mock` y un `OLLAMA_MODEL` fijo en `phpunit.xml` (`force="true"`) con prueba que lo verifique; cambio de backend tier C. |
 
 ## Settled
 
@@ -25,3 +24,4 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 | D-auv-6 | add-delivery-pipeline (`df71b72`) | Nombres de herramienta saneados a `[A-Za-z0-9_-]` (64) en `ToolCallRecord`; pruebas de log y respuesta HTTP fallan sin el cambio; verificado por final-auditor. |
 | D-auv-7 | fix-assistant-eval-and-health-docs (`225e911`, `93a5195`) | `EvaluationMatcher` compara bodega y producto resueltos con `CatalogResolver`; M4–M6 hacen fallar las pruebas del comparador; verificado por final-auditor. |
 | D-auv-8 | fix-expiry-badge-contrast (`a41100d`) | Insignia «Vence en N días» con tokens `warning`/`warning-foreground` (6.39:1 claro, 8.28:1 oscuro); prueba de contraste y controles C1–C2 fallan sin el cambio; verificado por final-auditor. |
+| D-auv-9 | fix-test-env-isolation (`8954b1c`) | `phpunit.xml` fija `AI_PROVIDER=mock` y `OLLAMA_MODEL` con `<server>` y `<env force>`; guarda estática y prueba de aislamiento con entorno `ollama`; M1–M5 fallan sin el cambio; suite completa verde con el `.env` local; verificado por final-auditor. |

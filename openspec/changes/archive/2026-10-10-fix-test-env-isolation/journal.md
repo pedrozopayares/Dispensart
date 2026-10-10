@@ -88,3 +88,12 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   Corridas completas usadas: 2 de 3; la tercera es del auditor.
 - Concurrencia: S16 hizo commits entre medias (`52092df`, `db73b5b`) sin tocar `software/api`; staging por ruta explícita.
 - Deuda: ninguna nueva. D-auv-9 queda saldada en código, pendiente GATE 2. Bloqueos: ninguno.
+
+## 2026-10-10 — GATE 2: APPROVED (final-auditor, completo tier A)
+
+- M1–M5 y PC1 reproducidos; corrida de confirmación (3 de 3) con el entorno local `ollama` sin anulación: Pint, Larastan
+  limpios, Pest 1075 pasan (4483 aserciones). Código de producto sin cambios.
+- El auditor vio `assistant:eval` con `ollama` en 3/24 («asistente no disponible»): Ollama no respondía a tiempo mientras
+  corrían a la vez la suite y newman de S16. Repetido por el Orchestrator con Ollama libre: 22/24, igual que la medición
+  del 2026-10-09. El comando sigue usando `ollama` cuando se pide (escenario de la evaluación cumplido).
+- D-auv-9 saldada.
