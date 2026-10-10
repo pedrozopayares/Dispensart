@@ -136,10 +136,10 @@ con `SEED_USER_PASSWORD`, que solo tiene efecto al crear cada usuario (la siembr
 
 ### Deuda abierta
 
-Una fila menor, D-auv-9: `phpunit.xml` no fija `AI_PROVIDER` ni `OLLAMA_MODEL`, así que con `ollama` en
-`software/.env` las pruebas deben correrse con `-e AI_PROVIDER=mock`. El registro de deuda es `openspec/DEBT.md`;
-las demás filas menores abiertas durante esta entrega se saldaron en ella (humos de dominio en staging, filtro de pacientes del asistente, saneo de nombres de herramienta en el
-log, comparador de `assistant:eval` por bodega y producto resueltos, contraste de la insignia de vencimiento).
+Ninguna. El registro de deuda es `openspec/DEBT.md`; las filas menores abiertas durante esta entrega se saldaron
+en ella (humos de dominio en staging, filtro de pacientes del asistente, saneo de nombres de herramienta en el
+log, comparador de `assistant:eval` por bodega y producto resueltos, contraste de la insignia de vencimiento,
+aislamiento de las pruebas: `phpunit.xml` fija `AI_PROVIDER=mock` y `OLLAMA_MODEL`, sin heredar `software/.env`).
 
 ## Documentación de la API
 
