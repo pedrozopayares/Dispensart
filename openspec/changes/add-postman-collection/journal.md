@@ -84,3 +84,10 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Suite: Pest y Vitest no se tocaron (los corre el CI). Corridas de newman: por carpeta, negativas, mutantes y una de
   cierre completa (R1) más sus repeticiones R2/R4 exigidas por 5.1.
 - Deuda: ninguna nueva. Bloqueos: ninguno.
+
+## 2026-10-10 — Orchestrator: cierre de apply
+
+- Tareas completas; newman 6.2.3 sin fallas en local (stack nuevo, repetición y tras `smoke.sh`) y en el staging del CI
+  (run 38052524687). Guarda de cobertura con todas las operaciones del OpenAPI cubiertas.
+- D-auv-9 ya saldada por S17 (`2280b59`): el archivo de S16 no queda bloqueado.
+- Siguiente: final-auditor, modo delta (tier B).
