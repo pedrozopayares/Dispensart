@@ -268,7 +268,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   `curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8090/ready` imprime `200`;
   `curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8090/assistant` imprime `200` (documento de la SPA);
   salida en `journal.md`.
-- [ ] 7.2 Humo del endpoint en el stack real (design D2, D6): `software/docker/smoke/assistant-smoke.sh` gana, con su
+- [x] 7.2 Humo del endpoint en el stack real (design D2, D6): `software/docker/smoke/assistant-smoke.sh` gana, con su
   patrón de tarro de cookies y `expect`: `GET /api/assistant/models` sin sesión → 401; con sesión de regente → 200 y
   `.data[0].id == "mock"`; `POST /api/assistant/ask` con `"model": "mock"` → 200 y `.data.model == "mock"`; si
   `SMOKE_EXPECT_OLLAMA_MODEL` está definida, `.data | map(.id) | index("ollama:" + $m) != null`; si

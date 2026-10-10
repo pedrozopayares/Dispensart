@@ -139,3 +139,13 @@ Decisiones y desvíos:
 
 Deuda observada (para el Orchestrator): la fuga de `OLLAMA_MODEL` de `software/.env` a `api-tools` acompaña a la de
 `AI_PROVIDER` ya registrada; fijar ambos en `phpunit.xml` cerraría las dos.
+
+## 2026-10-09 — devops-implementer: tarea 7.2
+
+- `assistant-smoke.sh` comprueba lista sin sesión (401), lista con `mock` primero, `ask` con `model=mock` →
+  `data.model == "mock"` y modelo fuera de la lista → 422 `errors.model`. No exige Ollama: CI (`AI_PROVIDER=mock`)
+  pasa igual. `SMOKE_EXPECT_OLLAMA_MODEL` y `SMOKE_EXPECT_MOCK_ONLY` quedan opcionales para 7.3 y 7.4.
+- Stack reconstruido (`api`, `web`) con `--wait`: todos `Healthy`. Humo del asistente exit 0 (19/0); humo completo
+  `Humo VERDE`; control negativo de las variables opcionales exit 1 (2 fallas esperadas). Tablas en
+  `verification.md` § 6.
+- Desvío: el humo pasa de 5 a 7 preguntas por corrida (sigue bajo el límite de 20 por minuto).

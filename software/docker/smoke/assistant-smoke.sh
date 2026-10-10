@@ -4,12 +4,16 @@
 # central), conteo de traslados en tránsito, estado de un traslado existente por id y pregunta sobre una paciente
 # (out_of_scope, sin herramientas). Médico: pregunta de inventario -> not_permitted, herramienta denied, sin datos.
 # Imprime una tabla rol | pregunta | HTTP | outcome | herramientas para el registro.
+# Selector de modelo (S15): lista sin sesión -> 401; con sesión -> 200 con `mock` primero; pregunta con
+# `model: mock` -> 200 y `data.model == "mock"`; modelo fuera de la lista -> 422 `errors.model`. No exige Ollama.
 #
 # Uso (stack en marcha):  software/docker/smoke/assistant-smoke.sh
 # Variables: WEB_PORT (8090), SMOKE_BASE_URL (http://localhost:$WEB_PORT),
-#            SEED_USER_PASSWORD (vacía = valor por defecto SOLO de desarrollo, el mismo de la API).
+#            SEED_USER_PASSWORD (vacía = valor por defecto SOLO de desarrollo, el mismo de la API),
+#            SMOKE_EXPECT_OLLAMA_MODEL (opcional: nombre que la lista debe traer como `ollama:<nombre>`),
+#            SMOKE_EXPECT_MOCK_ONLY (opcional, 1: la lista debe ser exactamente `["mock"]`, Ollama caído).
 # Requiere: bash, curl, jq. Sale con 0 solo si todas las comprobaciones pasan. Nunca imprime la contraseña.
-# Repetible: el asistente solo lee (transacción de solo lectura revertida). 5 preguntas por corrida, bajo el
+# Repetible: el asistente solo lee (transacción de solo lectura revertida). 7 preguntas por corrida, bajo el
 # límite de 20 por minuto. Sobre una base sin traslados crea uno en BORRADOR (única escritura del humo).
 set -euo pipefail
 
@@ -93,11 +97,37 @@ anon="$WORK_DIR/anon.jar"
 expect "[anónimo] GET /sanctum/csrf-cookie" 204 "$(request "$anon" GET /sanctum/csrf-cookie)"
 expect "[anónimo] POST /api/assistant/ask" 401 \
     "$(post "$anon" /api/assistant/ask '{"question":"¿Qué lotes están por vencer?"}')"
+expect "[anónimo] GET /api/assistant/models" 401 "$(request "$anon" GET /api/assistant/models)"
 
 reg="$WORK_DIR/regente.jar"
 med="$WORK_DIR/medico.jar"
 login regente "$reg"
 login medico "$med"
+
+# 1b. Selector de modelo (S15). La lista siempre trae `mock` primero, con o sin Ollama; las variables opcionales
+#     fijan lo que depende del anfitrión (Ollama encendido o caído) sin volver frágil al humo del CI.
+expect "[regente] GET /api/assistant/models" 200 "$(request "$reg" GET /api/assistant/models)" \
+    '(.data | type) == "array" and .data[0].id == "mock" and .data[0].provider == "mock"'
+printf 'Modelos disponibles: %s\n' "$(jq -c '[.data[]?.id]' "$BODY")"
+if [ -n "${SMOKE_EXPECT_OLLAMA_MODEL:-}" ]; then
+    if jq -e --arg m "$SMOKE_EXPECT_OLLAMA_MODEL" '.data | map(.id) | index("ollama:" + $m) != null' "$BODY" > /dev/null; then
+        pass "[regente] la lista trae ollama:$SMOKE_EXPECT_OLLAMA_MODEL"
+    else
+        fail "[regente] la lista no trae ollama:$SMOKE_EXPECT_OLLAMA_MODEL"
+    fi
+fi
+if [ "${SMOKE_EXPECT_MOCK_ONLY:-}" = 1 ]; then
+    if jq -e '.data | map(.id) == ["mock"]' "$BODY" > /dev/null; then
+        pass "[regente] la lista es solo [\"mock\"]"
+    else
+        fail "[regente] la lista no es solo [\"mock\"]: $(jq -c '[.data[]?.id]' "$BODY")"
+    fi
+fi
+expect "[regente] POST /api/assistant/ask con model=mock" 200 "$(post "$reg" /api/assistant/ask \
+    '{"question":"¿Cuántos traslados hay en tránsito?","model":"mock"}')" '.data.model == "mock"'
+expect "[regente] POST /api/assistant/ask con model=ollama:no-existe" 422 "$(post "$reg" /api/assistant/ask \
+    '{"question":"¿Cuántos traslados hay en tránsito?","model":"ollama:no-existe"}')" \
+    '(.errors.model | type) == "array" and (.errors.model | length) > 0'
 
 # 2. Pregunta de ejemplo de la parte C. El resultado depende de los datos sembrados (answered o no_results);
 #    lo fijo es la herramienta, su estado, sus argumentos (nombres resueltos del catálogo) y que todo lote

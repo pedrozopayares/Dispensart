@@ -110,3 +110,29 @@ Parches: `mutants/M1.patch` … `M9.patch`, `mutants/M14.patch`.
 | Depuración en el diff | `git diff 5504d20..HEAD -- software/api software/web \| /usr/bin/grep -E '^\+' \| /usr/bin/grep -cE '\b(dd\|dump\|var_dump\|ray\|print_r)\(\|console\.log'` | 0 | línea sintética `+ dd($x);` por la misma tubería: 1 |
 | `Log::` o `throw` en el catálogo (URL o cuerpos hacia fuera) | `/usr/bin/grep -cE 'Log::\|throw ' app/Services/Assistant/Llm/ModelCatalog.php` | 0 | `base_url` leído en el mismo archivo: 1 |
 | Escritura a la base en el catálogo | `/usr/bin/grep -cE 'DB::\|->save\(\|::create\(' app/Services/Assistant/Llm/ModelCatalog.php` | 0 | archivos de `app/Actions` con `DB::`: 11 |
+
+## 6. Humo del stack real (tarea 7.2)
+
+Stack reconstruido: `docker compose -f software/compose.yaml up -d --build --wait api web` → db, api, web `Healthy`.
+Local con `AI_PROVIDER=ollama` (`software/.env`) y Ollama del anfitrión encendido.
+
+| Escenario | Comprobación | Archivo:línea | Resultado |
+|---|---|---|---|
+| IA «Lista de modelos disponibles»: «Lista sin sesión» | `GET /api/assistant/models` anónimo → 401 | `software/docker/smoke/assistant-smoke.sh:100` | PASA, HTTP 401 |
+| IA «Lista de modelos disponibles» (`mock` primero) | regente → 200, `.data[0].id == "mock"`, `.data[0].provider == "mock"` | `software/docker/smoke/assistant-smoke.sh:109` | PASA; lista `["mock","ollama:gemma4:e2b-mlx"]` |
+| IA «Modelos con Ollama disponible» | `SMOKE_EXPECT_OLLAMA_MODEL` → `index("ollama:" + $m) != null` | `software/docker/smoke/assistant-smoke.sh:112` | PASA con `gemma4:e2b-mlx` |
+| IA «Ollama caído» (lista solo `mock`) | `SMOKE_EXPECT_MOCK_ONLY=1` → `map(.id) == ["mock"]` | `software/docker/smoke/assistant-smoke.sh:119` | lo corre 7.4; control negativo abajo |
+| IA «Modelo elegido por pregunta»: «Modelo simulado sin red» | `ask` con `"model":"mock"` → 200, `.data.model == "mock"` | `software/docker/smoke/assistant-smoke.sh:126` | PASA, HTTP 200 |
+| IA «Modelo fuera de la lista» | `ask` con `"model":"ollama:no-existe"` → 422, `errors.model` no vacío | `software/docker/smoke/assistant-smoke.sh:128` | PASA, HTTP 422 |
+
+| Corrida | Comando | Salida | Comprobaciones / fallas |
+|---|---|---|---|
+| Sintaxis | `bash -n software/docker/smoke/assistant-smoke.sh` | exit 0 | — |
+| Humo del asistente (base sin traslados: crea BORRADOR) | `bash software/docker/smoke/assistant-smoke.sh` | exit 0 | 19 / 0 |
+| Con Ollama esperado | `SMOKE_EXPECT_OLLAMA_MODEL=gemma4:e2b-mlx bash software/docker/smoke/assistant-smoke.sh` | exit 0 | 17 / 0 |
+| Control negativo (las comprobaciones opcionales muerden) | `SMOKE_EXPECT_MOCK_ONLY=1 SMOKE_EXPECT_OLLAMA_MODEL=no-existe bash …/assistant-smoke.sh` | exit 1 | 18 / 2 (las dos esperadas) |
+| Humo completo | `bash software/docker/smoke.sh` | exit 0, `Humo VERDE` | dominios auth 38, stock 15, alerts 18, dispensation 23, transfer 28, assistant 16; fallas 0 |
+
+| Barrido | Comando | Resultado | Control positivo |
+|---|---|---|---|
+| Secretos en el diff del humo | `git diff -- software/docker/smoke/assistant-smoke.sh \| /usr/bin/grep -E '^\+' \| /usr/bin/grep -ciE '(api[_-]?key\|secret\|token\|password)\s*[:=]'` | 0 | línea sintética `+API_KEY=abc` por el mismo filtro: 1 |
