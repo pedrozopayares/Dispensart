@@ -23,7 +23,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S12 | `apply-brand-palette` | Paleta de color de la IPS en la SPA: tokens de tema (claro y oscuro) con azul marino `#232955`, verde lima `#a9cd43`, fondo `#f8f9fa` y texto `#212b51`, con contraste AA; sin logo ni nombre comercial | B | C | archivado |
 | S13 | `add-admin-screens` | Pantallas de administración para `admin` sobre la API existente: usuarios (listar, crear con rol) y catálogo (bodegas y productos: listar, crear, editar); `admin` deja de ver el Asistente en menú, inicio y ruta | A, B, § 3 | B | archivado |
 | S14 | `fix-expiry-badge-contrast` | Salda D-auv-8: el badge «Vence en N días» del inventario cumple contraste WCAG AA, con prueba | B | C | archivado |
-| S15 | `add-assistant-model-selector` | Selector de modelo en la pantalla Asistente: `mock` siempre disponible y elegido por defecto; modelos de Ollama solo si Ollama responde y el modelo está descargado y admite herramientas; la API lista los modelos disponibles y `ask` acepta el modelo elegido validado contra esa lista; la elección sobrevive a recargas en el navegador (sin base de datos) | A, B, C | A | propuesto |
+| S15 | `add-assistant-model-selector` | Selector de modelo en la pantalla Asistente: `mock` siempre disponible y elegido por defecto; modelos de Ollama solo si Ollama responde y el modelo está descargado y admite herramientas; la API lista los modelos disponibles y `ask` acepta el modelo elegido validado contra esa lista; la elección sobrevive a recargas en el navegador (sin base de datos) | A, B, C | A | en curso |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.

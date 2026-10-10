@@ -224,3 +224,18 @@ Parches: `mutants/M10.patch` … `M13.patch`.
 | `catch` sin relanzar | `/usr/bin/grep -c catch software/web/src/features/assistant/model-preference.ts` | 2, ambos por spec «Almacenamiento no disponible» (sin error visible) | `assistant-model-select.tsx`: 0 |
 | HTML crudo | `/usr/bin/grep -rc dangerouslySetInnerHTML software/web/src/features/assistant` (archivos con hits) | 0 | línea sintética: 1 |
 | Captura | — | pendiente de 7.3 (Orchestrator, stack reconstruido en 7.1) | — |
+
+## 11. Cierre del Orchestrator (tareas 7.1, 7.3, 7.4, 7.5)
+
+| Paso | Comando o acción | Resultado |
+|---|---|---|
+| 7.1 | `docker compose -f software/compose.yaml up -d --build --wait` | `/ready` 200; `/assistant` 200 |
+| 7.3 humo | `SMOKE_EXPECT_OLLAMA_MODEL=gemma4:e2b-mlx bash software/docker/smoke/assistant-smoke.sh` | exit 0; Comprobaciones 17, fallas 0 |
+| 7.3 navegador | regente, `/assistant` desde el menú | Selector «Modelo» en «Simulado (sin red)» al entrar (`captures/selector-inicial-mock.jpg`); opciones `mock` y `ollama:gemma4:e2b-mlx` |
+| 7.3 navegador | elegir «Ollama · gemma4:e2b-mlx» y preguntar el ejemplo de stock | Respondida, «Respondió: Ollama · gemma4:e2b-mlx» (`captures/respuesta-ollama.jpg`) |
+| 7.3 navegador | recargar `/assistant` | El selector conserva «Ollama · gemma4:e2b-mlx» |
+| 7.4 humo, `AI_PROVIDER=ollama` local | `OLLAMA_BASE_URL=http://host.docker.internal:1 docker compose … up -d --wait api`, 35 s, `SMOKE_EXPECT_MOCK_ONLY=1 bash …assistant-smoke.sh` | exit 1: la lista es `["mock"]` (PASA), pero las preguntas antiguas del humo sin `model` usan el proveedor por defecto `ollama` y dan 503 (fallas 4). Comportamiento especificado: sin `model` decide `AI_PROVIDER` |
+| 7.4 humo, `AI_PROVIDER=mock` | `AI_PROVIDER=mock OLLAMA_BASE_URL=http://host.docker.internal:1 docker compose … up -d --wait api`, mismo humo | exit 0; «la lista es solo ["mock"]»; Comprobaciones 17, fallas 0 |
+| 7.4 navegador | recargar `/assistant` con `ollama:gemma4:e2b-mlx` guardado | Selector en «Simulado (sin red)» y aviso «El modelo que elegiste ya no está disponible. Se usa Simulado (sin red).»; pregunta de stock «Respondió: Simulado (sin red)» (`captures/ollama-caido-vuelve-a-mock.jpg`) |
+| Restauración | `docker compose -f software/compose.yaml up -d --wait api` | `AI_PROVIDER=ollama`, `OLLAMA_BASE_URL=http://host.docker.internal:11434` |
+| 7.5 | barrido de títulos de escenario de `specs/*/spec.md` contra este archivo | Todos presentes (control: el barrido imprime «FALTA» si se borra una fila) |

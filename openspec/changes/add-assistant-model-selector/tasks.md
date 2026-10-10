@@ -262,7 +262,7 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
 
 ## 7. Cierre
 
-- [ ] 7.1 Reconstruir el stack y comprobar disponibilidad (design D6, D8). Cubre AS
+- [x] 7.1 Reconstruir el stack y comprobar disponibilidad (design D6, D8). Cubre AS
   «Pantalla Asistente para los roles de operación»: «Médico abre el asistente desde el menú» (pantalla servida por el
   stack real). Verifica: `docker compose -f software/compose.yaml up -d --build --wait`;
   `curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8090/ready` imprime `200`;
@@ -276,19 +276,19 @@ salvo `mutants/`. (f) Misma prueba → PASA. Fila `| n | mutación | Applied →
   «Lista sin sesión», «Modelos con Ollama disponible»; IA «Modelo elegido por pregunta»: «Modelo simulado sin red».
   Verifica: `bash software/docker/smoke/assistant-smoke.sh` sale con código 0 sobre el stack de 7.1; `bash -n` del
   script sin errores.
-- [ ] 7.3 Revisión del Orchestrator con Ollama del anfitrión encendido (el stack local usa `AI_PROVIDER=ollama` por
+- [x] 7.3 Revisión del Orchestrator con Ollama del anfitrión encendido (el stack local usa `AI_PROVIDER=ollama` por
   `software/.env`; la SPA arranca igual en `mock`; design D2, D8): aparece "Ollama · gemma4:e2b-mlx", una pregunta de
   ejemplo responde con "Respondió: Ollama · gemma4:e2b-mlx" y la elección sobrevive a la recarga. Cubre AS
   «La elección sobrevive a una recarga» y «Respuesta de Ollama». Verifica:
   `SMOKE_EXPECT_OLLAMA_MODEL=gemma4:e2b-mlx bash software/docker/smoke/assistant-smoke.sh` sale con código 0;
   capturas en `captures/` citadas en `verification.md` como artefacto.
-- [ ] 7.4 Revisión del Orchestrator con Ollama inalcanzable (servicio detenido u `OLLAMA_BASE_URL` a un puerto cerrado;
+- [x] 7.4 Revisión del Orchestrator con Ollama inalcanzable (servicio detenido u `OLLAMA_BASE_URL` a un puerto cerrado;
   esperar a que venza el TTL de design D3): solo "Simulado (sin red)", aviso de modelo ya no disponible si estaba
   guardado, respuestas con "Respondió: Simulado (sin red)" (design D2, D3, D8). Cubre AS
   «Modelo guardado que ya no está disponible» e IA «Ollama caído». Verifica:
   `SMOKE_EXPECT_MOCK_ONLY=1 bash software/docker/smoke/assistant-smoke.sh` sale con código 0; capturas citadas en
   `verification.md` como artefacto; pantalla alcanzable desde el menú (sin ruta huérfana).
-- [ ] 7.5 `verification.md` con matrices completas (design D10): una fila escenario → prueba → archivo:línea por cada
+- [x] 7.5 `verification.md` con matrices completas (design D10): una fila escenario → prueba → archivo:línea por cada
   escenario del cambio, columna `cláusula → ruta archivo:línea` para cada THEN anclado, una fila por pin de la tabla
   del encabezado, § 0 con líneas de producto, de prueba y de registro. Cubre todos los escenarios del cambio; ancla
   nombrada: IA «Lista de modelos disponibles»: «Lista sin sesión» (fila `cláusula → ruta archivo:línea`). Verifica:

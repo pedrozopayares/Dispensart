@@ -175,3 +175,12 @@ Decisiones y desvíos:
 - Captura de la pantalla: no tomada aquí (stack sin reconstruir; 7.1 y 7.3 son del Orchestrator).
 - Árbol de los pins: `openspec/DEBT.md` y `software/docker/smoke/assistant-smoke.sh` estaban modificados por otros
   agentes; `software/web` limpio antes y después de cada pin.
+
+## 2026-10-09 — Orchestrator: cierre de apply
+
+- 7.1, 7.3, 7.4 y 7.5 hechas; tablas en `verification.md` § 11 con capturas.
+- Desvío de 7.4: con el `AI_PROVIDER=ollama` local, las preguntas del humo sin `model` dan 503 con Ollama caído, como
+  especifica «Proveedor configurable por entorno». El humo pasa con `AI_PROVIDER=mock` (caso de CI). La SPA siempre envía
+  `model`, así que el usuario no ve ese 503.
+- Suites: backend 2 corridas completas, frontend 1; la confirmación del auditor es la tercera.
+- Siguiente: final-auditor, modo completo (tier A).
