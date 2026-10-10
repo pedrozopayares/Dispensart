@@ -21,7 +21,7 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S10 | `add-sensitive-operation-audit` | Bitácora de auditoría para creación de usuarios y ajustes de stock (`audit_events`, migración de sus CHECK) | A, RN-09 | A | archivado |
 | S11 | `use-registry-mirror-in-ci` | El CI descarga las imágenes base de Docker Hub (postgres, php, composer, node, nginx) desde el espejo `mirror.gcr.io`, sin credenciales; en local sigue Docker Hub | D | B | bloqueado: GATE 1 en pausa por el usuario (2026-10-09) |
 | S12 | `apply-brand-palette` | Paleta de color de la IPS en la SPA: tokens de tema (claro y oscuro) con azul marino `#232955`, verde lima `#a9cd43`, fondo `#f8f9fa` y texto `#212b51`, con contraste AA; sin logo ni nombre comercial | B | C | archivado |
-| S13 | `add-admin-screens` | Pantallas de administración para `admin` sobre la API existente: usuarios (listar, crear con rol) y catálogo (bodegas y productos: listar, crear, editar); `admin` deja de ver el Asistente en menú, inicio y ruta | A, B, § 3 | B | en curso |
+| S13 | `add-admin-screens` | Pantallas de administración para `admin` sobre la API existente: usuarios (listar, crear con rol) y catálogo (bodegas y productos: listar, crear, editar); `admin` deja de ver el Asistente en menú, inicio y ruta | A, B, § 3 | B | archivado |
 | S14 | `fix-expiry-badge-contrast` | Salda D-auv-8: el badge «Vence en N días» del inventario cumple contraste WCAG AA, con prueba | B | C | archivado |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·

@@ -113,3 +113,9 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
 - Datos sintéticos en la base de desarrollo: usuario `verificacion.s13@dispensart.test`, bodega `S13`, producto `S13-001`.
 - Observación de redacción en los avisos de éxito (palabra repetida); no reabre nada (regla 12).
 - Siguiente: final-auditor, modo delta (tier B).
+
+## 2026-10-09 — GATE 2: APPROVED (final-auditor, delta tier B)
+
+- Veredicto sobre `ef3255b..080da74`: APPROVED, sin observaciones.
+- Deuda: ninguna nueva. Fuera de alcance y sin registrar como deuda: el endpoint del asistente sigue aceptando a `admin`
+  (cambio tier A aparte si el usuario lo pide).

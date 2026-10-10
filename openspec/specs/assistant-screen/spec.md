@@ -7,9 +7,10 @@ las preguntas fuera de la memoria de la pantalla (parte C, RN-10).
 
 ## Requirements
 
-### Requirement: Pantalla Asistente para toda sesión
-La SPA SHALL ofrecer la pantalla "Asistente" en `/assistant`, dentro del shell, para toda sesión y sin
-capacidad propia, igual que la ruta del asistente; los permisos los aplica el servidor en cada herramienta.
+### Requirement: Pantalla Asistente para los roles de operación
+La SPA SHALL ofrecer la pantalla "Asistente" en `/assistant`, dentro del shell, para toda sesión salvo el rol
+`admin` (§ 3), que ve el aviso de permiso de operator-workspace; los permisos los aplica el servidor en cada
+herramienta.
 SHALL seguir la disposición común de operator-workspace: título, caja de pregunta arriba, resultados
 debajo, componentes del kit (ADR-0004) y textos del módulo central. Abrirla SHALL NOT enviar ninguna
 pregunta (RN-10, parte C).
@@ -25,6 +26,10 @@ pregunta (RN-10, parte C).
 #### Scenario: Acceso directo sin sesión
 - **WHEN** un visitante sin sesión abre `/assistant` escribiendo la dirección
 - **THEN** la SPA lo lleva a `/login` sin mostrar la pantalla ni enviar ninguna pregunta
+
+#### Scenario: Admin escribe la dirección del asistente
+- **WHEN** un `admin` con sesión abre `/assistant` escribiendo la dirección
+- **THEN** ve "No tienes permiso para ver esta pantalla." y el enlace "Volver al inicio", sin la caja "Tu pregunta", y no se envía ninguna petición al asistente
 
 ### Requirement: Envío de una pregunta
 La pantalla SHALL enviar la pregunta escrita como `question` a `POST /api/assistant/ask` al pulsar
