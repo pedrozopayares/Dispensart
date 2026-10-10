@@ -181,3 +181,22 @@ function ollamaRequests(string $path): array
         ->filter(fn (Request $request): bool => str_ends_with($request->url(), $path))
         ->values()->all();
 }
+
+/**
+ * Respuesta de /api/chat de Ollama con el mensaje dado.
+ *
+ * @param  array<string, mixed>  $message
+ * @return array<string, mixed>
+ */
+function ollamaChatMessage(array $message): array
+{
+    return ['model' => 'modelo-simulado', 'message' => ['role' => 'assistant', 'content' => '', ...$message], 'done' => true];
+}
+
+/**
+ * Pregunta con `model` en el cuerpo (cualquier tipo, para probar también los inválidos).
+ */
+function askWithModel(User $user, string $question, mixed $model): TestResponse
+{
+    return test()->actingAs($user)->postJson('/api/assistant/ask', ['question' => $question, 'model' => $model]);
+}

@@ -48,6 +48,9 @@ return [
         'ANULADO' => 'anulado',
     ],
 
+    // Elección de modelo por pregunta (S15, design D5).
+    'model_unavailable' => 'El modelo elegido no está disponible.',
+
     'eval' => [
         'pass' => 'ACIERTO',
         'fail' => 'FALLO',

@@ -17,7 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 final class AssistantAnswerResource extends JsonResource
 {
     /**
-     * @return array{outcome: Outcome, answer: string, tool_calls: list<AssistantToolCallResource>}
+     * @return array{outcome: Outcome, answer: string, tool_calls: list<AssistantToolCallResource>, model: string}
      */
     public function toArray(Request $request): array
     {
@@ -27,6 +27,8 @@ final class AssistantAnswerResource extends JsonResource
             'tool_calls' => collect($this->toolCalls)
                 ->map(fn (ToolCallRecord $call): AssistantToolCallResource => new AssistantToolCallResource($call))
                 ->values()->all(),
+            // `id` del modelo que atendió (`mock` u `ollama:<name>`; S15).
+            'model' => (string) $this->model,
         ];
     }
 }

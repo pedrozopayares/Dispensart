@@ -47,7 +47,7 @@ describe('Pregunta en lenguaje natural', function () {
         $response = askAs(Role::AuxiliarFarmacia, '¿Cuánto stock hay de acetaminofén en la farmacia central?');
 
         $response->assertJsonPath('data.outcome', 'answered');
-        expect(array_keys($response->json('data')))->toBe(['outcome', 'answer', 'tool_calls'])
+        expect(array_keys($response->json('data')))->toBe(['outcome', 'answer', 'tool_calls', 'model'])
             ->and($response->json('data.tool_calls'))->toBe([[
                 'tool' => 'get_stock', 'arguments' => ['product' => 'Acetaminofén 500 mg', 'warehouse' => 'Farmacia Central'], 'status' => 'ok',
             ]])

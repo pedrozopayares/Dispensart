@@ -25,7 +25,6 @@ use App\Services\Assistant\Tools\ToolRegistry;
 final class AssistantOrchestrator
 {
     public function __construct(
-        private readonly LlmProvider $provider,
         private readonly ToolRegistry $registry,
         private readonly ToolArgumentValidator $validator,
         private readonly ReadOnlyToolRunner $runner,
@@ -35,11 +34,12 @@ final class AssistantOrchestrator
     ) {}
 
     /**
+     * @param  LlmProvider  $provider  el de la elección de la pregunta o el de AI_PROVIDER (S15, design D4)
      * @param  QueryTrace|null  $trace  se actualiza en cada ronda y llamada (lo lee el log aun ante un 503)
      *
      * @throws AssistantUnavailable
      */
-    public function answer(User $user, string $question, ?QueryTrace $trace = null): AssistantAnswer
+    public function answer(User $user, string $question, LlmProvider $provider, ?QueryTrace $trace = null): AssistantAnswer
     {
         $trace ??= new QueryTrace;
         $maxCalls = (int) config('assistant.max_tool_calls');
@@ -61,7 +61,7 @@ final class AssistantOrchestrator
             }
 
             $trace->rounds++;
-            $response = $this->provider->chat(new ChatRequest(SystemPrompt::TEXT, $messages, $this->registry->definitions(), $remaining));
+            $response = $provider->chat(new ChatRequest(SystemPrompt::TEXT, $messages, $this->registry->definitions(), $remaining));
             if (! $response->hasToolCalls()) {
                 break;
             }

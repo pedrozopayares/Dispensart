@@ -3,6 +3,7 @@
 use App\Enums\Role;
 use App\Exceptions\AssistantUnavailable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
@@ -23,7 +24,9 @@ function assistantLines(string $path): array
     return array_values(array_filter(logLines($path), fn (array $line): bool => $line['message'] === 'assistant.query'));
 }
 
-test('Línea de la consulta: outcome, llamadas, rondas, proveedor, duración y correlation_id', function () {
+test('Línea de la consulta: outcome, llamadas, rondas, proveedor, modelo, duración y correlation_id', function () {
+    config(['assistant.provider' => 'mock']);
+
     $this->actingAs(worldUser($this->world, Role::AuxiliarFarmacia))
         ->withHeader('X-Correlation-Id', 'traza-asistente')
         ->postJson('/api/assistant/ask', ['question' => '¿Cuánto stock hay de acetaminofén en la farmacia central?'])
@@ -32,15 +35,43 @@ test('Línea de la consulta: outcome, llamadas, rondas, proveedor, duración y c
     $lines = assistantLines($this->logPath);
     expect($lines)->toHaveCount(1)
         ->and($lines[0]['correlation_id'])->toBe('traza-asistente')
-        ->and(array_keys($lines[0]['context']))->toBe(['outcome', 'tool_calls', 'rounds', 'provider', 'duration_ms'])
+        ->and(array_keys($lines[0]['context']))->toBe(['outcome', 'tool_calls', 'rounds', 'provider', 'model', 'duration_ms'])
         ->and($lines[0]['context']['outcome'])->toBe('answered')
         ->and($lines[0]['context']['tool_calls'])->toBe([['tool' => 'get_stock', 'status' => 'ok']])
         ->and($lines[0]['context']['rounds'])->toBe(2)
         ->and($lines[0]['context']['provider'])->toBe('mock')
+        ->and($lines[0]['context']['model'])->toBe('mock')
         ->and($lines[0]['context']['duration_ms'])->toBeNumeric();
     // Ni pregunta, ni argumentos de texto, ni respuesta, ni resultados.
     $raw = (string) file_get_contents($this->logPath);
     foreach (['acetaminof', 'Acetaminof', 'farmacia central', 'Farmacia Central', 'EVAL-ACE', '30 unidades', 'question'] as $forbidden) {
+        expect($raw)->not->toContain($forbidden);
+    }
+});
+
+test('Línea con un modelo de Ollama: proveedor ollama, modelo elegido y nada de la pregunta', function () {
+    useOllamaCatalog();
+    config(['assistant.provider' => 'mock', 'assistant.ollama.model' => 'qwen2.5:3b']);
+    Http::fake([
+        ...ollamaCatalogStubs(['gemma4:e2b-mlx' => ['completion', 'tools']]),
+        CATALOG_OLLAMA_URL.'/api/chat' => Http::sequence()
+            ->push(ollamaChatMessage(['tool_calls' => [['function' => ['name' => 'get_stock', 'arguments' => ['product' => 'acetaminofén', 'warehouse' => 'Farmacia Central']]]]]))
+            ->push(ollamaChatMessage(['content' => 'listo'])),
+    ]);
+
+    askWithModel(worldUser($this->world, Role::AuxiliarFarmacia), '¿Cuánto stock hay de acetaminofén en la farmacia central?', 'ollama:gemma4:e2b-mlx')
+        ->assertOk()
+        ->assertJsonPath('data.outcome', 'answered');
+
+    $lines = assistantLines($this->logPath);
+    expect($lines)->toHaveCount(1)
+        ->and($lines[0]['context']['provider'])->toBe('ollama')
+        ->and($lines[0]['context']['model'])->toBe('ollama:gemma4:e2b-mlx')
+        ->and($lines[0]['context']['tool_calls'])->toBe([['tool' => 'get_stock', 'status' => 'ok']]);
+    $raw = (string) file_get_contents($this->logPath);
+    // Control positivo: el barrido lee la línea real (el modelo sí está).
+    expect($raw)->toContain('gemma4:e2b-mlx');
+    foreach (['acetaminofén', 'acetaminof', 'Acetaminof', 'farmacia central', 'Farmacia Central', 'question', 'ollama.catalogo'] as $forbidden) {
         expect($raw)->not->toContain($forbidden);
     }
 });
