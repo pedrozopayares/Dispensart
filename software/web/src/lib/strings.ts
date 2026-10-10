@@ -446,6 +446,17 @@ export const strings = {
     },
     unknownArgument: 'Dato',
     argument: '{label}: {value}',
+    // Selector de modelo (S15). Etiquetas por `id` de la API, nunca el `id` crudo.
+    model: {
+      label: 'Modelo',
+      mock: 'Simulado (sin red)',
+      ollama: 'Ollama · {name}',
+      loading: 'Cargando modelos…',
+      listFailed: 'No se pudo consultar los modelos disponibles. Se usa Simulado (sin red).',
+      storedMissing: 'El modelo que elegiste ya no está disponible. Se usa Simulado (sin red).',
+      answeredBy: 'Respondió: {model}',
+      unknown: 'Modelo desconocido',
+    },
   },
   // Pantalla Usuarios (admin-screens): la contraseña nunca se muestra ni se lista.
   users: {

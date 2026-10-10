@@ -4,21 +4,23 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   argumentLines,
   callStatusLabel,
+  modelLabel,
   outcomeLabel,
   toolLabel,
 } from '@/features/assistant/assistant-labels'
 import type { AssistantAnswer } from '@/lib/api-types'
-import { strings } from '@/lib/strings'
+import { format, strings } from '@/lib/strings'
 
 const labels = strings.assistant
 
 export type AssistantEntry = { id: number; question: string; answer: AssistantAnswer }
 
 // Una pregunta del historial: etiqueta por `outcome` (estilo propio para `answered`), `answer` como
-// texto plano línea por línea (React escapa: nada se interpreta como HTML) y las consultas hechas.
+// texto plano línea por línea (React escapa: nada se interpreta como HTML), las consultas hechas y el
+// modelo que la atendió, tomado de su propia respuesta y nunca de la selección actual (S15).
 export function AssistantAnswerCard({ entry }: { entry: AssistantEntry }) {
   const questionId = useId()
-  const { outcome, answer, tool_calls: toolCalls } = entry.answer
+  const { outcome, answer, tool_calls: toolCalls, model } = entry.answer
   return (
     <Card className="gap-4 py-4">
       <article aria-labelledby={questionId} className="flex flex-col gap-4">
@@ -60,6 +62,9 @@ export function AssistantAnswerCard({ entry }: { entry: AssistantEntry }) {
               </ul>
             )}
           </section>
+          <p className="text-xs text-muted-foreground">
+            {format(labels.model.answeredBy, { model: modelLabel(model) })}
+          </p>
         </CardContent>
       </article>
     </Card>

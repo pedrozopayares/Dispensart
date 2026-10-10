@@ -18,6 +18,8 @@ export const queryKeys = {
   // Raíz `transfers`: listado y detalle se invalidan juntos tras cada acción de traslado.
   transfers: (filters: TransferQuery) => ['transfers', 'list', filters] as const,
   transfer: (transferId: number) => ['transfers', 'detail', transferId] as const,
+  // Modelos elegibles del asistente (S15); se pide de nuevo tras un 422 con `errors.model`.
+  assistantModels: () => ['assistant', 'models'] as const,
 }
 
 // Raíces que cambian con toda escritura de stock (dispensación, ajuste, despacho, recepción).

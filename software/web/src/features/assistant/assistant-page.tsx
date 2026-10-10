@@ -8,7 +8,15 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { AssistantAnswerCard, type AssistantEntry } from '@/features/assistant/assistant-answer'
-import { useAskAssistant } from '@/features/assistant/queries'
+import { AssistantModelSelect } from '@/features/assistant/assistant-model-select'
+import {
+  DEFAULT_MODEL,
+  readStoredModel,
+  resolveModel,
+  storeModel,
+  type ResolvedModel,
+} from '@/features/assistant/model-preference'
+import { useAskAssistant, useAssistantModels } from '@/features/assistant/queries'
 import { fieldErrors } from '@/lib/api-errors'
 import { format, strings } from '@/lib/strings'
 import { useSubmitGuard } from '@/lib/use-submit-guard'
@@ -39,15 +47,32 @@ export function AssistantPage() {
   const box = useRef<HTMLTextAreaElement>(null)
   const guard = useSubmitGuard()
   const ask = useAskAssistant()
+  const models = useAssistantModels()
+  // Preferencia leída una vez al abrir (dato no confiable); la elección de la visita vive en memoria.
+  const [stored] = useState(readStoredModel)
+  const [chosen, setChosen] = useState<string | null>(null)
+
+  // Sin lista (cargando o fallida) solo se ofrece `mock`; el valor guardado nunca se usa sin validar.
+  const options = models.isSuccess ? models.data.map((model) => model.id) : [DEFAULT_MODEL]
+  const model: ResolvedModel = models.isSuccess
+    ? resolveModel(options, stored, chosen)
+    : { id: DEFAULT_MODEL, storedMissing: false }
+
+  const chooseModel = (id: string) => {
+    if (ask.isPending) return
+    setChosen(id)
+    storeModel(id)
+  }
 
   const submit = () => {
     const question = text.trim()
     const error = questionError(question)
     setLocalError(error)
-    if (error !== null) return
+    // "Preguntar" espera la lista de modelos (o su fallo).
+    if (error !== null || models.isPending) return
     guard((release) => {
       setSubmitError(null)
-      ask.mutate(question, {
+      ask.mutate({ question, model: model.id }, {
         onSuccess: (answer) => {
           const entry = { id: nextId.current++, question, answer }
           setHistory((current) => [entry, ...current].slice(0, HISTORY_SIZE))
@@ -69,6 +94,12 @@ export function AssistantPage() {
   }
 
   const message = localError ?? fieldErrors(submitError).question
+  const modelError = fieldErrors(submitError).model
+  const modelNotice = models.isError
+    ? labels.model.listFailed
+    : model.storedMissing
+      ? labels.model.storedMissing
+      : undefined
   const boxId = `${ids}-question`
   const describedBy = `${ids}-counter ${ids}-privacy`
 
@@ -83,6 +114,15 @@ export function AssistantPage() {
           submit()
         }}
       >
+        <AssistantModelSelect
+          options={options}
+          value={model.id}
+          loading={models.isPending}
+          disabled={models.isPending || ask.isPending}
+          notice={modelNotice}
+          error={modelError}
+          onChange={chooseModel}
+        />
         <Field data-invalid={message !== undefined || undefined}>
           <FieldLabel htmlFor={boxId}>{labels.question}</FieldLabel>
           <Textarea
@@ -105,7 +145,7 @@ export function AssistantPage() {
           <FieldDescription id={`${ids}-privacy`}>{labels.privacy}</FieldDescription>
         </Field>
         <div>
-          <SubmitButton pending={ask.isPending} pendingLabel={labels.submitting}>
+          <SubmitButton pending={ask.isPending} disabled={models.isPending} pendingLabel={labels.submitting}>
             {labels.submit}
           </SubmitButton>
         </div>

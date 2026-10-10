@@ -23,6 +23,18 @@ export function callStatusLabel(status: string): string {
   return labelOf(labels.callStatus, status, labels.unknownCallStatus)
 }
 
+const OLLAMA_PREFIX = 'ollama:'
+
+// Etiqueta de un `id` de modelo (S15): `mock` y `ollama:<name>`; cualquier otro, el texto genérico,
+// nunca el `id` recibido.
+export function modelLabel(id: unknown): string {
+  if (id === 'mock') return labels.model.mock
+  if (typeof id === 'string' && id.startsWith(OLLAMA_PREFIX) && id.length > OLLAMA_PREFIX.length) {
+    return format(labels.model.ollama, { name: id.slice(OLLAMA_PREFIX.length) })
+  }
+  return labels.model.unknown
+}
+
 // Una línea "Etiqueta: valor" por argumento. El `status` de un traslado usa las etiquetas de la
 // pantalla Traslados (RN-07), nunca el literal `EN_TRANSITO`.
 export function argumentLines(args: AssistantToolCall['arguments']): string[] {

@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { QueryClient } from '@tanstack/react-query'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { strings, type RoleCode } from '@/lib/strings'
 import { spyOnConsole } from '@/test/console-spy'
 import { installFakeApi } from '@/test/fake-api'
@@ -14,27 +14,34 @@ import { renderApp } from '@/test/render-app'
 
 const a = strings.assistant
 const ASK = 'POST /api/assistant/ask'
+// S15: la pantalla pide la lista de modelos al abrir; por defecto solo `mock` (Ollama no disponible).
+const MODELS = 'GET /api/assistant/models'
+const mockOnly = () => json(200, { data: [{ id: 'mock', provider: 'mock', name: 'mock' }] })
 
 type Answer = {
   outcome: string
   answer: string
   tool_calls: { tool: string; arguments: Record<string, string | number>; status: string }[]
+  model: string
 }
 
 const answer = (overrides: Partial<Answer> = {}): Answer => ({
   outcome: 'answered',
   answer: 'Hay 30 unidades disponibles.',
   tool_calls: [],
+  model: 'mock',
   ...overrides,
 })
 const reply = (body: Answer) => () => json(200, { data: body })
 
 type Routes = Parameters<typeof renderAs>[2]
 
+// Abre la pantalla y espera la lista de modelos: "Preguntar" espera esa lista (S15).
 async function openAssistant(role: RoleCode = 'auxiliar_farmacia', routes: Routes = {}) {
   setXsrfCookie('token-1')
-  const view = renderAs(role, '/assistant', routes)
+  const view = renderAs(role, '/assistant', { [MODELS]: mockOnly, ...routes })
   const box = (await screen.findByLabelText(a.question)) as HTMLTextAreaElement
+  await waitFor(() => expect(screen.getByLabelText(a.model.label)).toBeEnabled())
   return { ...view, box }
 }
 
@@ -53,9 +60,11 @@ async function ask(box: HTMLTextAreaElement, question: string) {
   return screen.findByRole('article', { name: question })
 }
 
+beforeEach(() => localStorage.clear())
+
 describe('Pantalla Asistente para los roles de operación', () => {
   it('Médico abre el asistente desde el menú: título, caja con foco, "Preguntar" y enlace actual', async () => {
-    const { router } = renderAs('medico', '/')
+    const { router } = renderAs('medico', '/', { [MODELS]: mockOnly })
     const menu = await screen.findByRole('navigation', { name: strings.nav.label })
 
     fireEvent.click(within(menu).getByRole('link', { name: strings.nav.assistant }))
@@ -63,16 +72,18 @@ describe('Pantalla Asistente para los roles de operación', () => {
     expect(await screen.findByRole('heading', { name: 'Asistente de inventario' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/assistant')
     expect(screen.getByLabelText('Tu pregunta')).toHaveFocus()
-    expect(screen.getByRole('button', { name: 'Preguntar' })).toBeEnabled()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Preguntar' })).toBeEnabled())
     expect(within(menu).getByRole('link', { name: strings.nav.assistant })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('Apertura sin preguntas enviadas: estado vacío y ninguna petición al asistente', async () => {
+  it('Apertura sin preguntas enviadas: estado vacío y la única petición al asistente es la lista de modelos', async () => {
     const { api, client } = await openAssistant('auxiliar_farmacia', { [ASK]: reply(answer()) })
 
     expect(screen.getByText('Aún no has hecho preguntas. Prueba con uno de los ejemplos.')).toBeInTheDocument()
     await settle(client)
     expect(asked(api)).toHaveLength(0)
+    const toAssistant = api.requests.filter((request) => request.path.startsWith('/api/assistant'))
+    expect(toAssistant.map((request) => `${request.method} ${request.path}`)).toEqual([MODELS])
   })
 
   it('Acceso directo sin sesión: lleva a /login sin la pantalla ni preguntas', async () => {
@@ -97,7 +108,7 @@ describe('Pantalla Asistente para los roles de operación', () => {
   })
 
   it('control positivo: el médico que escribe la misma dirección ve la caja "Tu pregunta"', async () => {
-    renderAs('medico', '/assistant')
+    renderAs('medico', '/assistant', { [MODELS]: mockOnly })
 
     expect(await screen.findByLabelText(a.question)).toBeInTheDocument()
     expect(screen.queryByText(strings.guard.forbidden)).not.toBeInTheDocument()
@@ -107,7 +118,7 @@ describe('Pantalla Asistente para los roles de operación', () => {
 describe('Envío de una pregunta', () => {
   const QUESTION = '¿Cuánto stock hay de acetaminofén en la farmacia central?'
 
-  it('Pregunta enviada: una sola petición con {"question": …} y progreso anunciado', async () => {
+  it('Pregunta enviada: una sola petición con {"question": …, "model": "mock"} y progreso anunciado', async () => {
     const pending = deferred<Response>()
     const { api, box } = await openAssistant('auxiliar_farmacia', { [ASK]: () => pending.promise })
 
@@ -117,7 +128,7 @@ describe('Envío de una pregunta', () => {
     expect(await screen.findByRole('button', { name: 'Consultando…' })).toBeDisabled()
     expect(screen.getByRole('status')).toHaveTextContent('Consultando al asistente…')
     await waitFor(() => expect(asked(api)).toHaveLength(1))
-    expect(asked(api)[0].body).toEqual({ question: QUESTION })
+    expect(asked(api)[0].body).toEqual({ question: QUESTION, model: 'mock' })
     expect(asked(api)[0].headers['x-xsrf-token']).toBe('token-1')
 
     pending.resolve(json(200, { data: answer() }))
@@ -265,7 +276,7 @@ describe('Resultado según el outcome del servidor', () => {
     expect(within(entry).getByText('Fuera de alcance')).toBeInTheDocument()
     // Todo el texto de la entrada: la pregunta escrita, la etiqueta, el mensaje y "sin consultas".
     expect(entry.textContent).toBe(
-      [question, 'Fuera de alcance', text, a.toolCalls, 'Sin consultas a herramientas.'].join(''),
+      [question, 'Fuera de alcance', text, a.toolCalls, 'Sin consultas a herramientas.', 'Respondió: Simulado (sin red)'].join(''),
     )
   })
 
@@ -469,6 +480,32 @@ describe('Historial de la pantalla solo en memoria', () => {
     await screen.findByRole('article', { name: question })
 
     expect(sweep()).toEqual([])
+  })
+
+  it('Almacenamiento solo con el modelo: una clave con el id elegido y nada de la pregunta', async () => {
+    const OLLAMA_ID = 'ollama:gemma4:e2b-mlx'
+    const question = '¿Cuánto acetaminofén retiró 9999010001?'
+    const { box } = await openAssistant('auxiliar_farmacia', {
+      [MODELS]: () =>
+        json(200, {
+          data: [
+            { id: 'mock', provider: 'mock', name: 'mock' },
+            { id: OLLAMA_ID, provider: 'ollama', name: 'gemma4:e2b-mlx' },
+          ],
+        }),
+      [ASK]: reply(answer({ model: OLLAMA_ID })),
+    })
+
+    fireEvent.change(screen.getByLabelText(a.model.label), { target: { value: OLLAMA_ID } })
+    await ask(box, question)
+
+    const entries = (storage: Storage) =>
+      Array.from({ length: storage.length }, (_, i) => [storage.key(i), storage.getItem(storage.key(i) ?? '')])
+    expect(entries(localStorage)).toEqual([['dispensart.assistant.model', OLLAMA_ID]])
+    expect(sessionStorage.length).toBe(0)
+    const stored = JSON.stringify([...entries(localStorage), ...entries(sessionStorage)])
+    expect(stored).not.toContain('9999010001')
+    expect(stored).not.toContain('acetaminofén')
   })
 })
 
