@@ -91,3 +91,11 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   (run 38052524687). Guarda de cobertura con todas las operaciones del OpenAPI cubiertas.
 - D-auv-9 ya saldada por S17 (`2280b59`): el archivo de S16 no queda bloqueado.
 - Siguiente: final-auditor, modo delta (tier B).
+
+## 2026-10-10 — GATE 2: APPROVED (final-auditor, delta tier B)
+
+- newman local con el comando de la guía: 123 peticiones, 235/235 aserciones, 0 fallas. Guarda de cobertura 34/34 y falla
+  con colección vacía. M0 y M1–M5 reproducidos. CI 38052524687 en verde con el paso de newman tras los humos. OpenAPI sin
+  cambios; sin secretos.
+- Nota ya registrada: en la carpeta de dispensación FEFO la comprobación de orden por vencimiento pasa con un solo lote
+  vigente; el orden entre varios lotes vigentes lo cubre Pest. No reabre el gate.
