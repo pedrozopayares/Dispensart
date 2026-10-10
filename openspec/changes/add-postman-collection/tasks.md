@@ -110,13 +110,13 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
 
 ## 3. CI
 
-- [ ] 3.1 Paso nuevo en el trabajo `backend` de `.github/workflows/ci.yml`, después del lint de Redocly:
+- [x] 3.1 Paso nuevo en el trabajo `backend` de `.github/workflows/ci.yml`, después del lint de Redocly:
   `bash software/docs/postman/check-coverage.sh software/docs/postman/dispensart.postman_collection.json`, sin
   permisos nuevos ni `secrets.`. Cubre CI › «Contrato cubierto», «Operación nueva sin petición» (la lógica la pinea
   M1), «Pull request desde un fork con la guarda». Verifica: `awk '/^  backend:/,/^  frontend:/'
   .github/workflows/ci.yml | /usr/bin/grep -n 'check-coverage.sh'` da una línea posterior a `openapi:lint`; el mismo
   bloque piped a `/usr/bin/grep -c 'secrets\.'` da 0, con control positivo: el patrón da ≥ 1 sobre el bloque `staging`.
-- [ ] 3.2 Paso nuevo en el trabajo `staging`, después de «Humo del stack y de dominio» y antes de «Logs del stack»:
+- [x] 3.2 Paso nuevo en el trabajo `staging`, después de «Humo del stack y de dominio» y antes de «Logs del stack»:
   Node por `actions/setup-node` con el mismo SHA fijado del archivo si el runner lo requiere, y `npx --yes
   newman@<NV> run` sobre la colección y el entorno local. Sin `continue-on-error`, sin `|| true`, sin `secrets.`.
   Cubre DP › «Colección verde en staging» (la cierra 5.3), «Aserción fallida en staging», «Humos fallidos», «Fallo

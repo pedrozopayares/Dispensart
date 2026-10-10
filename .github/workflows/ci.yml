@@ -129,6 +129,12 @@ jobs:
         working-directory: .
         run: npm run openapi:lint
 
+      # Cobertura del contrato por la colección de Postman (S16): cada operación de openapi.json tiene su petición
+      # y ninguna petición queda fuera del contrato. Solo bash y jq: sin stack, red ni secretos.
+      - name: Colección de Postman cubre el contrato
+        working-directory: .
+        run: bash software/docs/postman/check-coverage.sh software/docs/postman/dispensart.postman_collection.json
+
   frontend:
     name: Frontend (ESLint, tipos, Vitest)
     runs-on: ubuntu-24.04
@@ -331,6 +337,11 @@ jobs:
       # contraseña SOLO de desarrollo (APP_ENV=local por defecto en compose, sin SEED_USER_PASSWORD): no es secreto.
       - name: Humo del stack y de dominio
         run: bash software/docker/smoke.sh
+
+      # Colección de Postman (S16) sobre el mismo stack, después de los humos: newman con versión exacta por npx y
+      # el Node que ya trae el runner, sin cuenta de Postman ni secretos. Una aserción fallida deja staging en fallo.
+      - name: Colección de Postman (newman)
+        run: npx --yes newman@6.2.3 run software/docs/postman/dispensart.postman_collection.json -e software/docs/postman/local.postman_environment.json
 
       - name: Logs del stack
         if: failure()
