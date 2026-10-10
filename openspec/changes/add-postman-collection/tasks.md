@@ -94,7 +94,7 @@ Cada grupo cierra con un commit en español cuyo asunto nombra el objetivo de la
   password=dispensart-dev-only` sale 0; `nm "$C" --env-var password=no-es-la-clave` sale distinto de 0 y el primer
   login muestra 422; `/usr/bin/grep -rnEi 'password|token|cookie|app_key' software/docs/postman/` revisado fila a
   fila en `verification.md`, con control positivo: el patrón encuentra la línea de `password` del entorno.
-- [ ] 2.10 [MUT] Pines. Primero, con el árbol de 2.1–2.9 ya confirmado en git, escribir los filtros jq
+- [x] 2.10 [MUT] Pines. Primero, con el árbol de 2.1–2.9 ya confirmado en git, escribir los filtros jq
   `$M/M0.jq` … `$M/M5.jq` (uno por mutante, descritos abajo; `M0.jq` = `.`). Después, en este orden: autocontrol del
   arnés `mut M0 guard` sale **3** (el mutante identidad no falla: `mut` distingue); luego cada `mut` de M1–M5 sale 0:
   M1 quita la petición de `POST /api/transfers/{transfer}/void`: `mut M1 guard` (AC › «Operación sin petición»).
