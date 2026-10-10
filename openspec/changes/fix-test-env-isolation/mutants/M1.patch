@@ -1,0 +1,12 @@
+diff --git a/software/api/phpunit.xml b/software/api/phpunit.xml
+index 68d8c61..1649b97 100644
+--- a/software/api/phpunit.xml
++++ b/software/api/phpunit.xml
+@@ -38,7 +38,6 @@
+         <!-- Asistente simulado y modelo por defecto sea cual sea el .env del anfitrión (S17, design D1): <server> gana
+              en env()/config(), <env> en getenv() y en los procesos hijos. Una prueba que necesite Ollama lo fija ella misma. -->
+         <env name="AI_PROVIDER" value="mock" force="true"/>
+-        <server name="AI_PROVIDER" value="mock" force="true"/>
+         <env name="OLLAMA_MODEL" value="qwen2.5:3b" force="true"/>
+         <server name="OLLAMA_MODEL" value="qwen2.5:3b" force="true"/>
+         <!-- Las pruebas que leen el log redirigen el canal a un archivo temporal; el resto lo descarta. -->

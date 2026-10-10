@@ -1,0 +1,12 @@
+diff --git a/software/api/phpunit.xml b/software/api/phpunit.xml
+index 68d8c61..7b17b0d 100644
+--- a/software/api/phpunit.xml
++++ b/software/api/phpunit.xml
+@@ -39,7 +39,6 @@
+              en env()/config(), <env> en getenv() y en los procesos hijos. Una prueba que necesite Ollama lo fija ella misma. -->
+         <env name="AI_PROVIDER" value="mock" force="true"/>
+         <server name="AI_PROVIDER" value="mock" force="true"/>
+-        <env name="OLLAMA_MODEL" value="qwen2.5:3b" force="true"/>
+         <server name="OLLAMA_MODEL" value="qwen2.5:3b" force="true"/>
+         <!-- Las pruebas que leen el log redirigen el canal a un archivo temporal; el resto lo descarta. -->
+         <env name="LOG_CHANNEL" value="stderr" force="true"/>

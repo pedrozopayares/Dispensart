@@ -72,3 +72,19 @@ Append-only. Dueño: Orchestrator. Los agentes agregan su sección al volver.
   2. `openspec validate --strict` limpio y ancla sin hits. Lo único que el spec-validator dejó en la tercera pasada son
      frases descriptivas («dos líneas de», «una sola de las dos») que no son cifras de evidencia: redacción, regla 12.
      Decisión del Orchestrator: condición cumplida.
+
+## 2026-10-10 — backend-implementer: apply
+
+- Hecho: 1.1–2.2. `phpunit.xml` fija `<env force>` + `<server>` de `AI_PROVIDER=mock` y `OLLAMA_MODEL=qwen2.5:3b`
+  (D1); `tests/Feature/TestEnvironmentIsolationTest.php` con las cuatro pruebas de escenario (D2, D3, D6). Commit de
+  código `8954b1c`; sin código de producción.
+- 1.1 roja registrada antes del pin con entorno hostil: fallan «Proveedor ollama…», «Modelo de Ollama…» y «Pin
+  retirado…»; «Prueba que fija su propio proveedor» pasa (no depende del pin). Conteos en `verification.md` § 3.
+- Decisión: la guarda XPath exige `force="true"` solo en `<env>` (único lugar donde opera, según D1); en `<server>`
+  exige nombre y valor.
+- M1–M5 rojos aplicados y verdes restaurados, mensaje de M5 nombra `AI_PROVIDER`, PC1 verde; árbol limpio en cada
+  fila. Barrido `putenv|_SERVER[|_ENV[` en pruebas sin coincidencias, con control positivo.
+- Suite: línea base con `-e AI_PROVIDER=mock`; cierre 2.1 sin `-e`, proceso en `ollama`/`gemma4:e2b-mlx`, verde.
+  Corridas completas usadas: 2 de 3; la tercera es del auditor.
+- Concurrencia: S16 hizo commits entre medias (`52092df`, `db73b5b`) sin tocar `software/api`; staging por ruta explícita.
+- Deuda: ninguna nueva. D-auv-9 queda saldada en código, pendiente GATE 2. Bloqueos: ninguno.
