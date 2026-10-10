@@ -93,7 +93,7 @@
         "/assistant/ask": {
             "post": {
                 "operationId": "assistant.ask",
-                "summary": "Pregunta de inventario en espa\u00f1ol. `outcome` y `answer` los decide el servidor desde herramientas de solo\nlectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no est\u00e1 disponible)",
+                "summary": "Pregunta de inventario en espa\u00f1ol. `outcome` y `answer` los decide el servidor desde herramientas de solo\nlectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no est\u00e1 disponible).\n`model` opcional elige el modelo entre los de GET /assistant/models; `data.model` dice cu\u00e1l atendi\u00f3",
                 "tags": [
                     "Assistant"
                 ],
@@ -190,6 +190,53 @@
                     {
                         "sessionCookie": [],
                         "xsrfToken": []
+                    }
+                ]
+            }
+        },
+        "/assistant/models": {
+            "get": {
+                "operationId": "assistant.models",
+                "summary": "Modelos elegibles para preguntar: `mock` siempre y primero; los de Ollama solo si est\u00e1n descargados, declaran\nherramientas y Ollama responde en plazo. Ollama ca\u00eddo responde 200 solo con `mock`",
+                "tags": [
+                    "AssistantModel"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AssistantModelResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AssistantModelResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
                     }
                 ]
             }
@@ -3306,12 +3353,20 @@
             },
             "AskAssistantRequest": {
                 "type": "object",
-                "description": "Pregunta al asistente (inventory-assistant \u00abPregunta en lenguaje natural\u00bb): texto de 3 a 500 caracteres. Toda\nsesi\u00f3n puede preguntar (auth:sanctum en la ruta): sin authorize() propio, porque cada herramienta autoriza con la\nPolicy de su fuente y responde not_permitted, nunca 403 (proposal, supuesto 2).",
+                "description": "Pregunta al asistente (inventory-assistant \u00abPregunta en lenguaje natural\u00bb): texto de 3 a 500 caracteres. Toda\nsesi\u00f3n puede preguntar (auth:sanctum en la ruta): sin authorize() propio, porque cada herramienta autoriza con la\nPolicy de su fuente y responde not_permitted, nunca 403 (proposal, supuesto 2).\n`model` opcional (S15, design D5): texto y, solo entonces, un `id` de la lista de modelos disponibles.",
                 "properties": {
                     "question": {
                         "type": "string",
                         "minLength": 3,
                         "maxLength": 500
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "Modelo que atiende la pregunta: `mock` u `ollama:<name>` de GET /assistant/models. Sin \u00e9l decide\nAI_PROVIDER. Fuera de la lista: 422 con `errors.model`.",
+                        "examples": [
+                            "ollama:gemma4:e2b-mlx"
+                        ],
+                        "maxLength": 220
                     }
                 },
                 "required": [
@@ -3333,14 +3388,44 @@
                         "items": {
                             "$ref": "#/components/schemas/AssistantToolCallResource"
                         }
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "`id` del modelo que atendi\u00f3 (`mock` u `ollama:<name>`; S15)."
                     }
                 },
                 "required": [
                     "outcome",
                     "answer",
-                    "tool_calls"
+                    "tool_calls",
+                    "model"
                 ],
                 "title": "AssistantAnswerResource"
+            },
+            "AssistantModelResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "`mock` u `ollama:<name>`: el valor que acepta `model` en POST /assistant/ask."
+                    },
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "mock",
+                            "ollama"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "provider",
+                    "name"
+                ],
+                "title": "AssistantModelResource"
             },
             "AssistantToolCallResource": {
                 "type": "object",
