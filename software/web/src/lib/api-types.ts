@@ -88,6 +88,9 @@ export type AssistantAnswer = ResponseOf<'/assistant/ask', 'post'>['data']
 export type AssistantOutcome = AssistantAnswer['outcome']
 export type AssistantToolCall = AssistantAnswer['tool_calls'][number]
 export type ToolCallStatus = AssistantToolCall['status']
+// Modelo elegible del asistente (S15): `id` = `mock` | `ollama:<name>`, el valor de `model` en la pregunta.
+// El cuerpo de la pregunta con `model` opcional es `AskAssistantRequest`.
+export type AssistantModel = ResponseOf<'/assistant/models', 'get'>['data'][number]
 
 // Usuarios (S13, solo users.manage). `UserResource` no trae contraseña.
 export type User = ResponseOf<'/users', 'get'>['data'][number]

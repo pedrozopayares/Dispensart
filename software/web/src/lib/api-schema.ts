@@ -35,9 +35,30 @@ export interface paths {
         put?: never;
         /**
          * Pregunta de inventario en español. `outcome` y `answer` los decide el servidor desde herramientas de solo
-         *     lectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no está disponible)
+         *     lectura que respetan el rol; el proveedor del modelo solo elige herramientas (503 si no está disponible).
+         *     `model` opcional elige el modelo entre los de GET /assistant/models; `data.model` dice cuál atendió
          */
         post: operations["assistant.ask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assistant/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Modelos elegibles para preguntar: `mock` siempre y primero; los de Ollama solo si están descargados, declaran
+         *     herramientas y Ollama responde en plazo. Ollama caído responde 200 solo con `mock`
+         */
+        get: operations["assistant.models"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -546,15 +567,32 @@ export interface components {
          * @description Pregunta al asistente (inventory-assistant «Pregunta en lenguaje natural»): texto de 3 a 500 caracteres. Toda
          *     sesión puede preguntar (auth:sanctum en la ruta): sin authorize() propio, porque cada herramienta autoriza con la
          *     Policy de su fuente y responde not_permitted, nunca 403 (proposal, supuesto 2).
+         *     `model` opcional (S15, design D5): texto y, solo entonces, un `id` de la lista de modelos disponibles.
          */
         AskAssistantRequest: {
             question: string;
+            /**
+             * @description Modelo que atiende la pregunta: `mock` u `ollama:<name>` de GET /assistant/models. Sin él decide
+             *     AI_PROVIDER. Fuera de la lista: 422 con `errors.model`.
+             * @example ollama:gemma4:e2b-mlx
+             */
+            model?: string;
         };
         /** AssistantAnswerResource */
         AssistantAnswerResource: {
             outcome: components["schemas"]["Outcome"];
             answer: string;
             tool_calls: components["schemas"]["AssistantToolCallResource"][];
+            /** @description `id` del modelo que atendió (`mock` u `ollama:<name>`; S15). */
+            model: string;
+        };
+        /** AssistantModelResource */
+        AssistantModelResource: {
+            /** @description `mock` u `ollama:<name>`: el valor que acepta `model` en POST /assistant/ask. */
+            id: string;
+            /** @enum {string} */
+            provider: "mock" | "ollama";
+            name: string;
         };
         /** AssistantToolCallResource */
         AssistantToolCallResource: {
@@ -1165,6 +1203,37 @@ export interface operations {
             };
             /** @description El proveedor del asistente no respondió, respondió con error, superó el plazo o no está configurado. code: assistant_unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "assistant.models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of `AssistantModelResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AssistantModelResource"][];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
