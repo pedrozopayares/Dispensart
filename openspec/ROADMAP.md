@@ -24,6 +24,8 @@ continúa desde la primera tajada no archivada. El Orchestrator actualiza Estado
 | S13 | `add-admin-screens` | Pantallas de administración para `admin` sobre la API existente: usuarios (listar, crear con rol) y catálogo (bodegas y productos: listar, crear, editar); `admin` deja de ver el Asistente en menú, inicio y ruta | A, B, § 3 | B | archivado |
 | S14 | `fix-expiry-badge-contrast` | Salda D-auv-8: el badge «Vence en N días» del inventario cumple contraste WCAG AA, con prueba | B | C | archivado |
 | S15 | `add-assistant-model-selector` | Selector de modelo en la pantalla Asistente: `mock` siempre disponible y elegido por defecto; modelos de Ollama solo si Ollama responde y el modelo está descargado y admite herramientas; la API lista los modelos disponibles y `ask` acepta el modelo elegido validado contra esa lista; la elección sobrevive a recargas en el navegador (sin base de datos) | A, B, C | A | archivado |
+| S16 | `add-postman-collection` | Colección y entorno de Postman en `software/docs/postman/` sobre el contrato OpenAPI: sesión Sanctum SPA resuelta por script (cookie CSRF, `X-XSRF-TOKEN`, `Origin`), cuerpos de ejemplo y aserciones por flujo (roles, dispensación FEFO e idempotencia, control especial, traslados con discrepancia, alertas y kardex, asistente con modelo, permisos denegados); ejecución con `newman` en local y en el staging simulado del CI | A, D, E, § 7 | B | pendiente |
+| S17 | `fix-test-env-isolation` | Salda D-auv-9: `phpunit.xml` fija `AI_PROVIDER=mock` y `OLLAMA_MODEL` para que la suite no herede `software/.env`, con prueba | E | C | pendiente |
 
 Valores de Estado: `pendiente` · `propuesto` (GATE 1 registrado) · `en curso` (apply) · `aprobado` (GATE 2) ·
 `archivado` · `bloqueado: <motivo>`.
@@ -75,6 +77,12 @@ alcance y el tier de la fila S14. GATE 2 sigue siendo del `final-auditor`.
 Registrada el 2026-10-09 por instrucción del usuario: *"Este ajuste es en autopiloto hasta terminar"*, sobre el pedido
 del selector de modelo en la pantalla Asistente. Mismas cuatro condiciones, con el alcance y el tier de la fila S15.
 GATE 2 sigue siendo del `final-auditor`.
+
+## Preaprobación de GATE 1 para S16–S17
+
+Registrada el 2026-10-10 por instrucción del usuario: *"Aplica S16, junto con D-auv-9"*, tras proponer la colección de
+Postman (S16) y explicar D-auv-9 (S17). Mismas cuatro condiciones, con el alcance y el tier de cada fila. S17 se archiva
+antes que S16 para que D-auv-9 no bloquee el archivo de S16. GATE 2 sigue siendo del `final-auditor`.
 
 ## Restricciones del entorno (vinculan a S0 y S8)
 
