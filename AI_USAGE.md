@@ -11,7 +11,7 @@ del cambio, con número de línea).
 |---|---|
 | Claude Code (modelos Opus; Haiku para validación) | Único asistente. El hilo principal actúa como **Orchestrator**: no escribe código ni specs, delega en agentes declarados y lleva compuertas y bitácora (`CLAUDE.md`). |
 | Agentes declarados en `.claude/agents/` | spec-engineer, architect, backend-implementer, frontend-implementer, devops-implementer, spec-validator, final-auditor. Cada uno con alcance de archivos y leyes propias. |
-| OpenSpec (desarrollo guiado por especificaciones) | Cada tajada S0–S8 es un cambio: propuesta, specs delta con escenarios, diseño, tareas con comando de verificación, bitácora y matriz de verificación. Tras S0–S8 pasaron por el mismo ciclo la pantalla del asistente y S9, S10, S12, S13 y S14 (documentación de salud y evaluación, bitácora de operaciones sensibles, paleta de la IPS, pantallas de administración, contraste de la insignia de vencimiento); S11 no se construyó: el autor dejó su GATE 1 en pausa (`openspec/changes/use-registry-mirror-in-ci/journal.md` línea 77). Archivados en `openspec/changes/archive/`. |
+| OpenSpec (desarrollo guiado por especificaciones) | Cada tajada S0–S8 es un cambio: propuesta, specs delta con escenarios, diseño, tareas con comando de verificación, bitácora y matriz de verificación. Tras S0–S8 pasaron por el mismo ciclo la pantalla del asistente y S9, S10, S12, S13, S14 y S15 (documentación de salud y evaluación, bitácora de operaciones sensibles, paleta de la IPS, pantallas de administración, contraste de la insignia de vencimiento, selector de modelo del asistente); S11 no se construyó: el autor dejó su GATE 1 en pausa (`openspec/changes/use-registry-mirror-in-ci/journal.md` línea 77). Archivados en `openspec/changes/archive/`. |
 | Skills en `.claude/skills/` | Guías vendorizadas (Laravel, PostgreSQL, diseño de API, GitHub Actions, shadcn, accesibilidad, TDD, seguridad…). Origen, hash y licencia en `THIRD_PARTY_NOTICES.md` y `skills-lock.json`. Si una skill contradice un ADR, gana el repositorio. |
 | Comandos en `.claude/commands/` | `/opsx:*` (ciclo OpenSpec), `/autopilot` (encadena tajadas del roadmap), `/nitro` (cambios pequeños con los roles en línea). |
 
@@ -52,7 +52,7 @@ Proveedor de IA dentro del producto: ninguno de pago. El asistente usa `mock` po
 
 | Compuerta | Quién decide | Qué exige |
 |---|---|---|
-| GATE 1 (propuesta) | El autor. Para el lote S0–S8, y luego fila a fila para S9, S10, S12, S13 y S14, la preaprobó con cuatro condiciones; si una falla, la IA se detiene y pregunta (caso del tier de S5) | Alcance exacto, validación estricta, tier correcto, ningún ADR ni regla RN debilitados (`openspec/ROADMAP.md`) |
+| GATE 1 (propuesta) | El autor. Para el lote S0–S8, y luego fila a fila para S9, S10, S12, S13, S14 y S15, la preaprobó con cuatro condiciones; si una falla, la IA se detiene y pregunta (caso del tier de S5) | Alcance exacto, validación estricta, tier correcto, ningún ADR ni regla RN debilitados (`openspec/ROADMAP.md`) |
 | GATE 2 (cierre) | final-auditor emite `APPROVED`; nunca está preaprobada | Todas las tareas cerradas, matrices de verificación completas, hallazgos corregidos con evidencia |
 | Rama `main` | Solo el autor fusiona | Los agentes publican en `dev` o ramas `feat/*`, sin force-push |
 | Producción | El autor aprueba en el entorno `production` de GitHub | Revisor requerido; la guarda del pipeline falla si el entorno no lo exige (`software/docs/deployment.md`) |
