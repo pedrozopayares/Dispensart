@@ -8,7 +8,9 @@ use App\Services\Assistant\Llm\ChatResponse;
 use App\Services\Assistant\Llm\LlmProvider;
 use App\Services\Assistant\Llm\ToolCall;
 use Database\Seeders\AssistantEvalSeeder;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\RecordingLlmProvider;
 use Tests\Support\ScriptedLlmProvider;
@@ -111,4 +113,71 @@ function evaluationSetWith(Closure $alter): string
     file_put_contents($path, json_encode($set, JSON_UNESCAPED_UNICODE));
 
     return $path;
+}
+
+// Catálogo de modelos (S15): Ollama simulado en el borde HTTP con la forma real de /api/tags y /api/show, incluidos
+// los campos que la API nunca debe devolver (digest, tamaño, detalles, capacidades).
+
+const CATALOG_OLLAMA_URL = 'http://ollama.catalogo:11434';
+
+function useOllamaCatalog(): void
+{
+    config(['assistant.ollama.base_url' => CATALOG_OLLAMA_URL]);
+}
+
+/**
+ * Cuerpo de /api/tags con los nombres dados.
+ *
+ * @param  list<string>  $names
+ * @return array{models: list<array<string, mixed>>}
+ */
+function ollamaTags(array $names): array
+{
+    return ['models' => array_map(fn (string $name): array => [
+        'name' => $name,
+        'model' => $name,
+        'modified_at' => '2026-10-01T10:00:00.000000-05:00',
+        'size' => 1234567890,
+        'digest' => 'sha256:'.str_repeat('a', 64),
+        'details' => ['format' => 'gguf', 'family' => 'prueba', 'parameter_size' => '3B', 'quantization_level' => 'Q4_K_M'],
+    ], $names)];
+}
+
+/**
+ * Manejadores de Http::fake para /api/tags y /api/show.
+ *
+ * @param  array<string, list<string>|int>  $models  nombre → capacidades de su ficha, o código HTTP con que falla
+ * @return array<string, mixed>
+ */
+function ollamaCatalogStubs(array $models): array
+{
+    return [
+        CATALOG_OLLAMA_URL.'/api/tags' => Http::response(ollamaTags(array_map('strval', array_keys($models)))),
+        CATALOG_OLLAMA_URL.'/api/show' => function (Request $request) use ($models) {
+            $entry = $models[$request['model']] ?? 404;
+
+            return is_int($entry)
+                ? Http::response(['error' => 'model not found'], $entry)
+                : Http::response([
+                    'modelfile' => '# Modelfile de prueba',
+                    'details' => ['family' => 'prueba', 'parameter_size' => '3B'],
+                    'model_info' => ['general.architecture' => 'prueba'],
+                    'capabilities' => $entry,
+                    'modified_at' => '2026-10-01T10:00:00.000000-05:00',
+                ]);
+        },
+    ];
+}
+
+/**
+ * Peticiones enviadas a Ollama con la ruta dada (`/api/tags`, `/api/show`, `/api/chat`).
+ *
+ * @return list<Request>
+ */
+function ollamaRequests(string $path): array
+{
+    return Http::recorded()
+        ->map(fn (array $pair): Request => $pair[0])
+        ->filter(fn (Request $request): bool => str_ends_with($request->url(), $path))
+        ->values()->all();
 }

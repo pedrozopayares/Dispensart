@@ -25,6 +25,8 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- Catálogo de modelos del asistente (S15, design D3): caché vacía en cada prueba, nada compartido entre corridas. -->
+        <env name="ASSISTANT_MODELS_CACHE_STORE" value="array" force="true"/>
         <!-- Siempre PostgreSQL y siempre la base de pruebas: nunca SQLite ni la base de desarrollo (design D3). -->
         <env name="DB_CONNECTION" value="pgsql" force="true"/>
         <env name="DB_DATABASE" value="dispensart_test" force="true"/>

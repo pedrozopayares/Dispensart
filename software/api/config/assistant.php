@@ -14,6 +14,14 @@ return [
         'timeout' => (float) env('OLLAMA_TIMEOUT', 30),
     ],
 
+    // Modelos elegibles por pregunta (S15, design D2 y D3): descubrimiento en Ollama con plazo total corto y caché
+    // corta de solo nombres en un almacén que no es la base (`file` por defecto; `array` en las pruebas).
+    'models' => [
+        'budget_seconds' => 2,
+        'cache_ttl_seconds' => 30,
+        'cache_store' => env('ASSISTANT_MODELS_CACHE_STORE', 'file'),
+    ],
+
     // Plazo total de una pregunta, por debajo del proxy_read_timeout de 60 s del Nginx de web (design D7).
     'deadline_seconds' => 50,
 

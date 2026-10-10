@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Assistant\AssistantController;
+use App\Http\Controllers\Assistant\AssistantModelController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
@@ -98,4 +99,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/assistant/ask', AssistantController::class)
         ->middleware('throttle:assistant')
         ->name('assistant.ask');
+    // Modelos elegibles (S15, design D6): misma autorización que la pregunta y sin limitador (la caché del catálogo
+    // acota las consultas a Ollama).
+    Route::get('/assistant/models', AssistantModelController::class)->name('assistant.models');
 });
