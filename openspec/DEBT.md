@@ -11,6 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
+| D-6b6-1 | minor | add-lot-intake (línea base) | `tests/Feature/Assistant/EvaluationSetTest.php` «el comparador devuelve la primera expectativa…» consulta `warehouses` sin `RefreshDatabase`: falla sola o con `--parallel` (`relation "warehouses" does not exist`); pasa solo si otra prueba migró antes. Falso rojo dependiente del orden. | Tajada de arrastre: `uses(RefreshDatabase::class)` en la prueba + corrida aislada en verde. |
 
 ## Settled
 
