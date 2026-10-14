@@ -1613,6 +1613,91 @@
                 ]
             }
         },
+        "/stock-entries": {
+            "post": {
+                "operationId": "stock-entries.store",
+                "summary": "Registra el ingreso de un lote (lo crea si no existe) y devuelve el movimiento `entrada` creado (solo inventory.adjust)",
+                "tags": [
+                    "StockEntry"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreStockEntryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`KardexMovementResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/KardexMovementResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin sesi\u00f3n. code: unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Datos inv\u00e1lidos. code: validation_failed, con errors por campo.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    },
+                    "419": {
+                        "description": "Falta X-XSRF-TOKEN o no corresponde a la sesi\u00f3n. code: csrf_token_mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sessionCookie": [],
+                        "xsrfToken": []
+                    }
+                ]
+            }
+        },
         "/transfers": {
             "get": {
                 "operationId": "transfers.index",
@@ -4463,6 +4548,46 @@
                     "reason"
                 ],
                 "title": "StoreStockAdjustmentRequest"
+            },
+            "StoreStockEntryRequest": {
+                "type": "object",
+                "description": "Ingreso de lote (inventory \"Ingreso de lote\", S18): solo inventory.adjust. Texto de solo espacios llega como null\n(TrimStrings + ConvertEmptyStringsToNull) y falla `required`. Usuario, tipo, saldo y fecha nunca se leen del\ncuerpo: solo `entry()` llega a la acci\u00f3n. El vencimiento distinto de un lote existente lo decide la acci\u00f3n.",
+                "properties": {
+                    "warehouse_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "product_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "lot_code": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "expires_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                    },
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "warehouse_id",
+                    "product_id",
+                    "lot_code",
+                    "expires_on",
+                    "quantity",
+                    "reason"
+                ],
+                "title": "StoreStockEntryRequest"
             },
             "StoreTransferRequest": {
                 "type": "object",

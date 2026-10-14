@@ -66,5 +66,10 @@ return [
         'status' => 'estado',
         'per_page' => 'resultados por página',
         'page' => 'página',
+        'lot_code' => 'código de lote',
+        'expires_on' => 'vencimiento',
     ],
+
+    // Ingreso de lote (S18): el lote ya existe con otro vencimiento.
+    'lot_expiry_mismatch' => 'El lote ya existe con otra fecha de vencimiento.',
 ];

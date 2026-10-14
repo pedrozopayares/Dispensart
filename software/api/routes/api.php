@@ -14,6 +14,7 @@ use App\Http\Controllers\Inventory\AlertController;
 use App\Http\Controllers\Inventory\KardexController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockController;
+use App\Http\Controllers\Inventory\StockEntryController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Prescriptions\PrescriptionController;
 use App\Http\Controllers\Transfers\TransferActionController;
@@ -56,6 +57,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/stock', StockController::class)->name('stock.index');
     Route::get('/kardex', KardexController::class)->name('kardex.index');
     Route::post('/stock-adjustments', StockAdjustmentController::class)->name('stock-adjustments.store');
+    // Ingreso de lote (S18): alta del lote si falta + movimiento `entrada`.
+    Route::post('/stock-entries', StockEntryController::class)->name('stock-entries.store');
     // Alertas de inventario (S5, RN-11): solo lectura, misma Policy que las existencias.
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 

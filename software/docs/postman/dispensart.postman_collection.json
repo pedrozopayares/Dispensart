@@ -3204,7 +3204,8 @@
                   "const row = pm.response.json().data.find((s) => s.lot.lot_code === 'L-IBU-2402');",
                   "pm.test('existencia semilla FC / L-IBU-2402 con cantidad > 0', () => { pm.expect(row).to.be.an('object'); pm.expect(row.quantity).to.be.above(0); });",
                   "pm.collectionVariables.set('adjLotId', row.lot.id);",
-                  "pm.collectionVariables.set('adjQuantity', row.quantity);"
+                  "pm.collectionVariables.set('adjQuantity', row.quantity);",
+                  "pm.collectionVariables.set('adjProductId', row.product.id);"
                 ]
               }
             }
@@ -3384,6 +3385,94 @@
                 "exec": [
                   "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
                   "pm.test('code insufficient_stock', () => pm.expect(pm.response.json().code).to.eql('insufficient_stock'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: ingreso de lote nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-entries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": {{fcId}},\n  \"product_id\": {{adjProductId}},\n  \"lot_code\": \"PM-{{runId}}\",\n  \"expires_on\": \"2099-12-31\",\n  \"quantity\": 5,\n  \"reason\": \"Colección Postman {{runId}}: factura de proveedor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Crea el lote (producto + código + vencimiento) y su existencia en FC con un movimiento entrada (S18)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const m = pm.response.json().data;",
+                  "pm.test('movimiento entrada de 5 sobre el lote nuevo', () => { pm.expect(m.type).to.eql('entrada'); pm.expect(m.quantity).to.eql(5); pm.expect(m.balance_after).to.eql(5); pm.expect(m.lot.lot_code).to.eql('PM-' + pm.collectionVariables.get('runId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regente: ingreso con vencimiento distinto del lote existente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-entries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": {{fcId}},\n  \"product_id\": {{adjProductId}},\n  \"lot_code\": \"PM-{{runId}}\",\n  \"expires_on\": \"2099-11-30\",\n  \"quantity\": 1,\n  \"reason\": \"Colección Postman {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('validation_failed en expires_on', () => { pm.expect(pm.response.json().code).to.eql('validation_failed'); pm.expect(pm.response.json().errors).to.have.property('expires_on'); });"
                 ]
               }
             }
@@ -4550,6 +4639,50 @@
                 }
               }
             }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code forbidden', () => pm.expect(pm.response.json().code).to.eql('forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auxiliar: ingreso de lote (sin la capacidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-entries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_id\": 1,\n  \"product_id\": 1,\n  \"lot_code\": \"PM-DENIED\",\n  \"expires_on\": \"2099-12-31\",\n  \"quantity\": 1,\n  \"reason\": \"Colección Postman: rol sin la capacidad\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "La autorización se evalúa antes que la validación: los ids del ejemplo no necesitan existir."
           },
           "event": [
             {

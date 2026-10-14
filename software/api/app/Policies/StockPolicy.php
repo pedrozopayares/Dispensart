@@ -20,4 +20,12 @@ final class StockPolicy
     {
         return $user->role->allows(Ability::InventoryAdjust->value);
     }
+
+    /**
+     * Ingreso de lote (S18 D1): misma capacidad que el ajuste; el mapa de roles no cambia.
+     */
+    public function receive(User $user): bool
+    {
+        return $user->role->allows(Ability::InventoryAdjust->value);
+    }
 }

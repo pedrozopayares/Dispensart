@@ -38,7 +38,8 @@ test('Filas nuevas inmutables: sobreviven al retroceso de la migración y se rev
     $before = DB::table('audit_events')->orderBy('id')->get()->map(fn ($r) => (array) $r)->all();
     expect(sensitiveOperationChecksValidated())->toBe(array_fill_keys(SENSITIVE_OPERATION_CHECKS, true));
 
-    $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful()->run();
+    // Dos pasos: la migración de S18 (stock.received) va después de la de S10 y se retrocede primero.
+    $this->artisan('migrate:rollback', ['--step' => 2])->assertSuccessful()->run();
 
     expect(DB::table('audit_events')->orderBy('id')->get()->map(fn ($r) => (array) $r)->all())->toBe($before)
         ->and(sensitiveOperationChecksValidated())->toBe(array_fill_keys(SENSITIVE_OPERATION_CHECKS, false));
