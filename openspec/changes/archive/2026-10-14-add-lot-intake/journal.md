@@ -38,3 +38,10 @@ de gate. shard = 6b6.
 - Deuda: D-6b6-1 (prueba de evaluación sin base propia), D-6b6-2 (memoria de `api-tools`). Contiguo, no barrido: S19
   pantalla de ajuste manual (fila del ROADMAP, pendiente).
 - Siguiente: final-auditor (GATE 2). Corrida 3 = confirmación del auditor, con `php -d memory_limit=512M`.
+
+## 2026-10-14 — final-auditor
+
+- **GATE 2: APPROVED.** Corrida 3 de 3 (confirmación): API `php -d memory_limit=512M vendor/bin/pest` 1103 pasan, 0
+  fallan; SPA 34 archivos, 367 pasan.
+- Hallazgo minor → D-6b6-3 (prueba SPA no afirma el kardex). Nota de redacción: D2 paso 1 ubica la regla de vencido
+  dentro de la transacción y el código la corre antes; sin efecto (Iron rule 12), anotada.

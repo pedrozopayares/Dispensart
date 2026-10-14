@@ -11,6 +11,7 @@ Ids: `D-<shard>-<n>`, see `openspec/ID-CONVENTION.md`. On a merge conflict in th
 
 | Id | Severity | Found in | Debt | Settle |
 |---|---|---|---|---|
+| D-6b6-3 | minor | add-lot-intake (final-auditor) | `software/web/src/features/inventory/stock-entry-form.test.tsx:100-103`: «Ingreso exitoso» afirma la nueva consulta de existencias y alertas, no la del kardex (invalidada vía `stockWriteRoots`, `query-keys.ts:26`). | Lote: afirmar la invalidación de la raíz `kardex` en la prueba. |
 | D-6b6-2 | minor | add-lot-intake (corrida de cierre) | `api-tools` (imagen `dev`) corre PHP con `memory_limit` 128M: la suite Pest completa en serie (≈1100 pruebas) aborta al final por memoria (`Allowed memory size of 134217728 bytes exhausted`) tras pasar todas las de Feature. El CI usa `setup-php`, sin ese tope. | Tajada de arrastre: `memory_limit` mayor en el php.ini de la imagen `dev` (devops) + corrida completa en serie con exit 0. |
 | D-6b6-1 | minor | add-lot-intake (línea base) | `tests/Feature/Assistant/EvaluationSetTest.php` «el comparador devuelve la primera expectativa…» consulta `warehouses` sin `RefreshDatabase`: falla sola o con `--parallel` (`relation "warehouses" does not exist`); pasa solo si otra prueba migró antes. Falso rojo dependiente del orden. | Tajada de arrastre: `uses(RefreshDatabase::class)` en la prueba + corrida aislada en verde. |
 
