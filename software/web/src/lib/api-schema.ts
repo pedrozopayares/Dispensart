@@ -308,6 +308,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registra el ingreso de un lote (lo crea si no existe) y devuelve el movimiento `entrada` creado (solo inventory.adjust) */
+        post: operations["stock-entries.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/transfers": {
         parameters: {
             query?: never;
@@ -899,6 +916,21 @@ export interface components {
         StoreStockAdjustmentRequest: {
             warehouse_id: number;
             lot_id: number;
+            quantity: number;
+            reason: string;
+        };
+        /**
+         * StoreStockEntryRequest
+         * @description Ingreso de lote (inventory "Ingreso de lote", S18): solo inventory.adjust. Texto de solo espacios llega como null
+         *     (TrimStrings + ConvertEmptyStringsToNull) y falla `required`. Usuario, tipo, saldo y fecha nunca se leen del
+         *     cuerpo: solo `entry()` llega a la acción. El vencimiento distinto de un lote existente lo decide la acción.
+         */
+        StoreStockEntryRequest: {
+            warehouse_id: number;
+            product_id: number;
+            lot_code: string;
+            /** Format: date */
+            expires_on: string;
             quantity: number;
             reason: string;
         };
@@ -2114,6 +2146,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "stock-entries.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreStockEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description `KardexMovementResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["KardexMovementResource"];
+                    };
+                };
+            };
+            /** @description Sin sesión. code: unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Sin permiso para el rol, o login desde un origen ajeno a la SPA. code: forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Falta X-XSRF-TOKEN o no corresponde a la sesión. code: csrf_token_mismatch */
+            419: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Datos inválidos. code: validation_failed, con errors por campo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
                 };
             };
         };

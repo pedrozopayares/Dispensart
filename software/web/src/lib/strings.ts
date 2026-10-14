@@ -140,6 +140,21 @@ export const strings = {
         available: 'Disponible',
       },
     },
+    // Ingreso de lote (S18): solo inventory.adjust.
+    entry: {
+      title: 'Registrar ingreso',
+      description: 'Entrada de mercancía a una bodega. Si el lote no existe, se crea con su vencimiento.',
+      warehouse: 'Bodega',
+      product: 'Producto',
+      choose: 'Elige una opción',
+      lotCode: 'Código de lote',
+      expiresOn: 'Vencimiento',
+      quantity: 'Cantidad',
+      reason: 'Documento o motivo',
+      submit: 'Registrar ingreso',
+      submitting: 'Registrando…',
+      created: 'Ingreso registrado: {quantity} unidades del lote {lot} en {warehouse}.',
+    },
   },
   kardex: {
     title: 'Kardex',

@@ -43,6 +43,8 @@ export type NewWarehouse = BodyOf<'/warehouses', 'post'>
 export type WarehouseChanges = BodyOf<'/warehouses/{warehouse}', 'patch'>
 export type NewProduct = BodyOf<'/products', 'post'>
 export type ProductChanges = BodyOf<'/products/{product}', 'patch'>
+// Ingreso de lote (S18, solo inventory.adjust).
+export type NewStockEntry = BodyOf<'/stock-entries', 'post'>
 export type ApiErrorBody = components['schemas']['ApiError']
 // Faltante por ítem de `insufficient_stock` en la dispensación (publicado por S3).
 export type Shortage = NonNullable<ApiErrorBody['shortages']>[number]

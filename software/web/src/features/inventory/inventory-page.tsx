@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useOutletContext } from 'react-router'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorMessage } from '@/components/error-message'
 import { LoadingState } from '@/components/loading-state'
@@ -18,14 +19,19 @@ import { productOptions, warehouseOptions } from '@/features/catalog/options'
 import { useProducts, useWarehouses } from '@/features/catalog/queries'
 import { indexAlerts, expiresInLabel, type AlertIndex } from '@/features/inventory/alert-index'
 import { InventoryAlerts } from '@/features/inventory/inventory-alerts'
+import { StockEntryForm } from '@/features/inventory/stock-entry-form'
 import { useAlerts, useStock } from '@/features/inventory/queries'
+import { can } from '@/lib/abilities'
+import type { AuthenticatedUser } from '@/lib/api'
 import type { StockRow } from '@/lib/api-types'
 import { strings } from '@/lib/strings'
 import { cn } from '@/lib/utils'
 
 // Pantalla Inventario (/inventory): existencias por bodega, producto y lote, con las alertas de
-// vencimiento y stock mínimo de la misma bodega (RN-11). Solo lectura (RN-01).
+// vencimiento y stock mínimo de la misma bodega (RN-11). La tabla es de solo lectura (RN-01); con
+// `inventory.adjust` se suma el formulario de ingreso de lote (S18).
 export function InventoryPage() {
+  const user = useOutletContext<AuthenticatedUser>()
   const [warehouseId, setWarehouseId] = useState<number | undefined>()
   const [productId, setProductId] = useState<number | undefined>()
   const warehouses = useWarehouses()
@@ -36,6 +42,12 @@ export function InventoryPage() {
   return (
     <section className="flex w-full max-w-6xl flex-col gap-6">
       <PageHeader title={strings.inventory.title} description={strings.inventory.description} />
+      {can(user, 'inventory.adjust') && (
+        <StockEntryForm
+          warehouses={warehouseOptions(warehouses.data)}
+          products={productOptions(products.data)}
+        />
+      )}
       <div className="flex flex-wrap gap-4">
         <SelectFilter
           id="inventory-warehouse"

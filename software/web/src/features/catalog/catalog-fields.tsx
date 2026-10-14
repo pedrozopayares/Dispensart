@@ -15,10 +15,24 @@ type TextFieldProps = {
   maxLength?: number
   autoFocus?: boolean
   inputRef?: Ref<HTMLInputElement>
+  // Tipo nativo del campo (p. ej. `date`); texto por defecto.
+  type?: 'text' | 'date'
+  inputMode?: 'numeric'
 }
 
 // Campo de texto del kit con su mensaje junto al campo, enlazado como descripción accesible.
-export function TextField({ id, label, value, onChange, error, maxLength, autoFocus, inputRef }: TextFieldProps) {
+export function TextField({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  maxLength,
+  autoFocus,
+  inputRef,
+  type = 'text',
+  inputMode,
+}: TextFieldProps) {
   const errorId = `${id}-error`
   return (
     <Field data-invalid={error !== undefined || undefined}>
@@ -26,6 +40,8 @@ export function TextField({ id, label, value, onChange, error, maxLength, autoFo
       <Input
         id={id}
         ref={inputRef}
+        type={type}
+        inputMode={inputMode}
         autoComplete="off"
         // Foco al abrir la edición en contexto (flujo de teclado); nunca al cargar la página.
         autoFocus={autoFocus}
